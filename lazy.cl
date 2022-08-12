@@ -30,11 +30,9 @@
     ((normalize-app (ret l)
        (cond ((not l) ret)
              (t (normalize-app (list ret (curry (car l))) (cdr l)))))
-
      (curry-lambda (args body)
        (cond ((= 1 (length args)) `(lambda ,args ,(curry body)))
              (t `(lambda (,(car args)) ,(curry-lambda (cdr args) body))))))
-
     (cond ((atom expr) expr)
           ((eq (car expr) `lambda) (curry-lambda (car (cdr expr)) (cdr (cdr expr))))
           ((eq 1 (length expr)) (curry (car expr)))
@@ -48,33 +46,28 @@
 
 (defun to-de-bruijn (body env)
   (labels
-    ((lookup (env var level)
-       (cond ((not env) (concatenate `string "[" (write-to-string var) "]"))
-             ((eq var (car env)) level)
-             (t (lookup (cdr env) var (+ level 1))))))
+    ((lookup (env var)
+       (let ((i (position var env)))
+         (if i (+ 1 i) (concatenate `string "[" (write-to-string var) "]")))))
     (if (not (atom body))
         (if (and (atom (car body)) (eq (car body) `lambda))
             `(abs ,@(to-de-bruijn (car (cdr (cdr body))) (cons (car (car (cdr body))) env)))
             `(app ,@(to-de-bruijn (car body) env) ,@(to-de-bruijn (car (cdr body)) env)))
-        (list (lookup env body 1)))))
+        (list (lookup env body)))))
 
 (print (to-de-bruijn (curry `(lambda (x y z) (x y ((x y z) x)))) ()))
 
 (defun to-blc-string (body)
   (labels
    ((int2varname (n)
-      (if (> n 0)
-          (concatenate `string "1" (int2varname (- n 1)))
-          "0"))
+      (if (> n 0) (concatenate `string "1" (int2varname (- n 1))) "0"))
     (token2string (token)
       (cond ((not token) "")
             ((eq token 'abs) "00")
             ((eq token 'app) "01")
             ((stringp token) token)
             (t (int2varname token)))))
-   (if (not body)
-       ""
-       (concatenate `string (token2string (car body)) (to-blc-string (cdr body))))))
+   (if (not body) "" (concatenate `string (token2string (car body)) (to-blc-string (cdr body))))))
 
 
 (defun compile-to-blc (expr)
@@ -83,6 +76,10 @@
 (print (compile-to-blc `(lambda (x y z) (x y ((x y z) x)))))
 (print (compile-to-blc `(lambda (x y) x)))
 
+
+;; (defun occurs-freely-in (expr env var)
+;;   (labels
+;;     (cond ((atom expr) (find var env)))))
 
 (defun-lazy t (x y) x)
 (defun-lazy nil (x y) y)
