@@ -106,15 +106,18 @@
                                        (write-to-string args) (write-to-string name)))))
   `(setf (gethash ',name lazy-env) '(lambda ,args ,expr)))
 
-(defun macroexpand-lazy (expr &optional (history ()))
+(defun macroexpand-lazy-raw (expr &optional (history ()))
   (cond ((atom expr)
          (if (find expr history)
              (lazy-error (format nil "Recursive expansion of macro ~a. Expansion stack: ~a~%When writing recursive functions, please use anonymous recursion." expr (reverse (cons expr history)))))
          (let ((rexpr (gethash expr lazy-env `***lazy-cl-nomatch***)))
               (if (eq rexpr `***lazy-cl-nomatch***)
                   expr
-                  (macroexpand-lazy rexpr (cons expr history)))))
-        (t (mapcar #'(lambda (expr) (macroexpand-lazy expr history)) expr))))
+                  (macroexpand-lazy-raw rexpr (cons expr history)))))
+        (t (mapcar #'(lambda (expr) (macroexpand-lazy-raw expr history)) expr))))
+
+(defmacro macroexpand-lazy (expr)
+  `(macroexpand-lazy-raw ',expr))
 
 (defun-lazy t (x y) x)
 (defun-lazy nil (x y) y)
@@ -161,18 +164,18 @@
   (flatten-ski (t-rewrite (curry expr))))
 
 (defmacro compile-to-blc-lazy (expr-lazy)
-  `(compile-to-blc (macroexpand-lazy ',expr-lazy)))
+  `(compile-to-blc (macroexpand-lazy ,expr-lazy)))
 
 (defmacro compile-to-ski-lazy (expr-lazy)
-  `(compile-to-ski (macroexpand-lazy ',expr-lazy)))
+  `(compile-to-ski (macroexpand-lazy ,expr-lazy)))
 
 
-(print (curry (macroexpand-lazy `(if t (not t) t))))
+(print (curry (macroexpand-lazy-raw `(if t (not t) t))))
 (print (compile-to-blc `(if t (not t) t)))
 (print (compile-to-blc `(lambda (stdin) (cons t (cons nil (cons t nil))))))
 
 
-(print (flatten-ski (t-rewrite (curry (macroexpand-lazy `(lambda (stdin) (cons 64 (cons 32 (cons 64 (cons 256 zz))))))))))
+(print (flatten-ski (t-rewrite (curry (macroexpand-lazy-raw `(lambda (stdin) (cons 64 (cons 32 (cons 64 (cons 256 zz))))))))))
 
 (print (compile-to-blc `(lambda (x y z) (x y ((x y z) x)))))
 (print (compile-to-blc `(lambda (x y) x)))
