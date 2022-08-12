@@ -50,5 +50,8 @@
       ""
       (concatenate `string (to-blc-string-helper (car body)) (to-blc-string (cdr body)))))
 
-(print (to-blc-string (to-de-bruijn (curry `(lambda (x y z) (x y ((x y z) x)))) ())))
-(print (to-blc-string (to-de-bruijn (curry `(lambda (x y) x)) ())))
+(defun print-blc (code)
+  (print (to-blc-string (to-de-bruijn (curry code) ()))))
+
+(print-blc `(lambda (x y z) (x y ((x y z) x))))
+(print-blc `(lambda (x y) x))
