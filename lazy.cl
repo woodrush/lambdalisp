@@ -1,22 +1,27 @@
 (defparameter lazy-env (make-hash-table :test #'equal))
+;; (defparameter lazy-env ())
 
 (defmacro lazy-error (&rest message)
   `(error (concatenate 'string "Lazy K CL Error: " ,@message)))
 
 (defmacro def-lazy (name expr)
   (if (not (atom name)) (lazy-error (format nil "Variable name ~a must be a symbol" (write-to-string name))))
-  `(setf (gethash ',name lazy-env) ',expr))
+  `(setf (gethash ',name lazy-env) ',expr)
+  ;; `(setf lazy-env (cons '(,name ,@expr) lazy-env))
+  )
 
 (defmacro defun-lazy (name args expr)
   (cond ((not (atom name)) (lazy-error (format nil "Function name ~a must be a symbol" (write-to-string name))))
         ((atom args)       (lazy-error (format nil "Argument list ~a must be a list in ~a"
                                        (write-to-string args) (write-to-string name)))))
-  `(setf (gethash ',name lazy-env) '(lambda ,args ,expr)))
+  `(setf (gethash ',name lazy-env) '(lambda ,args ,expr))
+  ;; `(setf lazy-env (cons '(,name lambda ,args ,expr) lazy-env))
+  )
 
 (def-lazy a b)
-(def-lazy c (a b c))
+(def-lazy c (a b f))
 (defun-lazy f (x) (x x x))
-
+(print lazy-env)
 (loop for v being each hash-values of lazy-env using (hash-key k)
       do (format t "~a : ~a~%" k v))
 
@@ -25,8 +30,20 @@
         ((eq var (car env)) (cdr env))
         (t (env-lookup (cdr env) var))))
 
+(defun macroexpand-lazy (expr)
+  (cond ((atom expr)
+         (let ((rexpr (gethash expr lazy-env `***lazy-cl-nomatch***)))
+              (cond ((eq rexpr `***lazy-cl-nomatch***) expr)
+                    (t (macroexpand-lazy rexpr)))))
+        (t (mapcar #'macroexpand-lazy expr)
+        )))
+
 ;; (defun macroexpand-lazy (expr)
-;;   (cond ((atom ))))
+;;   (setf lazy-env (sublis lazy-env expr)))
+
+(print (subst `aa `f `(f g h)))
+(print (gethash 'f lazy-env))
+(print (macroexpand-lazy `(f g h a c a)))
 
 (defun normalize-app (ret l)
   (cond ((not l) ret)
