@@ -55,4 +55,4 @@
 (defun-lazy main (stdin)
   (lazystr2blcstr (program (blcstr2lazystr stdin))))
 
-(print (compile-to-blc main))
+(print (compile-to-blc-lazy main))

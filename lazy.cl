@@ -154,11 +154,17 @@
 (defun-lazy if (x) x)
 
 
-(defmacro compile-to-blc (expr)
-  `(to-blc-string (to-de-bruijn (curry (macroexpand-lazy ',expr)))))
+(defun compile-to-blc (expr)
+  (to-blc-string (to-de-bruijn (curry expr))))
 
-(defmacro compile-to-ski (expr)
-  `(flatten-ski (t-rewrite (curry (macroexpand-lazy ',expr)))))
+(defun compile-to-ski (expr)
+  (flatten-ski (t-rewrite (curry expr))))
+
+(defmacro compile-to-blc-lazy (expr-lazy)
+  `(compile-to-blc (macroexpand-lazy ',expr-lazy)))
+
+(defmacro compile-to-ski-lazy (expr-lazy)
+  `(compile-to-ski (macroexpand-lazy ',expr-lazy)))
 
 
 (print (curry (macroexpand-lazy `(if t (not t) t))))
