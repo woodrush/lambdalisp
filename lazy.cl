@@ -1,3 +1,96 @@
+(defun islambda (expr)
+  (eq `lambda (car expr)))
+
+(defun lambdaargs (expr)
+  (car (cdr expr)))
+
+(defun lambdaarg-top (expr)
+  (car (car (cdr expr))))
+
+(defun lambdabody (expr)
+  (car (cdr (cdr expr))))
+
+(defun decorate-varname (var)
+  (concatenate `string "[" (write-to-string var) "]"))
+
+
+(defun curry (expr)
+  (labels
+    ((normalize-app (ret l)
+       (if (not l) ret (normalize-app (list ret (curry (car l))) (cdr l))))
+     (curry-lambda (args body)
+       `(lambda (,(car args))
+          ,(if (= 1 (length args))
+               (curry body)
+               (curry-lambda (cdr args) body)))))
+    (cond ((atom expr)
+             expr)
+          ((islambda expr)
+             (curry-lambda (lambdaargs expr) (lambdabody expr)))
+          ((eq 1 (length expr))
+             (curry (car expr)))
+          (t
+             (normalize-app (curry (car expr)) (cdr expr))))))
+
+(defun to-de-bruijn (body &optional (env ()))
+  (labels
+    ((lookup (env var)
+       (let ((i (position var env)))
+         (if i (+ 1 i) (decorate-varname var)))))
+    (if (not (atom body))
+        (if (islambda body)
+            `(abs ,@(to-de-bruijn (lambdabody body) (cons (lambdaarg-top body) env)))
+            `(app ,@(to-de-bruijn (car body) env) ,@(to-de-bruijn (car (cdr body)) env)))
+        (list (lookup env body)))))
+
+(defun to-blc-string (body)
+  (labels
+   ((int2varname (n)
+      (if (> n 0) (concatenate `string "1" (int2varname (- n 1))) "0"))
+    (token2string (token)
+      (cond ((not token) "")
+            ((eq token 'abs) "00")
+            ((eq token 'app) "01")
+            ((stringp token) token)
+            (t (int2varname token)))))
+   (if (not body) "" (concatenate `string (token2string (car body)) (to-blc-string (cdr body))))))
+
+
+
+(defun occurs-freely-in (expr var)
+  (cond ((atom expr) (eq var expr))
+        ((islambda expr)
+         (if (eq (lambdaarg-top expr) var)
+             nil
+             (occurs-freely-in (cdr (cdr expr)) var)))
+        (t (or (occurs-freely-in (car expr) var)
+               (occurs-freely-in (cdr expr) var)))))
+
+(defun t-rewrite (expr)
+  (cond ((atom expr) expr)
+        ((eq `lambda (car expr))
+         (let ((arg  (lambdaarg-top expr))
+               (body (lambdabody expr)))
+              (cond ((eq arg body) `I)
+                    ((not (occurs-freely-in body arg))
+                       `(K ,(t-rewrite body)))
+                    ((islambda body)
+                       (t-rewrite `(lambda (,arg) ,(t-rewrite body))))
+                    (t `((S ,(t-rewrite `(lambda (,arg) ,(car body))))
+                            ,(t-rewrite `(lambda (,arg) ,(car (cdr body)))))))))
+        (t (mapcar #'t-rewrite expr))))
+
+(defun flatten-ski (expr)
+  (if (atom expr)
+      (if (find expr `(S K I))
+          (string-downcase (string expr))
+          (decorate-varname expr))
+      (concatenate `string "`" (flatten-ski (car expr)) (flatten-ski (car (cdr expr))))))
+
+
+;;================================================================
+;; The macro system
+;;================================================================
 (defparameter lazy-env (make-hash-table :test #'equal))
 
 (defmacro lazy-error (&rest message)
@@ -23,126 +116,16 @@
                   (macroexpand-lazy rexpr (cons expr history)))))
         (t (mapcar #'(lambda (expr) (macroexpand-lazy expr history)) expr))))
 
-(print (subst `aa `f `(f g h)))
-(print (gethash 'f lazy-env))
-(print (macroexpand-lazy `(f g h a c a)))
-
-
-(defun islambda (expr)
-  (eq `lambda (car expr)))
-
-(defun lambdaargs (expr)
-  (car (cdr expr)))
-
-(defun lambdabody (expr)
-  (car (cdr (cdr expr))))
-
-(defun curry (expr)
-  (labels
-    ((normalize-app (ret l)
-       (if (not l) ret (normalize-app (list ret (curry (car l))) (cdr l))))
-     (curry-lambda (args body)
-       `(lambda (,(car args))
-          ,(if (= 1 (length args))
-               (curry body)
-               (curry-lambda (cdr args) body)))))
-    (cond ((atom expr)
-             expr)
-          ((islambda expr)
-             (curry-lambda (lambdaargs expr) (lambdabody expr)))
-          ((eq 1 (length expr))
-             (curry (car expr)))
-          (t
-             (normalize-app (curry (car expr)) (cdr expr))))))
-
-(print (curry `(a b (lambda (x y) x) d e f)))
-(print (curry `(a b (c d e f (a b c d e) g) f g)))
-(print (curry `(lambda (x y z) (x y ((a b c) x)))))
-(print (curry `(lambda (x y z) (x y ((x y z) x)))))
-
-(defun decorate-varname (var)
-  (concatenate `string "[" (write-to-string var) "]"))
-
-(defun to-de-bruijn (body env)
-  (labels
-    ((lookup (env var)
-       (let ((i (position var env)))
-         (if i (+ 1 i) (decorate-varname var)))))
-    (if (not (atom body))
-        (if (eq (car body) `lambda)
-            `(abs ,@(to-de-bruijn (car (cdr (cdr body))) (cons (car (car (cdr body))) env)))
-            `(app ,@(to-de-bruijn (car body) env) ,@(to-de-bruijn (car (cdr body)) env)))
-        (list (lookup env body)))))
-
-(print (to-de-bruijn (curry `(lambda (x y z) (x y ((x y z) x)))) ()))
-
-(defun to-blc-string (body)
-  (labels
-   ((int2varname (n)
-      (if (> n 0) (concatenate `string "1" (int2varname (- n 1))) "0"))
-    (token2string (token)
-      (cond ((not token) "")
-            ((eq token 'abs) "00")
-            ((eq token 'app) "01")
-            ((stringp token) token)
-            (t (int2varname token)))))
-   (if (not body) "" (concatenate `string (token2string (car body)) (to-blc-string (cdr body))))))
-
-
-(defun compile-to-blc (expr)
-  (to-blc-string (to-de-bruijn (curry (macroexpand-lazy expr)) ())))
-
-(print (compile-to-blc `(lambda (x y z) (x y ((x y z) x)))))
-(print (compile-to-blc `(lambda (x y) x)))
-
-
-
-
-(defun occurs-freely-in (expr var)
-  (cond ((atom expr) (eq var expr))
-        ((eq `lambda (car expr))
-         (if (eq (car (car (cdr expr))) var)
-             nil
-             (occurs-freely-in (cdr (cdr expr)) var)))
-        (t (or (occurs-freely-in (car expr) var)
-               (occurs-freely-in (cdr expr) var)))))
-
-(print (occurs-freely-in `(lambda (z) z) `x))
-
-(defun t-rewrite (expr)
-  (cond ((atom expr) expr)
-        ((eq `lambda (car expr))
-         (let ((arg (car (lambdaargs expr)))
-               (body (lambdabody expr)))
-              (cond ((eq arg body) `I)
-                    ((not (occurs-freely-in body arg))
-                       `(K ,(t-rewrite body)))
-                    ((islambda body)
-                       (t-rewrite `(lambda (,arg) ,(t-rewrite body))))
-                    (t `((S ,(t-rewrite `(lambda (,arg) ,(car body))))
-                            ,(t-rewrite `(lambda (,arg) ,(car (cdr body)))))))))
-        (t (mapcar #'t-rewrite expr))))
-
-(print (t-rewrite (curry (macroexpand-lazy `(lambda (x) x)))))
-(print (t-rewrite (curry (macroexpand-lazy `(lambda (x y f) (f x y))))))
-
-(defun flatten-ski (expr)
-  (if (atom expr)
-      (if (find expr `(S K I))
-          (string-downcase (string expr))
-          (decorate-varname expr))
-      (concatenate `string "`" (flatten-ski (car expr)) (flatten-ski (car (cdr expr))))))
-
-(print (flatten-ski (t-rewrite (curry (macroexpand-lazy `(lambda (x) x))))))
-(print (flatten-ski (t-rewrite (curry (macroexpand-lazy `(lambda (x y f) (f x y)))))))
-
-
 (defun-lazy t (x y) x)
 (defun-lazy nil (x y) y)
 (defun-lazy cons (x y f) (f x y))
 (defun-lazy car (l) (l t))
 (defun-lazy cdr (l) (l nil))
 (defun-lazy isnil (l) ((lambda (a) (a (lambda (v n x) nil) t)) l))
+(defun-lazy inflist (item)
+  ((lambda (x) (x x))
+   (lambda (self)
+     (cons item (self self)))))
 
 (defun-lazy not (x) (x nil t))
 (defun-lazy and (x y) (x y nil))
@@ -165,10 +148,17 @@
 (def-lazy 16 ((lambda (x) (x x x)) 2))
 (def-lazy 32 (* 2 16))
 (def-lazy 64 (* 2 32))
-(def-lazy 128 (* 2 128))
+(def-lazy 128 (* 2 64))
 (def-lazy 256 ((lambda (x) (x x)) 4))
 
 (defun-lazy if (x) x)
+
+
+(defmacro compile-to-blc (expr)
+  `(to-blc-string (to-de-bruijn (curry (macroexpand-lazy ',expr)))))
+
+(defmacro compile-to-ski (expr)
+  `(flatten-ski (t-rewrite (curry (macroexpand-lazy ',expr)))))
 
 
 (print (curry (macroexpand-lazy `(if t (not t) t))))
@@ -177,3 +167,9 @@
 
 
 (print (flatten-ski (t-rewrite (curry (macroexpand-lazy `(lambda (stdin) (cons 64 (cons 32 (cons 64 (cons 256 zz))))))))))
+
+(print (compile-to-blc `(lambda (x y z) (x y ((x y z) x)))))
+(print (compile-to-blc `(lambda (x y) x)))
+
+
+
