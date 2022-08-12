@@ -60,13 +60,14 @@
 (print (curry `(lambda (x y z) (x y ((a b c) x)))))
 (print (curry `(lambda (x y z) (x y ((x y z) x)))))
 
+(defun decorate-varname (var)
+  (concatenate `string "[" (write-to-string var) "]"))
 
 (defun to-de-bruijn (body env)
   (labels
     ((lookup (env var)
        (let ((i (position var env)))
-         (if i (+ 1 i)
-               (concatenate `string "[" (write-to-string var) "]")))))
+         (if i (+ 1 i) (decorate-varname var)))))
     (if (not (atom body))
         (if (eq (car body) `lambda)
             `(abs ,@(to-de-bruijn (car (cdr (cdr body))) (cons (car (car (cdr body))) env)))
@@ -127,7 +128,9 @@
 
 (defun flatten-ski (expr)
   (if (atom expr)
-      (string-downcase (string expr))
+      (if (find expr `(S K I))
+          (string-downcase (string expr))
+          (decorate-varname expr))
       (concatenate `string "`" (flatten-ski (car expr)) (flatten-ski (car (cdr expr))))))
 
 (print (flatten-ski (t-rewrite (curry (macroexpand-lazy `(lambda (x) x))))))
@@ -173,4 +176,4 @@
 (print (compile-to-blc `(lambda (stdin) (cons t (cons nil (cons t nil))))))
 
 
-(print (flatten-ski (t-rewrite (curry (macroexpand-lazy `(lambda (stdin) (cons 64 (cons 32 (cons 64 (cons 256 256))))))))))
+(print (flatten-ski (t-rewrite (curry (macroexpand-lazy `(lambda (stdin) (cons 64 (cons 32 (cons 64 (cons 256 zz))))))))))
