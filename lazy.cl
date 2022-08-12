@@ -48,9 +48,10 @@
   (labels
     ((lookup (env var)
        (let ((i (position var env)))
-         (if i (+ 1 i) (concatenate `string "[" (write-to-string var) "]")))))
+         (if i (+ 1 i)
+               (concatenate `string "[" (write-to-string var) "]")))))
     (if (not (atom body))
-        (if (and (atom (car body)) (eq (car body) `lambda))
+        (if (eq (car body) `lambda)
             `(abs ,@(to-de-bruijn (car (cdr (cdr body))) (cons (car (car (cdr body))) env)))
             `(app ,@(to-de-bruijn (car body) env) ,@(to-de-bruijn (car (cdr body)) env)))
         (list (lookup env body)))))
@@ -77,9 +78,52 @@
 (print (compile-to-blc `(lambda (x y) x)))
 
 
-;; (defun occurs-freely-in (expr env var)
-;;   (labels
-;;     (cond ((atom expr) (find var env)))))
+(defun occurs-freely-in (expr var)
+  (cond ((atom expr) (eq var expr))
+        ((eq `lambda (car expr))
+         (if (eq (car (car (cdr expr))) var)
+             nil
+             (occurs-freely-in (cdr (cdr expr)) var)))
+        (t (or (occurs-freely-in (car expr) var)
+               (occurs-freely-in (cdr expr) var)))))
+
+(print (occurs-freely-in `(lambda (z) z) `x))
+
+
+(defun islambda (expr)
+  (eq `lambda (car expr)))
+
+(defun lambdavar (expr)
+  (car (car (cdr expr))))
+
+(defun lambdabody (expr)
+  (car (cdr (cdr expr))))
+
+(defun t-rewrite (expr)
+  (cond ((atom expr) expr)
+        ((eq `lambda (car expr))
+         (let ((var (lambdavar expr))
+               (body (lambdabody expr)))
+              (cond ((eq var body) `I)
+                    ((not (occurs-freely-in body var))
+                       `(K ,(t-rewrite body)))
+                    ((islambda body)
+                       (t-rewrite `(lambda (,var) ,(t-rewrite body))))
+                    (t `((S ,(t-rewrite `(lambda (,var) ,(car body))))
+                            ,(t-rewrite `(lambda (,var) ,(car (cdr body)))))))))
+        (t (mapcar #'t-rewrite expr))))
+
+(print (t-rewrite (curry (macroexpand-lazy `(lambda (x) x)))))
+(print (t-rewrite (curry (macroexpand-lazy `(lambda (x y f) (f x y))))))
+
+(defun flatten-ski (expr)
+  (if (atom expr)
+      (string-downcase (string expr))
+      (concatenate `string "`" (flatten-ski (car expr)) (flatten-ski (car (cdr expr))))))
+
+(print (flatten-ski (t-rewrite (curry (macroexpand-lazy `(lambda (x) x))))))
+(print (flatten-ski (t-rewrite (curry (macroexpand-lazy `(lambda (x y f) (f x y)))))))
+
 
 (defun-lazy t (x y) x)
 (defun-lazy nil (x y) y)
@@ -118,3 +162,6 @@
 (print (curry (macroexpand-lazy `(if t (not t) t))))
 (print (compile-to-blc `(if t (not t) t)))
 (print (compile-to-blc `(lambda (stdin) (cons t (cons nil (cons t nil))))))
+
+
+(print (flatten-ski (t-rewrite (curry (macroexpand-lazy `(lambda (stdin) (cons 64 (cons 32 (cons 64 (cons 256 256))))))))))
