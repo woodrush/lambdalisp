@@ -1,0 +1,10 @@
+(defun curry (expr)
+  (cond ((atom expr) expr)
+        ((eq (car expr) `lambda) nil)
+        ((eq 1 (length expr)) (curry (car expr)))
+        (t (defun helper (ret l)
+             (cond ((not l) ret)
+                   (t (helper (list ret (car l)) (cdr l)))))
+           (helper (car expr) (cdr expr)))))
+
+(print (curry `(a b c d e f)))
