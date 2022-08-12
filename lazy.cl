@@ -13,30 +13,47 @@
                                        (write-to-string args) (write-to-string name)))))
   `(setf (gethash ',name lazy-env) '(lambda ,args ,expr)))
 
-(defun macroexpand-lazy (expr)
+(defun macroexpand-lazy (expr &optional (history ()))
   (cond ((atom expr)
+         (if (find expr history)
+             (lazy-error (format nil "Recursive expansion of macro ~a. Expansion stack: ~a~%When writing recursive functions, please use anonymous recursion." expr (reverse (cons expr history)))))
          (let ((rexpr (gethash expr lazy-env `***lazy-cl-nomatch***)))
-              (cond ((eq rexpr `***lazy-cl-nomatch***) expr)
-                    (t (macroexpand-lazy rexpr)))))
-        (t (mapcar #'macroexpand-lazy expr))))
+              (if (eq rexpr `***lazy-cl-nomatch***)
+                  expr
+                  (macroexpand-lazy rexpr (cons expr history)))))
+        (t (mapcar #'(lambda (expr) (macroexpand-lazy expr history)) expr))))
 
 (print (subst `aa `f `(f g h)))
 (print (gethash 'f lazy-env))
 (print (macroexpand-lazy `(f g h a c a)))
 
 
+(defun islambda (expr)
+  (eq `lambda (car expr)))
+
+(defun lambdaargs (expr)
+  (car (cdr expr)))
+
+(defun lambdabody (expr)
+  (car (cdr (cdr expr))))
+
 (defun curry (expr)
   (labels
     ((normalize-app (ret l)
-       (cond ((not l) ret)
-             (t (normalize-app (list ret (curry (car l))) (cdr l)))))
+       (if (not l) ret (normalize-app (list ret (curry (car l))) (cdr l))))
      (curry-lambda (args body)
-       (cond ((= 1 (length args)) `(lambda ,args ,(curry body)))
-             (t `(lambda (,(car args)) ,(curry-lambda (cdr args) body))))))
-    (cond ((atom expr) expr)
-          ((eq (car expr) `lambda) (curry-lambda (car (cdr expr)) (cdr (cdr expr))))
-          ((eq 1 (length expr)) (curry (car expr)))
-          (t (normalize-app (curry (car expr)) (cdr expr))))))
+       `(lambda (,(car args))
+          ,(if (= 1 (length args))
+               (curry body)
+               (curry-lambda (cdr args) body)))))
+    (cond ((atom expr)
+             expr)
+          ((islambda expr)
+             (curry-lambda (lambdaargs expr) (lambdabody expr)))
+          ((eq 1 (length expr))
+             (curry (car expr)))
+          (t
+             (normalize-app (curry (car expr)) (cdr expr))))))
 
 (print (curry `(a b (lambda (x y) x) d e f)))
 (print (curry `(a b (c d e f (a b c d e) g) f g)))
@@ -78,6 +95,8 @@
 (print (compile-to-blc `(lambda (x y) x)))
 
 
+
+
 (defun occurs-freely-in (expr var)
   (cond ((atom expr) (eq var expr))
         ((eq `lambda (car expr))
@@ -89,28 +108,18 @@
 
 (print (occurs-freely-in `(lambda (z) z) `x))
 
-
-(defun islambda (expr)
-  (eq `lambda (car expr)))
-
-(defun lambdavar (expr)
-  (car (car (cdr expr))))
-
-(defun lambdabody (expr)
-  (car (cdr (cdr expr))))
-
 (defun t-rewrite (expr)
   (cond ((atom expr) expr)
         ((eq `lambda (car expr))
-         (let ((var (lambdavar expr))
+         (let ((arg (car (lambdaargs expr)))
                (body (lambdabody expr)))
-              (cond ((eq var body) `I)
-                    ((not (occurs-freely-in body var))
+              (cond ((eq arg body) `I)
+                    ((not (occurs-freely-in body arg))
                        `(K ,(t-rewrite body)))
                     ((islambda body)
-                       (t-rewrite `(lambda (,var) ,(t-rewrite body))))
-                    (t `((S ,(t-rewrite `(lambda (,var) ,(car body))))
-                            ,(t-rewrite `(lambda (,var) ,(car (cdr body)))))))))
+                       (t-rewrite `(lambda (,arg) ,(t-rewrite body))))
+                    (t `((S ,(t-rewrite `(lambda (,arg) ,(car body))))
+                            ,(t-rewrite `(lambda (,arg) ,(car (cdr body)))))))))
         (t (mapcar #'t-rewrite expr))))
 
 (print (t-rewrite (curry (macroexpand-lazy `(lambda (x) x)))))
@@ -143,6 +152,8 @@
 (defun-lazy * (m n f x) (m (n f) x))
 (defun-lazy - (m n) (n pred m))
 (defun-lazy iszero (n) (n (lambda (x) nil) t))
+(defun-lazy <= (m n) (iszero (- m n)))
+(defun-lazy >= (m n) (<= n m))
 (defun-lazy 0 (f x) x)
 (defun-lazy 1 (f x) (f x))
 (defun-lazy 2 (f x) (f (f x)))
@@ -153,8 +164,6 @@
 (def-lazy 64 (* 2 32))
 (def-lazy 128 (* 2 128))
 (def-lazy 256 ((lambda (x) (x x)) 4))
-(defun-lazy <= (m n) (iszero (- m n)))
-(defun-lazy >= (m n) (<= n m))
 
 (defun-lazy if (x) x)
 
