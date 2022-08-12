@@ -1,3 +1,17 @@
+(defparameter lazy-env ())
+
+(defmacro def-lazy (name expr)
+  `(setf lazy-env (cons (list ',name ',expr) lazy-env)))
+
+(defmacro defun-lazy (name args expr)
+  `(setf lazy-env (cons (list ',name '(lambda ,args ,expr)) lazy-env)))
+
+(def-lazy a b)
+(def-lazy c (a b c))
+(defun-lazy f (x) (x x x))
+(print lazy-env)
+
+
 (defun normalize-app (ret l)
   (cond ((not l) ret)
         (t (normalize-app (list ret (curry (car l))) (cdr l)))))
@@ -16,6 +30,7 @@
 (print (curry `(a b (c d e f (a b c d e) g) f g)))
 (print (curry `(lambda (x y z) (x y ((a b c) x)))))
 (print (curry `(lambda (x y z) (x y ((x y z) x)))))
+
 
 (defun lookup (env var level)
   (cond ((not env) (concatenate `string "[" (symbol->string var) "]"))
@@ -49,6 +64,8 @@
   (if (not body)
       ""
       (concatenate `string (to-blc-string-helper (car body)) (to-blc-string (cdr body)))))
+
+
 
 (defun print-blc (code)
   (print (to-blc-string (to-de-bruijn (curry code) ()))))
