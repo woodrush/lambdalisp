@@ -1,16 +1,32 @@
-(defparameter lazy-env ())
+(defparameter lazy-env (make-hash-table :test #'equal))
+
+(defmacro lazy-error (&rest message)
+  `(error (concatenate 'string "Lazy K CL Error: " ,@message)))
 
 (defmacro def-lazy (name expr)
-  `(setf lazy-env (cons (list ',name ',expr) lazy-env)))
+  (if (not (atom name)) (lazy-error (format nil "Variable name ~a must be a symbol" (write-to-string name))))
+  `(setf (gethash ',name lazy-env) ',expr))
 
 (defmacro defun-lazy (name args expr)
-  `(setf lazy-env (cons (list ',name '(lambda ,args ,expr)) lazy-env)))
+  (cond ((not (atom name)) (lazy-error (format nil "Function name ~a must be a symbol" (write-to-string name))))
+        ((atom args)       (lazy-error (format nil "Argument list ~a must be a list in ~a"
+                                       (write-to-string args) (write-to-string name)))))
+  `(setf (gethash ',name lazy-env) '(lambda ,args ,expr)))
 
 (def-lazy a b)
 (def-lazy c (a b c))
 (defun-lazy f (x) (x x x))
-(print lazy-env)
 
+(loop for v being each hash-values of lazy-env using (hash-key k)
+      do (format t "~a : ~a~%" k v))
+
+(defun env-lookup (env var)
+  (cond ((not env) (lazy-error "Variable " (write-to-string var) " does not exist"))
+        ((eq var (car env)) (cdr env))
+        (t (env-lookup (cdr env) var))))
+
+;; (defun macroexpand-lazy (expr)
+;;   (cond ((atom ))))
 
 (defun normalize-app (ret l)
   (cond ((not l) ret)
@@ -33,7 +49,7 @@
 
 
 (defun lookup (env var level)
-  (cond ((not env) (concatenate `string "[" (symbol->string var) "]"))
+  (cond ((not env) (concatenate `string "[" (write-to-string var) "]"))
         ((eq var (car env)) level)
         (t (lookup (cdr env) var (+ level 1)))))
 
