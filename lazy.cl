@@ -18,7 +18,7 @@
 (print (curry `(lambda (x y z) (x y ((x y z) x)))))
 
 (defun lookup (env var level)
-  (cond ((not env) (concatenate 'string "[" (symbol->string var) "]"))
+  (cond ((not env) (concatenate `string "[" (symbol->string var) "]"))
         ((eq var (car env)) level)
         (t (lookup (cdr env) var (+ level 1)))))
 
@@ -31,3 +31,24 @@
 
 (print (to-de-bruijn (curry `(lambda (x y z) (x y ((x y z) x)))) ()))
 
+(defun int2varname (n)
+  (if (> n 0)
+      (concatenate `string "1" (int2varname (- n 1)))
+      "0"))
+
+(print (int2varname 5))
+
+(defun to-blc-string-helper (token)
+  (cond ((not token) "")
+        ((eq token 'abs) "00")
+        ((eq token 'app) "01")
+        ((stringp token) token)
+        (t (int2varname token))))
+
+(defun to-blc-string (body)
+  (if (not body)
+      ""
+      (concatenate `string (to-blc-string-helper (car body)) (to-blc-string (cdr body)))))
+
+(print (to-blc-string (to-de-bruijn (curry `(lambda (x y z) (x y ((x y z) x)))) ())))
+(print (to-blc-string (to-de-bruijn (curry `(lambda (x y) x)) ())))
