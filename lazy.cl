@@ -92,7 +92,7 @@
 ;; The macro system
 ;;================================================================
 (defparameter lazy-env (make-hash-table :test #'equal))
-(defparameter lazy-macro-env (make-hash-table :test #'equal))
+(defparameter lazy-macro-list ())
 
 (defmacro lazy-error (&rest message)
   `(error (concatenate 'string "Lazy K CL Error: " ,@message)))
@@ -108,18 +108,32 @@
                                        (write-to-string args) (write-to-string name)))))
   `(setf (gethash ',name lazy-env) '(lambda ,args ,expr)))
 
+;; (defmacro defmacro-lazy (name args &rest expr)
+;;   (cond ((not (atom name)) (lazy-error (format nil "Function name ~a must be a symbol" (write-to-string name))))
+;;         ((atom args)       (lazy-error (format nil "Argument list ~a must be a list in ~a"
+;;                                        (write-to-string args) (write-to-string name)))))
+;;   `(setf (gethash ',name lazy-macro-env) '(,args (progn ,@expr))))
+
+(defun mangle-macroname (name)
+  (make-symbol (concatenate `string (write-to-string name) "-**LAZY-MACRO**"))
+  name)
+
 (defmacro defmacro-lazy (name args &rest expr)
-  (cond ((not (atom name)) (lazy-error (format nil "Function name ~a must be a symbol" (write-to-string name))))
-        ((atom args)       (lazy-error (format nil "Argument list ~a must be a list in ~a"
-                                       (write-to-string args) (write-to-string name)))))
-  `(setf (gethash ',name lazy-macro-env) '(,args (progn ,@expr))))
+  (setf lazy-macro-list (cons name lazy-macro-list))
+  `(defun ,(mangle-macroname name) ,args ,@expr))
 
+(defun eval-lazy-macro (name argvalues)
+(print 0)
+  (eval `(,(mangle-macroname name) 
+  ,@(mapcar #'(lambda (x) `(quote ,x)) argvalues)
+  ;; ,@argvalues
+  )))
 
-(defun eval-lazy-macro (macrodef argvalues)
-  (let ((args (car macrodef))
-        (body (car (cdr macrodef)))
-        (quoteargs (mapcar #'(lambda (x) `(quote ,x)) argvalues)))
-    (eval `(let ,(mapcar #'list args quoteargs) ,body))))
+;; (defun eval-lazy-macro (macrodef argvalues)
+;;   (let ((args (car macrodef))
+;;         (body (car (cdr macrodef)))
+;;         (quoteargs (mapcar #'(lambda (x) `(quote ,x)) argvalues)))
+;;     (eval `(let ,(mapcar #'list args quoteargs) ,body))))
 
 (defun macroexpand-lazy-raw (expr &optional (history ()))
   (cond ((atom expr)
@@ -129,11 +143,10 @@
                 (if (eq rexpr `***lazy-cl-nomatch***)
                     expr
                     (macroexpand-lazy-raw rexpr (cons expr history)))))
+        ((find (car expr) lazy-macro-list)
+          (macroexpand-lazy-raw (eval-lazy-macro (car expr) (cdr expr)) history))
         (t
-          (let ((macrodef (gethash (car expr) lazy-macro-env `***lazy-cl-nomatch***)))
-              (if (eq macrodef `***lazy-cl-nomatch***)
-                  (mapcar #'(lambda (expr) (macroexpand-lazy-raw expr history)) expr)
-                  (macroexpand-lazy-raw (eval-lazy-macro macrodef (cdr expr)) (cons expr history)))))))
+          (mapcar #'(lambda (expr) (macroexpand-lazy-raw expr history)) expr))))
 
 (defmacro macroexpand-lazy (expr)
   `(macroexpand-lazy-raw ',expr))
@@ -174,16 +187,23 @@
 (def-lazy 128 (* 2 64))
 (def-lazy 256 ((lambda (x) (x x)) 4))
 
-(defmacro-lazy if (x) `x)
-(defmacro-lazy let (argpairs body)
+(defmacro-lazy ifa (x) x)
+(defmacro-lazy leta (argpairs body)
+  ;; 
+  ;; Syntax: (let ((x1 v1) (x2 v2) ...) body)
+  ;; 
   (labels
     ((let-helper (argpairs)
       (cond ((not argpairs) body)
             (t `((lambda (,(car (car argpairs))) ,(let-helper (cdr argpairs)))
                  ,(car (cdr (car argpairs))))))))
     (let-helper argpairs)))
+;; (defmacro-lazy cond (clauses))
 
-(print (macroexpand-lazy-raw `(let ((a z) (b ccc)) (do something a))))
+(print (ifa 0))
+(print (macroexpand-lazy-raw `(ifa a)))
+
+(print (macroexpand-lazy-raw `(leta ((a z) (b ccc)) (do something a))))
 
 (defun compile-to-blc (expr)
   (to-blc-string (to-de-bruijn (curry expr))))
