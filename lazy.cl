@@ -115,8 +115,9 @@
 ;;   `(setf (gethash ',name lazy-macro-env) '(,args (progn ,@expr))))
 
 (defun mangle-macroname (name)
-  (make-symbol (concatenate `string (write-to-string name) "-**LAZY-MACRO**"))
-  name)
+  (intern (concatenate `string (write-to-string name) "-**LAZY-MACRO**"))
+  ;; name
+  )
 
 (defmacro defmacro-lazy (name args &rest expr)
   (setf lazy-macro-list (cons name lazy-macro-list))
@@ -187,11 +188,9 @@
 (def-lazy 128 (* 2 64))
 (def-lazy 256 ((lambda (x) (x x)) 4))
 
-(defmacro-lazy ifa (x) x)
-(defmacro-lazy leta (argpairs body)
-  ;; 
+(defmacro-lazy if (x) x)
+(defmacro-lazy let (argpairs body)
   ;; Syntax: (let ((x1 v1) (x2 v2) ...) body)
-  ;; 
   (labels
     ((let-helper (argpairs)
       (cond ((not argpairs) body)
@@ -200,10 +199,9 @@
     (let-helper argpairs)))
 ;; (defmacro-lazy cond (clauses))
 
-(print (ifa 0))
-(print (macroexpand-lazy-raw `(ifa a)))
+(print (macroexpand-lazy-raw `(if a)))
 
-(print (macroexpand-lazy-raw `(leta ((a z) (b ccc)) (do something a))))
+(print (macroexpand-lazy-raw `(let ((a z) (b ccc)) (do something a))))
 
 (defun compile-to-blc (expr)
   (to-blc-string (to-de-bruijn (curry expr))))
