@@ -168,17 +168,3 @@
 
 (defmacro compile-to-ski-lazy (expr-lazy)
   `(compile-to-ski (macroexpand-lazy ,expr-lazy)))
-
-
-(print (curry (macroexpand-lazy-raw `(if t (not t) t))))
-(print (compile-to-blc `(if t (not t) t)))
-(print (compile-to-blc `(lambda (stdin) (cons t (cons nil (cons t nil))))))
-
-
-(print (flatten-ski (t-rewrite (curry (macroexpand-lazy-raw `(lambda (stdin) (cons 64 (cons 32 (cons 64 (cons 256 zz))))))))))
-
-(print (compile-to-blc `(lambda (x y z) (x y ((x y z) x)))))
-(print (compile-to-blc `(lambda (x y) x)))
-
-
-
