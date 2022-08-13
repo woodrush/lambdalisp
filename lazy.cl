@@ -98,54 +98,38 @@
 (defmacro lazy-error (&rest message)
   `(error (concatenate 'string "Lazy K CL Error: " ,@message)))
 
-(defmacro def-lazy (name expr)
-  (cond ((not (atom name)) (lazy-error (format nil "Variable name ~a must be a symbol" (write-to-string name)))))
-  `(setf (gethash ',name lazy-env) ',expr))
-
-;; (defmacro defun-lazy (name args expr)
-;;   (cond ((not (atom name)) (lazy-error (format nil "Function name ~a must be a symbol" (write-to-string name))))
-;;         ((atom args)       (lazy-error (format nil "Argument list ~a must be a list in ~a"
-;;                                        (write-to-string args) (write-to-string name)))))
-;;   `(setf (gethash ',name lazy-env) '(lambda ,args ,expr)))
-
 (defun mangle-varname (name)
   (intern (concatenate `string (write-to-string name) "-**LAZY-VAR**")))
-
-(defmacro def-lazy (name expr)
-  (setf lazy-var-list (cons name lazy-var-list))
-  (setf (gethash (mangle-varname name) lazy-env) expr)
-  nil
-  ;; `(defparameter ,(mangle-varname name) ',expr)
-  )
-
-(defmacro defun-lazy (name args expr)
-  `(def-lazy ,name (lambda ,args ,expr)))
-
-(defun eval-lazy-var (name)
-  (gethash (mangle-varname name) lazy-env))
 
 (defun mangle-macroname (name)
   (intern (concatenate `string (write-to-string name) "-**LAZY-MACRO**")))
 
+(defmacro def-lazy (name expr)
+  (setf lazy-var-list (cons name lazy-var-list))
+  (setf (gethash (mangle-varname name) lazy-env) expr)
+  nil)
+
+(defmacro defun-lazy (name args expr)
+  `(def-lazy ,name (lambda ,args ,expr)))
+
 (defmacro defmacro-lazy (name args &rest expr)
   (setf lazy-macro-list (cons name lazy-macro-list))
   `(defun ,(mangle-macroname name) ,args ,@expr))
+
+(defun eval-lazy-var (name)
+  (gethash (mangle-varname name) lazy-env))
 
 (defun eval-lazy-macro (name argvalues)
   (apply (mangle-macroname name) argvalues))
 
 (defun macroexpand-lazy-raw (expr &optional (history ()))
   (cond ((atom expr)
-          (if (position expr history)
-            (lazy-error (format nil "Recursive expansion of macro/variable ~a. Expansion stack: ~a~%When writing recursive functions, please use anonymous recursion." expr (reverse (cons expr history)))))
-          (if (position expr lazy-var-list)
-            (macroexpand-lazy-raw (eval-lazy-var expr) (cons expr history))
-            expr)
-          ;; (let ((rexpr (gethash expr lazy-env `***lazy-cl-nomatch***)))
-          ;;       (if (eq rexpr `***lazy-cl-nomatch***)
-          ;;           expr
-          ;;           (macroexpand-lazy-raw rexpr (cons expr history))))
-                    )
+          (cond ((position expr history)
+                  (lazy-error (format nil "Recursive expansion of macro/variable ~a. Expansion stack: ~a~%When writing recursive functions, please use anonymous recursion." expr (reverse (cons expr history)))))
+                ((position expr lazy-var-list)
+                  (macroexpand-lazy-raw (eval-lazy-var expr) (cons expr history)))
+                (t
+                  expr)))
         ((position (car expr) lazy-macro-list)
           (macroexpand-lazy-raw (eval-lazy-macro (car expr) (cdr expr)) history))
         (t
@@ -190,8 +174,7 @@
 (def-lazy 128 (* 2 64))
 (def-lazy 256 ((lambda (x) (x x)) 4))
 
-;; (defmacro-lazy if (&rest x) x)
-(defun-lazy if (x) x)
+(defmacro-lazy if (x y z) `(,x ,y ,z))
 (defmacro-lazy let (argpairs body)
   ;; Syntax: (let ((x1 v1) (x2 v2) ...) body)
   (labels
@@ -200,12 +183,21 @@
             (t `((lambda (,(car (car argpairs))) ,(let-helper (cdr argpairs)))
                  ,(car (cdr (car argpairs))))))))
     (let-helper argpairs)))
-;; (defmacro-lazy cond (clauses))
 
-(print (macroexpand-lazy-raw `(if a)))
+(defmacro-lazy cond (&rest clauses)
+  (cond ((not (cdr clauses))
+           (cond ((not (eq (car (car clauses)) t))
+                    (lazy-error "No default case provided for cond"))
+                 (t (car (cdr (car clauses))))))
+        (t `(if ,(car (car clauses))
+              ,(car (cdr (car clauses)))
+              (cond ,@(cdr clauses))))))
+
 
 (print (macroexpand-lazy (let ((a z) (b ccc)) (do something a))))
 (print (macroexpand-lazy (let ((a z) (b ccc)) (do 16 a))))
+(print (macroexpand-lazy (cond ((a b) c) ((d e) f) (t h))))
+
 
 (defun compile-to-blc (expr)
   (to-blc-string (to-de-bruijn (curry expr))))
