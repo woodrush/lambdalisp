@@ -92,6 +92,7 @@
 ;; The macro system
 ;;================================================================
 (defparameter lazy-env (make-hash-table :test #'equal))
+(defparameter lazy-macro-env (make-hash-table :test #'equal))
 
 (defmacro lazy-error (&rest message)
   `(error (concatenate 'string "Lazy K CL Error: " ,@message)))
@@ -106,15 +107,37 @@
                                        (write-to-string args) (write-to-string name)))))
   `(setf (gethash ',name lazy-env) '(lambda ,args ,expr)))
 
+(defmacro defmacro-lazy (name args expr)
+  (cond ((not (atom name)) (lazy-error (format nil "Function name ~a must be a symbol" (write-to-string name))))
+        ((atom args)       (lazy-error (format nil "Argument list ~a must be a list in ~a"
+                                       (write-to-string args) (write-to-string name)))))
+  `(setf (gethash ',name lazy-macro-env) '(,args ,expr)))
+
+(defun eval-lazy-macro (macrodef argvalues)
+  (let ((argsi (car macrodef)) (body (car (cdr macrodef))))
+    (eval `(let ,(mapcar #'list argsi argvalues) ,body))))
+
+(print (eval-lazy-macro `((hello a) `(a b ,a d ,hello b)) `(`a 0)))
+
+
 (defun macroexpand-lazy-raw (expr &optional (history ()))
   (cond ((atom expr)
-         (if (find expr history)
-             (lazy-error (format nil "Recursive expansion of macro ~a. Expansion stack: ~a~%When writing recursive functions, please use anonymous recursion." expr (reverse (cons expr history)))))
-         (let ((rexpr (gethash expr lazy-env `***lazy-cl-nomatch***)))
-              (if (eq rexpr `***lazy-cl-nomatch***)
-                  expr
-                  (macroexpand-lazy-raw rexpr (cons expr history)))))
-        (t (mapcar #'(lambda (expr) (macroexpand-lazy-raw expr history)) expr))))
+          (if (find expr history)
+              (lazy-error (format nil "Recursive expansion of macro/variable ~a. Expansion stack: ~a~%When writing recursive functions, please use anonymous recursion." expr (reverse (cons expr history)))))
+          (let ((rexpr (gethash expr lazy-env `***lazy-cl-nomatch***)))
+                (if (eq rexpr `***lazy-cl-nomatch***)
+                    expr
+                    (macroexpand-lazy-raw rexpr (cons expr history)))))
+        (t
+          (let ((macrodef (gethash (car expr) lazy-macro-env `***lazy-cl-nomatch***)))
+              (if (eq macrodef `***lazy-cl-nomatch***)
+                  (mapcar #'(lambda (expr) (macroexpand-lazy-raw expr history)) expr)
+                  (macroexpand-lazy-raw (eval-lazy-macro macrodef (cdr expr)) (cons expr history)))))))
+
+(defmacro-lazy test (hello a)
+  `(a b ,a d ,hello b))
+
+(print (macroexpand-lazy-raw `(test 1 2)))
 
 (defmacro macroexpand-lazy (expr)
   `(macroexpand-lazy-raw ',expr))
