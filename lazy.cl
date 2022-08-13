@@ -97,6 +97,7 @@
 (defmacro lazy-error (&rest message)
   `(error (concatenate 'string "Lazy K CL Error: " ,@message)))
 
+
 (defmacro def-lazy (name expr)
   (cond ((not (atom name)) (lazy-error (format nil "Variable name ~a must be a symbol" (write-to-string name)))))
   `(setf (gethash ',name lazy-env) ',expr))
@@ -113,12 +114,12 @@
                                        (write-to-string args) (write-to-string name)))))
   `(setf (gethash ',name lazy-macro-env) '(,args ,expr)))
 
+
 (defun eval-lazy-macro (macrodef argvalues)
-  (let ((argsi (car macrodef)) (body (car (cdr macrodef))))
-    (eval `(let ,(mapcar #'list argsi argvalues) ,body))))
-
-(print (eval-lazy-macro `((hello a) `(a b ,a d ,hello b)) `(`a 0)))
-
+  (let ((args (car macrodef))
+        (body (car (cdr macrodef)))
+        (quoteargs (mapcar #'(lambda (x) `(quote ,x)) argvalues)))
+    (eval `(let ,(mapcar #'list args quoteargs) ,body))))
 
 (defun macroexpand-lazy-raw (expr &optional (history ()))
   (cond ((atom expr)
@@ -134,13 +135,9 @@
                   (mapcar #'(lambda (expr) (macroexpand-lazy-raw expr history)) expr)
                   (macroexpand-lazy-raw (eval-lazy-macro macrodef (cdr expr)) (cons expr history)))))))
 
-(defmacro-lazy test (hello a)
-  `(a b ,a d ,hello b))
-
-(print (macroexpand-lazy-raw `(test 1 2)))
-
 (defmacro macroexpand-lazy (expr)
   `(macroexpand-lazy-raw ',expr))
+
 
 (defun-lazy t (x y) x)
 (defun-lazy nil (x y) y)
@@ -177,8 +174,11 @@
 (def-lazy 128 (* 2 64))
 (def-lazy 256 ((lambda (x) (x x)) 4))
 
-(defun-lazy if (x) x)
+(defmacro-lazy if (x) `x)
+(defmacro-lazy let (args body)
+  `((lambda (,(car args)) ,body) ,(car (cdr args))))
 
+(print (macroexpand-lazy-raw `(let (a z) (do something a))))
 
 (defun compile-to-blc (expr)
   (to-blc-string (to-de-bruijn (curry expr))))
