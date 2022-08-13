@@ -122,18 +122,23 @@
 (defun eval-lazy-macro (name argvalues)
   (apply (mangle-macroname name) argvalues))
 
-(defun macroexpand-lazy-raw (expr &optional (history ()))
+(defun macroexpand-lazy-raw (expr &optional (env ()) (history ()))
   (cond ((atom expr)
           (cond ((position expr history)
                   (lazy-error (format nil "Recursive expansion of macro/variable ~a. Expansion stack: ~a~%When writing recursive functions, please use anonymous recursion." expr (reverse (cons expr history)))))
+                ((position expr env)
+                  expr)
                 ((position expr lazy-var-list)
-                  (macroexpand-lazy-raw (eval-lazy-var expr) (cons expr history)))
+                  (macroexpand-lazy-raw (eval-lazy-var expr) env (cons expr history)))
                 (t
                   expr)))
+        ((islambda expr)
+          `(lambda ,(lambdaargs expr)
+            ,(macroexpand-lazy-raw (lambdabody expr) (append env (lambdaargs expr)) history)))
         ((position (car expr) lazy-macro-list)
-          (macroexpand-lazy-raw (eval-lazy-macro (car expr) (cdr expr)) history))
+          (macroexpand-lazy-raw (eval-lazy-macro (car expr) (cdr expr)) env history))
         (t
-          (mapcar #'(lambda (expr) (macroexpand-lazy-raw expr history)) expr))))
+          (mapcar #'(lambda (expr) (macroexpand-lazy-raw expr env history)) expr))))
 
 (defmacro macroexpand-lazy (expr)
   `(macroexpand-lazy-raw ',expr))
