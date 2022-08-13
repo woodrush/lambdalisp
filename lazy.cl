@@ -105,9 +105,9 @@
   (intern (concatenate `string (write-to-string name) "-**LAZY-MACRO**")))
 
 (defmacro def-lazy (name expr)
-  (setf lazy-var-list (cons name lazy-var-list))
-  (setf (gethash (mangle-varname name) lazy-env) expr)
-  nil)
+  `(progn
+      (setf lazy-var-list (cons ',name lazy-var-list))
+      (setf (gethash (mangle-varname ',name) lazy-env) ',expr)))
 
 (defmacro defun-lazy (name args expr)
   `(def-lazy ,name (lambda ,args ,expr)))
@@ -163,6 +163,7 @@
 (defun-lazy iszero (n) (n (lambda (x) nil) t))
 (defun-lazy <= (m n) (iszero (- m n)))
 (defun-lazy >= (m n) (<= n m))
+(defun-lazy = (m n) (and (<= m n) (<= n m)))
 (defun-lazy 0 (f x) x)
 (defun-lazy 1 (f x) (f x))
 (defun-lazy 2 (f x) (f (f x)))
@@ -193,11 +194,10 @@
               ,(car (cdr (car clauses)))
               (cond ,@(cdr clauses))))))
 
-
-(print (macroexpand-lazy (let ((a z) (b ccc)) (do something a))))
-(print (macroexpand-lazy (let ((a z) (b ccc)) (do 16 a))))
-(print (macroexpand-lazy (cond ((a b) c) ((d e) f) (t h))))
-
+(defmacro-lazy list (item &rest items)
+  (if items
+    `(cons ,item (list ,@items))
+    `nil))
 
 (defun compile-to-blc (expr)
   (to-blc-string (to-de-bruijn (curry expr))))
