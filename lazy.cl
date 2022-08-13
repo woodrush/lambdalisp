@@ -82,7 +82,7 @@
 
 (defun flatten-ski (expr)
   (if (atom expr)
-      (if (find expr `(S K I))
+      (if (position expr `(S K I))
           (string-downcase (string expr))
           (decorate-varname expr))
       (concatenate `string "`" (flatten-ski (car expr)) (flatten-ski (car (cdr expr))))))
@@ -113,7 +113,7 @@
 
 (defmacro def-lazy (name expr)
   (setf lazy-var-list (cons name lazy-var-list))
-  (setf (gethash name lazy-env) expr)
+  (setf (gethash (mangle-varname name) lazy-env) expr)
   nil
   ;; `(defparameter ,(mangle-varname name) ',expr)
   )
@@ -122,7 +122,7 @@
   `(def-lazy ,name (lambda ,args ,expr)))
 
 (defun eval-lazy-var (name)
-  (gethash name lazy-env))
+  (gethash (mangle-varname name) lazy-env))
 
 (defun mangle-macroname (name)
   (intern (concatenate `string (write-to-string name) "-**LAZY-MACRO**")))
@@ -136,9 +136,9 @@
 
 (defun macroexpand-lazy-raw (expr &optional (history ()))
   (cond ((atom expr)
-          (if (find expr history)
+          (if (position expr history)
             (lazy-error (format nil "Recursive expansion of macro/variable ~a. Expansion stack: ~a~%When writing recursive functions, please use anonymous recursion." expr (reverse (cons expr history)))))
-          (if (find expr lazy-var-list)
+          (if (position expr lazy-var-list)
             (macroexpand-lazy-raw (eval-lazy-var expr) (cons expr history))
             expr)
           ;; (let ((rexpr (gethash expr lazy-env `***lazy-cl-nomatch***)))
@@ -146,7 +146,7 @@
           ;;           expr
           ;;           (macroexpand-lazy-raw rexpr (cons expr history))))
                     )
-        ((find (car expr) lazy-macro-list)
+        ((position (car expr) lazy-macro-list)
           (macroexpand-lazy-raw (eval-lazy-macro (car expr) (cdr expr)) history))
         (t
           (mapcar #'(lambda (expr) (macroexpand-lazy-raw expr history)) expr))))
