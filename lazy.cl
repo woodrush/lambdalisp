@@ -108,11 +108,11 @@
                                        (write-to-string args) (write-to-string name)))))
   `(setf (gethash ',name lazy-env) '(lambda ,args ,expr)))
 
-(defmacro defmacro-lazy (name args expr)
+(defmacro defmacro-lazy (name args &rest expr)
   (cond ((not (atom name)) (lazy-error (format nil "Function name ~a must be a symbol" (write-to-string name))))
         ((atom args)       (lazy-error (format nil "Argument list ~a must be a list in ~a"
                                        (write-to-string args) (write-to-string name)))))
-  `(setf (gethash ',name lazy-macro-env) '(,args ,expr)))
+  `(setf (gethash ',name lazy-macro-env) '(,args (progn ,@expr))))
 
 
 (defun eval-lazy-macro (macrodef argvalues)
@@ -175,10 +175,15 @@
 (def-lazy 256 ((lambda (x) (x x)) 4))
 
 (defmacro-lazy if (x) `x)
-(defmacro-lazy let (args body)
-  `((lambda (,(car args)) ,body) ,(car (cdr args))))
+(defmacro-lazy let (argpairs body)
+  (labels
+    ((let-helper (argpairs)
+      (cond ((not argpairs) body)
+            (t `((lambda (,(car (car argpairs))) ,(let-helper (cdr argpairs)))
+                 ,(car (cdr (car argpairs))))))))
+    (let-helper argpairs)))
 
-(print (macroexpand-lazy-raw `(let (a z) (do something a))))
+(print (macroexpand-lazy-raw `(let ((a z) (b ccc)) (do something a))))
 
 (defun compile-to-blc (expr)
   (to-blc-string (to-de-bruijn (curry expr))))
