@@ -162,7 +162,10 @@
 
 (defun-lazy not (x) (x nil t))
 (defun-lazy and (x y) (x y nil))
-(defun-lazy or (x y) (x t y))
+;; (defun-lazy or (x y) (x t y))
+(defmacro-lazy or (x &rest r)
+  (if (not r) x `(,x t (or ,@r))))
+
 (defun-lazy xor (x y) (x (not y) y))
 
 (defun-lazy succ (n f x) (f (n f x)))
