@@ -129,10 +129,10 @@
 
 (defun macroexpand-lazy-raw (expr &optional (env ()) (history ()))
   (cond ((atom expr)
-          (cond ((position expr history :test #'equal)
-                  (lazy-error (format nil "Recursive expansion of macro/variable ~a. Expansion stack: ~a~%When writing recursive functions, please use anonymous recursion." expr (reverse (cons expr history)))))
-                ((position expr env :test #'equal)
+          (cond ((position expr env :test #'equal)
                   expr)
+                ((position expr history :test #'equal)
+                  (lazy-error (format nil "Recursive expansion of macro/variable ~a. Expansion stack: ~a~%When writing recursive functions, please use anonymous recursion." expr (reverse (cons expr history)))))
                 ((position expr lazy-var-list :test #'equal)
                   (macroexpand-lazy-raw (eval-lazy-var expr) env (cons expr history)))
                 (t
@@ -184,6 +184,11 @@
 (def-lazy 64 (* 2 32))
 (def-lazy 128 (* 2 64))
 (def-lazy 256 ((lambda (x) (x x)) 4))
+
+(def-lazy Y
+  (lambda (f)
+    ((lambda (x) (f (x x)))
+     (lambda (x) (f (x x))))))
 
 (defmacro-lazy if (x y z) `(,x ,y ,z))
 (defmacro-lazy let (argpairs body)
