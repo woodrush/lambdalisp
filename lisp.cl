@@ -7,9 +7,19 @@
 (def-lazy "\\n" (+ 8 2))
 
 (def-lazy "A" (succ 64))
-(def-lazy "B" (succ "A"))
-(def-lazy "C" (succ "B"))
-(def-lazy "D" (succ "C"))
+
+(defmacro def-alphabet-lazy ()
+  (let* ((alphabet (coerce "ABCDEFGHIJKLMNOPQRSTUVWXYZ" `list))
+        (alphazip (mapcar #'list (cdr alphabet) alphabet))
+        (expr (map 'list #'(lambda (z) `(def-lazy ,(string (car z)) (succ ,(string (car (cdr z)))))) alphazip)))
+    `(progn ,@expr)))
+;; (print (macroexpand `(def-alphabet-lazy)))
+(def-alphabet-lazy)
+
+
+;; (def-lazy "B" (succ "A"))
+;; (def-lazy "C" (succ "B"))
+;; (def-lazy "D" (succ "C"))
 
 
 (defrec-lazy map (f list)
