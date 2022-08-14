@@ -50,7 +50,7 @@
   (let ((exprtype (car expr)) (value (cdr expr)))
     (typematch exprtype
       ;; atom
-      (car (value cdr atomenv))
+      (str2stream (car (value cdr atomenv)))
       ;; list
       (catstreamlist
         (list (char2stream "(")
@@ -83,14 +83,15 @@
         (t
           nil)))
 
-(defrec-lazy get-atomindex-env (atomenv str)
+(defun-lazy get-atomindex-env (atomenv str)
   ((letrec-lazy get-atomindex-env-helper (cur-atomenv n)
     (cond ((isnil cur-atomenv)
-            (cons (succ n) (append-element atomenv str)))
+            (cons n (append-element atomenv str)))
           ((stringeq (car cur-atomenv) str)
             (cons n atomenv))
           (t
-            (get-atomindex-env-helper (cdr cur-atomenv) (succ n)))))
+            (get-atomindex-env-helper (cdr cur-atomenv) (succ n))))
+            )
    atomenv 0))
 
 ;; untested
@@ -113,21 +114,23 @@
     (cond ((or (= ")" c) (= 256 c))
             (cons (cons type-list curlist) (cdr stdin)))
           ((= "(" c)
-            (let ((readoutstate (read-list nil (cdr stdin)))
+            (let ((readoutstate (read-list nil (cdr stdin) atomenv))
                   (readoutlist (car readoutstate))
                   (stdin (cdr readoutstate)))
-              (read-list (append-element curlist readoutlist) stdin)))
+              (read-list (append-element curlist readoutlist) stdin atomenv)))
           (t
             (let ((readoutstate (read-atom nullstream stdin))
                   (readoutstream (car readoutstate))
                   (stdin (cdr readoutstate))
                   (ret-atomlookup (get-atomindex-env atomenv (readoutstream nil)))
-                  (ret-atom (car ret-atomlookup)))
+                  (ret-atom (atom* (car ret-atomlookup))))
               ;; (cons (atom* 1) nil)
               (read-list (append-element curlist 
-              (atom* 0)
-              ;; ret-atom
-              ) stdin)
+              ;; (atom* 0)
+              ret-atom
+              )
+              stdin
+              atomenv)
               )
               )
     ))
@@ -158,18 +161,19 @@
 
 
 (defun-lazy main (stdin)
-  (if (stringeq (list "A" "A") (list "A" "A"))
-    (list "A" "A" 256 256)
-    (list "A" "B" 256 256))
+  ;; (if (stringeq (list "A" "A") (list "A" "A"))
+  ;;   (list "A" "A" 256 256)
+  ;;   (list "A" "B" 256 256))
 
-  ;; (let ((env (list (char2stream "A") (str2stream (list "A" "B" "C")) (char2stream "C"))))
-  ;;   ((printexpr
-  ;;       env
-  ;;       ;; (atom* 1)
-  ;;       (car (read-list nil stdin))
-  ;;       )
-  ;;    (inflist 256))
-  ;;   )
+  (let ((env (list (list "A") (list "B") (list "A" "B" "C") (list "C"))))
+    ((printexpr
+        env
+        ;; (atom* 1)
+        ;; (atom* (car (get-atomindex-env env (list "A"))))
+        (car (read-list nil stdin env))
+        )
+     (inflist 256))
+    )
 
   ;; (cdr (read-atom nullstream stdin))
 
