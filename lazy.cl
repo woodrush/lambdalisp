@@ -215,9 +215,11 @@
     ((lambda (x) (f (x x)))
      (lambda (x) (f (x x))))))
 
+(defmacro-lazy letrec-lazy (name args body)
+  `(Y (lambda (,name) (lambda ,args ,body))))
+
 (defmacro defrec-lazy (name args body)
-  `(def-lazy ,name
-     (Y (lambda (,name) (lambda ,args ,body)))))
+  `(def-lazy ,name (letrec-lazy ,name ,args ,body)))
 
 
 (defun compile-to-blc (expr)
