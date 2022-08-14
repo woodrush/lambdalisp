@@ -7,13 +7,19 @@
 (def-lazy "\\n" (+ 8 2))
 
 (def-lazy "A" (succ 64))
-
 (defmacro def-alphabet-lazy ()
   (let* ((alphabet (coerce "ABCDEFGHIJKLMNOPQRSTUVWXYZ" `list))
         (alphazip (mapcar #'list (cdr alphabet) alphabet))
         (expr (map 'list #'(lambda (z) `(def-lazy ,(string (car z)) (succ ,(string (car (cdr z)))))) alphazip)))
     `(progn ,@expr)))
-;; (print (macroexpand `(def-alphabet-lazy)))
+(def-alphabet-lazy)
+
+(def-lazy "a" (succ (+ 64 32)))
+(defmacro def-alphabet-lazy ()
+  (let* ((alphabet (coerce "abcdefghijklmnopqrstuvwxyz" `list))
+        (alphazip (mapcar #'list (cdr alphabet) alphabet))
+        (expr (map 'list #'(lambda (z) `(def-lazy ,(string (car z)) (succ ,(string (car (cdr z)))))) alphazip)))
+    `(progn ,@expr)))
 (def-alphabet-lazy)
 
 
@@ -172,20 +178,50 @@
   `(cons type-list (list ,arg ,@args)))
 
 
+(def-lazy initialenv
+  (list
+    (list "q" "u" "o" "t" "e")
+    (list "c" "o" "n" "s")
+    (list "c" "a" "r")
+    (list "c" "d" "r")
+    (list "a" "t" "o" "m")
+    (list "e" "q")
+    (list "c" "o" "n" "d")
+    (list "l" "a" "m" "b" "d" "a")
+    (list "p" "r" "i" "n" "t")
+    (list "r" "e" "a" "d")
+    (list "t")))
+
+(defrec-lazy eval (expr varenv atomenv stdin stdoutstream)
+  (let ((expr-type (car expr))
+        (value (cdr expr)))
+    (typematch expr-type
+      ;; atom
+      nil
+      ;; list
+      (let ((head (car value)))
+        (cond
+          ;; quote
+          ((= (cdr head) 0)
+            (car (cdr value)))
+          (t
+            nil)
+          ))
+      )))
+
 (defun-lazy main (stdin)
   ;; (if (stringeq (list "A" "A") (list "A" "A"))
   ;;   (list "A" "A" 256 256)
   ;;   (list "A" "B" 256 256))
 
-  (let ((env (list (list "A") (list "B") (list "A" "B" "C") (list "C")))
+;; (list (list "A") (list "B") (list "A" "B" "C") (list "C"))
+  (let ((env initialenv)
         (ret-parse (read-list nil stdin env))
         (env (car (cdr ret-parse)))
         (expr (car ret-parse)))
     ((printexpr
         env
-        ;; (atom* 1)
-        ;; (atom* (car (get-atomindex-env env (list "A"))))
-        expr
+        (eval expr nil env stdin nil)
         )
      (inflist 256))
     )
