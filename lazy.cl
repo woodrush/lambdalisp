@@ -207,7 +207,7 @@
 (defmacro-lazy list (item &rest items)
   (if items
     `(cons ,item (list ,@items))
-    `nil))
+    `(cons ,item nil)))
 
 (defun compile-to-blc (expr)
   (to-blc-string (to-de-bruijn (curry expr))))
