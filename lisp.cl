@@ -9,27 +9,29 @@
 (def-lazy "A" (succ 64))
 
 
-(defmacro defrec-lazy (name args body)
-  `(def-lazy ,name
-     ((lambda (x) (x x))
-      (lambda ,args ,body))))
-
 (defmacro-lazy typematch (tvar t0 t1)
   `(,tvar ,t0 ,t1))
 
 (defun-lazy type-atom (t0 t1) t0)
 (defun-lazy type-list (t0 t1) t1)
 
-(defrec-lazy printexpr (self expr)
-  (let ((head (car expr))
-  (headtype (car head)) (value (cdr head))
-  )
+(defun-lazy char2stream (char)
+  (lambda (stream) (cons char stream)))
+
+(defun-lazy catstream (stream1 stream2)
+  (lambda (stream) (stream1 (stream2 stream))))
+
+(defrec-lazy printexpr (expr)
+  (let ((exprtype (car expr)) (value (cdr expr)))
   ;; (list "A" 256 256)
-    (typematch headtype
+    (typematch exprtype
       ;; atom
-      (list "A" 256 256)
+      (char2stream "A")
       ;; list
-      (list "(" "A" ")" 256 256)    
+      ;; (char2stream "(")
+      (catstream (catstream (char2stream "(") (printexpr (car value))) (char2stream ")"))
+      ;; (((char2stream "(") (printexpr (cdr expr))) (char2stream ")"))
+      ;; (cons "(" suffix)
       )
       )
       )
@@ -47,8 +49,14 @@
 (def-lazy test
   (list type-atom))
 
+(defrec-lazy f (x)
+  (cons "A" (f nil))
+  ;; (lambda (x) (cons "A" (x nil)))
+  )
+
 (defun-lazy main (stdin)
-  (printexpr (list (cons type-list "A")))
+  ;; (f nil)
+  ((printexpr (cons type-list (list (cons type-atom "A")))) (inflist 256))
   ;; (list "A" 256 256)
   )
 
