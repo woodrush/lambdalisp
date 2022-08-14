@@ -92,7 +92,7 @@
             curlist
             ) (cdr stdin)))
           ((= "(" c)
-            (let ((readoutstate (read-list (cdr stdin)))
+            (let ((readoutstate (read-list nil (cdr stdin)))
                   (readoutlist (car readoutstate))
                   (stdin (cdr readoutstate)))
               (read-list (append-element curlist readoutlist) stdin)))
