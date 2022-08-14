@@ -185,11 +185,6 @@
 (def-lazy 128 (* 2 64))
 (def-lazy 256 ((lambda (x) (x x)) 4))
 
-(def-lazy Y
-  (lambda (f)
-    ((lambda (x) (f (x x)))
-     (lambda (x) (f (x x))))))
-
 (defmacro-lazy if (x y z) `(,x ,y ,z))
 (defmacro-lazy let (argpairs body)
   ;; Syntax: (let ((x1 v1) (x2 v2) ...) body)
@@ -213,6 +208,17 @@
   (if items
     `(cons ,item (list ,@items))
     `(cons ,item nil)))
+
+
+(def-lazy Y
+  (lambda (f)
+    ((lambda (x) (f (x x)))
+     (lambda (x) (f (x x))))))
+
+(defmacro defrec-lazy (name args body)
+  `(def-lazy ,name
+     (Y (lambda (,name) (lambda ,args ,body)))))
+
 
 (defun compile-to-blc (expr)
   (to-blc-string (to-de-bruijn (curry expr))))
