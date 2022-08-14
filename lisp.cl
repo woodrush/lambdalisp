@@ -62,20 +62,25 @@
 (defrec-lazy str2stream (s)
   (catstreamlist (map char2stream s)))
 
+(def-lazy typeof car)
+(def-lazy valueof cdr)
+
 (defrec-lazy printexpr (atomenv expr)
-  (let ((exprtype (car expr)) (value (cdr expr)))
-    (typematch exprtype
-      ;; atom
-      (str2stream (car (value cdr atomenv)))
-      ;; list
-      (catstreamlist
-        (list (char2stream "(")
-              ((letrec-lazy interleave-space (slist)
-                  (if (isnil (cdr slist))
-                    (car slist)
-                    (catstreamlist (list (car slist) (char2stream " ") (interleave-space (cdr slist))))))
-               (map (printexpr atomenv) value))
-              (char2stream ")"))))))
+  (typematch (typeof expr)
+    ;; atom
+    (str2stream (car ((valueof expr) cdr atomenv)))
+    ;; list
+    (catstreamlist
+      (list (char2stream "(")
+            ((letrec-lazy interleave-space (slist)
+                (if (isnil (cdr slist))
+                  (car slist)
+                  (catstreamlist (list (car slist) (char2stream " ") (interleave-space (cdr slist))))))
+              (map (printexpr atomenv) (valueof expr)))
+            (char2stream ")"))))
+  ;; (let ((exprtype (typeof expr)) ((valueof expr) (cdr expr)))
+  ;;   )
+    )
 
 
 (defrec-lazy read-atom (curstream stdin)
@@ -181,33 +186,42 @@
 (def-lazy initialenv
   (list
     (list "q" "u" "o" "t" "e")
-    (list "c" "o" "n" "s")
     (list "c" "a" "r")
     (list "c" "d" "r")
+    (list "c" "o" "n" "s")
     (list "a" "t" "o" "m")
     (list "e" "q")
     (list "c" "o" "n" "d")
-    (list "l" "a" "m" "b" "d" "a")
     (list "p" "r" "i" "n" "t")
     (list "r" "e" "a" "d")
     (list "t")))
 
 (defrec-lazy eval (expr varenv atomenv stdin stdoutstream)
-  (let ((expr-type (car expr))
-        (value (cdr expr)))
-    (typematch expr-type
-      ;; atom
-      nil
-      ;; list
-      (let ((head (car value)))
+  (typematch (typeof expr)
+    ;; atom
+    nil
+    ;; list
+    (let ((head (car (valueof expr)))
+          (hvalue (valueof head))
+          (etail (car (cdr (valueof expr)))))
+      (typematch (typeof head)
+        ;; atom
         (cond
           ;; quote
-          ((= (cdr head) 0)
-            (car (cdr value)))
+          ((= hvalue 0)
+            etail)
+          ;; car
+          ((= hvalue 1)
+            ;; etail
+            (car (valueof (eval etail varenv atomenv stdin stdoutstream)))
+            )
           (t
             nil)
-          ))
-      )))
+          )
+        ;; list
+        nil
+        ))
+      ))
 
 (defun-lazy main (stdin)
   ;; (if (stringeq (list "A" "A") (list "A" "A"))
