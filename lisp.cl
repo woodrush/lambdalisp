@@ -34,16 +34,24 @@
     (lambda (x) x)
     (catstream (car streamlist) (catstreamlist (cdr streamlist)))))
 
+(defrec-lazy str2stream (s)
+  (catstreamlist (map char2stream s)))
+
 (defrec-lazy printexpr (atomenv expr)
   (let ((exprtype (car expr)) (value (cdr expr)))
     (typematch exprtype
       ;; atom
       ;; (char2stream "A")
-      (char2stream (car (value cdr atomenv)))
+      (car (value cdr atomenv))
       ;; list
       (catstreamlist
         (list (char2stream "(")
-              (catstreamlist (map (printexpr atomenv) value))
+              ((letrec-lazy interleave-space (slist)
+                  (if (isnil (cdr slist))
+                    (car slist)
+                    (catstreamlist (list (car slist) (char2stream " ") (interleave-space (cdr slist))))))
+               (map (printexpr atomenv) value))
+              ;; (catstreamlist (map (printexpr atomenv) value))
               (char2stream ")"))))))
 
 
@@ -64,11 +72,23 @@
   ;; (lambda (x) (cons "A" (x nil)))
   )
 
+(defmacro-lazy atom* (value)
+  `(cons type-atom ,value))
+
+(defmacro-lazy list* (arg &rest args)
+  `(cons type-list (list ,arg ,@args)))
+
+
 (defun-lazy main (stdin)
   ;; (f nil)
   ((printexpr
-      (list "A" "B" "C")
-      (cons type-list (list (cons type-atom 2) (cons type-list (list (cons type-atom 1))) (cons type-atom 2)))) (inflist 256))
+      (list (char2stream "A") (str2stream (list "A" "B" "C")) (char2stream "C"))
+      ;; (cons type-list (list (cons type-atom 2) (cons type-list (list (cons type-atom 1))) (cons type-atom 2)))
+      (list*  (atom* 2)
+              (list* (atom* 1) (atom* 2) (atom* 0))
+              (atom* 0))
+        )
+   (inflist 256))
   ;; (list "A" 256 256)
   )
 
