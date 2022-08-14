@@ -56,9 +56,56 @@
 
 (defrec-lazy read-atom (curstream stdin)
   (let ((c (car stdin)))
-    (if (or (= " " c) (= "(" c) (= ")" c) (= 256 c))
-        (cons curstream stdin)
-        (read-atom (catstream curstream (char2stream (car stdin))) (cdr stdin)))))
+    (cond
+          ;; ((or (= " " c) (= "\\n" c))
+          ;;   (cons curstream (cdr stdin)))
+          ((or (= "(" c) (= ")" c) (= 256 c) (= " " c) (= "\\n" c))
+            (cons curstream stdin))
+          (t
+            (read-atom (catstream curstream (char2stream (car stdin))) (cdr stdin))))))
+
+;; untested
+(defrec-lazy read-skip-until-newline (stdin)
+  (let ((c (car stdin)))
+    (if (= "\\n" c)
+      (cdr stdin)
+      (read-skip-until-newline (cdr stdin)))))
+
+(defrec-lazy read-skip-whitespace (stdin)
+  (let ((c (car stdin)))
+    (cond ((or (= " " c) (= "\\n" c))
+            (read-skip-whitespace (cdr stdin)))
+          (t
+            stdin))))
+
+(defrec-lazy append-element (l item)
+  (if (isnil l) (cons item nil) (cons (car l) (append-element (cdr l) item))))
+
+(defrec-lazy append-list (l item)
+  (if (isnil l) item (cons (car l) (append-list (cdr l) item))))
+
+(defrec-lazy read-list (curlist stdin)
+  (let ((stdin (read-skip-whitespace stdin)) (c (car stdin)))
+    (cond ((or (= ")" c) (= 256 c))
+            (cons (cons type-list
+            ;; (list (atom* 1))
+            curlist
+            ) (cdr stdin)))
+          ((= "(" c)
+            (let ((readoutstate (read-list (cdr stdin)))
+                  (readoutlist (car readoutstate))
+                  (stdin (cdr readoutstate)))
+              (read-list (append-element curlist readoutlist) stdin)))
+          (t
+            (let ((readoutstate (read-atom nullstream stdin))
+                  (readoutstream (car readoutstate))
+                  (stdin2 (cdr readoutstate)))
+              ;; (cons (atom* 1) nil)
+              (read-list (append-element curlist (atom* 0)) stdin2)
+              )
+              )
+    ))
+    )
 
 ;; (defrec-lazy parseexpr (self stream)
 ;;   (let ((c (car stream)))
@@ -85,8 +132,18 @@
 
 
 (defun-lazy main (stdin)
-  ((car (read-atom nullstream stdin))
-   (inflist 256))
+;; (append-list (append-element (list "A" "B") "C") (inflist 256))
+  (let ((env (list (char2stream "A") (str2stream (list "A" "B" "C")) (char2stream "C"))))
+    ((printexpr
+        env
+        ;; (atom* 1)
+        (car (read-list nil stdin))
+        )
+     (inflist 256))
+    )
+
+  ;; (cdr (read-atom nullstream stdin))
+
   ;; ((printexpr
   ;;     (list (char2stream "A") (str2stream (list "A" "B" "C")) (char2stream "C"))
   ;;     (list*  (atom* 2)
