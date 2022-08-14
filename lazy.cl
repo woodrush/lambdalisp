@@ -13,7 +13,6 @@
 (defun decorate-varname (var)
   (concatenate `string "[" (write-to-string var) "]"))
 
-
 (defun curry (expr)
   (labels
     ((normalize-app (ret l)
@@ -35,7 +34,7 @@
 (defun to-de-bruijn (body &optional (env ()))
   (labels
     ((lookup (env var)
-       (let ((i (position var env)))
+       (let ((i (position var env :test #'equal)))
          (if i (+ 1 i) (decorate-varname var)))))
     (if (not (atom body))
         (if (islambda body)
@@ -99,10 +98,16 @@
   `(error (concatenate 'string "Lazy K CL Error: " ,@message)))
 
 (defun mangle-varname (name)
-  (intern (concatenate `string (write-to-string name) "-**LAZY-VAR**")))
+  (cond ((stringp name)
+          (intern (concatenate `string (write-to-string name) "-**LAZY-VAR-STR**")))
+        (t
+          (intern (concatenate `string (write-to-string name) "-**LAZY-VAR**")))))
 
 (defun mangle-macroname (name)
-  (intern (concatenate `string (write-to-string name) "-**LAZY-MACRO**")))
+  (cond ((stringp name)
+          (intern (concatenate `string (write-to-string name) "-**LAZY-MACRO-STR**")))
+        (t
+          (intern (concatenate `string (write-to-string name) "-**LAZY-MACRO**")))))
 
 (defmacro def-lazy (name expr)
   `(progn
@@ -124,18 +129,18 @@
 
 (defun macroexpand-lazy-raw (expr &optional (env ()) (history ()))
   (cond ((atom expr)
-          (cond ((position expr history)
+          (cond ((position expr history :test #'equal)
                   (lazy-error (format nil "Recursive expansion of macro/variable ~a. Expansion stack: ~a~%When writing recursive functions, please use anonymous recursion." expr (reverse (cons expr history)))))
-                ((position expr env)
+                ((position expr env :test #'equal)
                   expr)
-                ((position expr lazy-var-list)
+                ((position expr lazy-var-list :test #'equal)
                   (macroexpand-lazy-raw (eval-lazy-var expr) env (cons expr history)))
                 (t
                   expr)))
         ((islambda expr)
           `(lambda ,(lambdaargs expr)
             ,(macroexpand-lazy-raw (lambdabody expr) (append env (lambdaargs expr)) history)))
-        ((position (car expr) lazy-macro-list)
+        ((position (car expr) lazy-macro-list :test #'equal)
           (macroexpand-lazy-raw (eval-lazy-macro (car expr) (cdr expr)) env history))
         (t
           (mapcar #'(lambda (expr) (macroexpand-lazy-raw expr env history)) expr))))
