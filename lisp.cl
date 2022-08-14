@@ -7,7 +7,15 @@
 (def-lazy "\\n" (+ 8 2))
 
 (def-lazy "A" (succ 64))
+(def-lazy "B" (succ "A"))
+(def-lazy "C" (succ "B"))
+(def-lazy "D" (succ "C"))
 
+
+(defrec-lazy map (f list)
+  (if (isnil list)
+    nil
+    (cons (f (car list)) (map f (cdr list)))))
 
 (defmacro-lazy typematch (tvar t0 t1)
   `(,tvar ,t0 ,t1))
@@ -26,25 +34,17 @@
     (lambda (x) x)
     (catstream (car streamlist) (catstreamlist (cdr streamlist)))))
 
-(defrec-lazy map (f list)
-  (if (isnil list)
-    nil
-    (cons (f (car list)) (map f (cdr list)))))
-
-(defrec-lazy printexpr (expr)
+(defrec-lazy printexpr (atomenv expr)
   (let ((exprtype (car expr)) (value (cdr expr)))
-  ;; (list "A" 256 256)
     (typematch exprtype
       ;; atom
-      (char2stream "A")
+      ;; (char2stream "A")
+      (char2stream (car (value cdr atomenv)))
       ;; list
-      ;; (char2stream "(")
-      (catstream (catstream (char2stream "(") (catstreamlist (map printexpr value))) (char2stream ")"))
-      ;; (((char2stream "(") (printexpr (cdr expr))) (char2stream ")"))
-      ;; (cons "(" suffix)
-      )
-      )
-      )
+      (catstreamlist
+        (list (char2stream "(")
+              (catstreamlist (map (printexpr atomenv) value))
+              (char2stream ")"))))))
 
 
 ;; (defrec-lazy parseexpr (self stream)
@@ -66,7 +66,9 @@
 
 (defun-lazy main (stdin)
   ;; (f nil)
-  ((printexpr (cons type-list (list (cons type-atom "A") (cons type-list (list (cons type-atom "A"))) (cons type-atom "A")))) (inflist 256))
+  ((printexpr
+      (list "A" "B" "C")
+      (cons type-list (list (cons type-atom 2) (cons type-list (list (cons type-atom 1))) (cons type-atom 2)))) (inflist 256))
   ;; (list "A" 256 256)
   )
 
