@@ -16,10 +16,20 @@
 (defun-lazy type-list (t0 t1) t1)
 
 (defun-lazy char2stream (char)
-  (lambda (stream) (cons char stream)))
+  (cons char))
 
 (defun-lazy catstream (stream1 stream2)
   (lambda (stream) (stream1 (stream2 stream))))
+
+(defrec-lazy catstreamlist (streamlist)
+  (if (isnil streamlist)
+    (lambda (x) x)
+    (catstream (car streamlist) (catstreamlist (cdr streamlist)))))
+
+(defrec-lazy map (f list)
+  (if (isnil list)
+    nil
+    (cons (f (car list)) (map f (cdr list)))))
 
 (defrec-lazy printexpr (expr)
   (let ((exprtype (car expr)) (value (cdr expr)))
@@ -29,7 +39,7 @@
       (char2stream "A")
       ;; list
       ;; (char2stream "(")
-      (catstream (catstream (char2stream "(") (printexpr (car value))) (char2stream ")"))
+      (catstream (catstream (char2stream "(") (catstreamlist (map printexpr value))) (char2stream ")"))
       ;; (((char2stream "(") (printexpr (cdr expr))) (char2stream ")"))
       ;; (cons "(" suffix)
       )
@@ -56,7 +66,7 @@
 
 (defun-lazy main (stdin)
   ;; (f nil)
-  ((printexpr (cons type-list (list (cons type-atom "A")))) (inflist 256))
+  ((printexpr (cons type-list (list (cons type-atom "A") (cons type-list (list (cons type-atom "A"))) (cons type-atom "A")))) (inflist 256))
   ;; (list "A" 256 256)
   )
 
