@@ -212,9 +212,10 @@
             etail)
           ;; car
           ((= hvalue 1)
-            ;; etail
-            (car (valueof (eval etail varenv atomenv stdin stdoutstream)))
-            )
+            (car (valueof (eval etail varenv atomenv stdin stdoutstream))))
+          ;; cdr
+          ((= hvalue 2)
+            (cons type-list (cdr (valueof (eval etail varenv atomenv stdin stdoutstream)))))
           (t
             nil)
           )
