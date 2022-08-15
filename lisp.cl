@@ -8,6 +8,7 @@
 (def-lazy "\\n" (+ 8 2))
 
 (def-lazy 3 (succ 2))
+(def-lazy 5 (succ 4))
 
 (def-lazy "A" (succ 64))
 (defmacro def-alphabet-lazy ()
@@ -47,6 +48,18 @@
   `(if (isnil ,expr)
       ,nilcase
       ((typeof ,expr) ,atomcase ,listcase)))
+
+(defun-lazy isatom (expr)
+  (typematch expr
+    ;; atom
+    t
+    ;; list
+    nil
+    ;; nil
+    t))
+
+(defun-lazy truth-data (expr)
+  (if expr t-data nil))
 
 (defun-lazy type-atom (t0 t1) t0)
 (defun-lazy type-list (t0 t1) t1)
@@ -303,13 +316,15 @@
                        (eval (car-data (cdr-data tail)) varenv atomenv stdin stdoutstream)))
           ;; atom
           ((= head-index 4)
-            (typematch (eval (car-data tail) varenv atomenv stdin stdoutstream)
-              ;; atom
-              t-data
-              ;; list
-              nil
-              ;; nil
-              t-data))
+            (truth-data (isatom (eval (car-data tail) varenv atomenv stdin stdoutstream))))
+          ;; eq
+          ((= head-index 5)
+            (let ((x (eval (car-data tail) varenv atomenv stdin stdoutstream))
+                  (y (eval (car-data (cdr-data tail)) varenv atomenv stdin stdoutstream)))
+              (cond ((or (not (isatom x)) (not (isatom y)))
+                      nil)
+                    (t
+                      (truth-data (= (valueof x) (valueof y)))))))
           (t
             nil)
           )
