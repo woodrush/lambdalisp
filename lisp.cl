@@ -256,24 +256,24 @@
     ;; atom
     nil
     ;; list
-    (let ((head (car (valueof expr)))
-          (hvalue (valueof head))
-          (etail (car (cdr (valueof expr)))))
+    (let ((head (car-data expr))
+          (tail (cdr-data expr))
+          (head-index (valueof head)))
       (typematch (typeof head)
         ;; atom
         (cond
           ;; quote
-          ((= hvalue 0)
-            etail)
+          ((= head-index 0)
+            (car-data tail))
           ;; car
-          ((= hvalue 1)
-            (car (valueof (eval etail varenv atomenv stdin stdoutstream))))
+          ((= head-index 1)
+            (car-data (eval tail varenv atomenv stdin stdoutstream)))
           ;; cdr
-          ((= hvalue 2)
-            (cons type-list (cdr (valueof (eval etail varenv atomenv stdin stdoutstream)))))
-          ;; cons
-          ((= hvalue 3)
-            )
+          ((= head-index 2)
+            (cdr-data (eval tail varenv atomenv stdin stdoutstream)))
+          ;; ;; cons
+          ;; ((= head-index 3)
+          ;;   )
           (t
             nil)
           )
@@ -292,8 +292,8 @@
     ((printexpr
         env
         ;; (atom* 0)
-        expr
-        ;; (eval expr nil env stdin nil)
+        ;; expr
+        (eval expr nil env stdin nil)
         )
      (inflist 256))
     )
