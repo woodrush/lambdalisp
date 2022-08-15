@@ -43,8 +43,10 @@
   (if (isnil l) item (cons (car l) (append-list (cdr l) item))))
 
 
-(defmacro-lazy typematch (tvar t0 t1)
-  `(,tvar ,t0 ,t1))
+(defmacro-lazy typematch (expr atomcase listcase nilcase)
+  `(if (isnil ,expr)
+      ,nilcase
+      ((typeof ,expr) ,atomcase ,listcase)))
 
 (defun-lazy type-atom (t0 t1) t0)
 (defun-lazy type-list (t0 t1) t1)
@@ -94,7 +96,7 @@
                  (map-data-as-baselist f (cdr-data data))))))
 
 (defrec-lazy printexpr (atomenv expr)
-  (typematch (typeof expr)
+  (typematch expr
     ;; atom
     (str2stream (car ((valueof expr) cdr atomenv)))
     ;; list
@@ -106,7 +108,7 @@
                       ((isnil (cdr-data list))
                           (printexpr atomenv (car-data list)))
                       (t
-                          (typematch (typeof (cdr-data list))
+                          (typematch (cdr-data list)
                             ;; atom
                             (catstreamlist
                               (list
@@ -116,9 +118,14 @@
                             ;; list
                             (catstream (printexpr atomenv (car-data list))
                               (catstream (char2stream " ")
-                                (print-list (cdr-data list))))))))
+                                (print-list (cdr-data list))))
+                            ;; nil
+                            nullstream
+                                ))))
               expr)
-            (char2stream ")")))))
+            (char2stream ")")))
+    ;; nil
+    (catstream (char2stream "(") (char2stream ")"))))
 
 (defrec-lazy read-string (curstream stdin)
   (let ((c (car stdin)))
@@ -267,15 +274,18 @@
     (list "r" "e" "a" "d")
     (list "t")))
 
+(def-lazy t-data
+  (atom* (succ 8)))
+
 (defrec-lazy eval (expr varenv atomenv stdin stdoutstream)
-  (typematch (typeof expr)
+  (typematch expr
     ;; atom
     nil
     ;; list
     (let ((head (car-data expr))
           (tail (cdr-data expr))
           (head-index (valueof head)))
-      (typematch (typeof head)
+      (typematch head
         ;; atom
         (cond
           ;; quote
@@ -291,13 +301,25 @@
           ((= head-index 3)
             (cons-data (eval (car-data tail) varenv atomenv stdin stdoutstream)
                        (eval (car-data (cdr-data tail)) varenv atomenv stdin stdoutstream)))
+          ;; atom
+          ((= head-index 4)
+            (typematch (eval (car-data tail) varenv atomenv stdin stdoutstream)
+              ;; atom
+              t-data
+              ;; list
+              nil
+              ;; nil
+              t-data))
           (t
             nil)
           )
         ;; list
         nil
+        ;; nil
+        nil
         ))
-      ))
+    ;; nil
+    nil))
 
 (defun-lazy main (stdin)
   (let ((env initialenv)
