@@ -4,7 +4,10 @@
 (def-lazy "(" (+ 32 8))
 (def-lazy ")" (succ "("))
 (def-lazy " " 32)
+(def-lazy "." (+ (+ (+ 32 8) 4) 2))
 (def-lazy "\\n" (+ 8 2))
+
+(def-lazy 3 (succ 2))
 
 (def-lazy "A" (succ 64))
 (defmacro def-alphabet-lazy ()
@@ -97,11 +100,24 @@
     ;; list
     (catstreamlist
       (list (char2stream "(")
-            ((letrec-lazy interleave-space (slist)
-                (if (isnil (cdr slist))
-                  (car slist)
-                  (catstreamlist (list (car slist) (char2stream " ") (interleave-space (cdr slist))))))
-              (map-data-as-baselist (printexpr atomenv) expr))
+            ((letrec-lazy print-list (list)
+                (cond ((isnil (car-data list))
+                        nullstream)
+                      ((isnil (cdr-data list))
+                          (printexpr atomenv (car-data list)))
+                      (t
+                          (typematch (typeof (cdr-data list))
+                            ;; atom
+                            (catstreamlist
+                              (list
+                                (printexpr atomenv (car-data list))
+                                (char2stream " ") (char2stream ".") (char2stream " ")
+                                (printexpr atomenv (cdr-data list))))
+                            ;; list
+                            (catstream (printexpr atomenv (car-data list))
+                              (catstream (char2stream " ")
+                                (print-list (cdr-data list))))))))
+              expr)
             (char2stream ")")))))
 
 (defrec-lazy read-string (curstream stdin)
@@ -271,9 +287,10 @@
           ;; cdr
           ((= head-index 2)
             (cdr-data (eval (car-data tail) varenv atomenv stdin stdoutstream)))
-          ;; ;; cons
-          ;; ((= head-index 3)
-          ;;   )
+          ;; cons
+          ((= head-index 3)
+            (cons-data (eval (car-data tail) varenv atomenv stdin stdoutstream)
+                       (eval (car-data (cdr-data tail)) varenv atomenv stdin stdoutstream)))
           (t
             nil)
           )
