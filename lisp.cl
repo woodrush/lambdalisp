@@ -83,7 +83,7 @@
     `(cons-data ,arg (list* ,@args))))
 
 (defrec-lazy append-element-data (l item)
-  (if (isnil l) (cons-data item nil) (cons-data (car-data l) (append-element (cdr-data l) item))))
+  (if (isnil l) (cons-data item nil) (cons-data (car-data l) (append-element-data (cdr-data l) item))))
 
 (defrec-lazy map-data-as-baselist (f data)
   (cond ((isnil data) nil)
@@ -160,16 +160,16 @@
           (t
             stdin))))
 
-(defrec-lazy read-expr (stdin atomenv curexpr)
+(defrec-lazy read-expr (stdin atomenv)
   ;; (cons (atom* 0) (cons stdin atomenv))
   (let ((read-list
           (letrec-lazy read-list (stdin atomenv curexpr)
             (let ((stdin (read-skip-whitespace stdin))
                   (c (car stdin)))
               (cond ((= ")" c)
-                      (cons curexpr (cons stdin atomenv)))
+                      (cons curexpr (cons (cdr stdin) atomenv)))
                     (t
-                      (let ((ret (read-expr stdin atomenv curexpr))
+                      (let ((ret (read-expr stdin atomenv))
                             (ret-expr (car ret))
                             (stdin (car (cdr ret)))
                             (atomenv (cdr (cdr ret))))
@@ -177,7 +177,7 @@
                         )))))))
     (let ((stdin (read-skip-whitespace stdin)) (c (car stdin)))
             (cond ((= "(" c)
-                    (read-list stdin atomenv curexpr))
+                    (read-list (cdr stdin) atomenv nil))
                   (t
                     (read-atom stdin atomenv)
                     ))))
@@ -284,7 +284,7 @@
 
 (defun-lazy main (stdin)
   (let ((env initialenv)
-        (ret-parse (read-expr stdin env nil))
+        (ret-parse (read-expr stdin env))
         (stdin (car (cdr ret-parse)))
         (env (cdr (cdr ret-parse)))
         (expr (car ret-parse))
