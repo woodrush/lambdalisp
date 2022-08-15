@@ -267,10 +267,10 @@
             (car-data tail))
           ;; car
           ((= head-index 1)
-            (car-data (eval tail varenv atomenv stdin stdoutstream)))
+            (car-data (eval (car-data tail) varenv atomenv stdin stdoutstream)))
           ;; cdr
           ((= head-index 2)
-            (cdr-data (eval tail varenv atomenv stdin stdoutstream)))
+            (cdr-data (eval (car-data tail) varenv atomenv stdin stdoutstream)))
           ;; ;; cons
           ;; ((= head-index 3)
           ;;   )
