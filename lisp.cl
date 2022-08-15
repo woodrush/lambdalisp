@@ -9,6 +9,7 @@
 
 (def-lazy 3 (succ 2))
 (def-lazy 5 (succ 4))
+(def-lazy 6 (+ 4 2))
 
 (def-lazy "A" (succ 64))
 (defmacro def-alphabet-lazy ()
@@ -290,8 +291,14 @@
 (def-lazy t-data
   (atom* (succ 8)))
 
-(defrec-lazy eval-cond (expr varenv atomenv stdin stdoutstream)
-  (let ((carclause ((cdr-data expr))))))
+(defrec-lazy eval-cond (clauselist varenv atomenv stdin stdoutstream)
+  (let ((carclause (-> clauselist car-data))
+        (carcond (-> carclause car-data))
+        (carbody (-> carclause cdr-data car-data))
+        (carcond-eval (eval carcond varenv atomenv stdin stdoutstream)))
+    (if (isnil carcond-eval)
+      (eval-cond (cdr-data clauselist) varenv atomenv stdin stdoutstream)
+      (eval carbody varenv atomenv stdin stdoutstream))))
 
 (defrec-lazy eval (expr varenv atomenv stdin stdoutstream)
   (typematch expr
@@ -316,7 +323,7 @@
           ;; cons
           ((= head-index 3)
             (cons-data (eval (car-data tail) varenv atomenv stdin stdoutstream)
-                       (eval (car-data (cdr-data tail)) varenv atomenv stdin stdoutstream)))
+                       (eval (-> tail cdr-data car-data) varenv atomenv stdin stdoutstream)))
           ;; atom
           ((= head-index 4)
             (truth-data (isatom (eval (car-data tail) varenv atomenv stdin stdoutstream))))
@@ -329,7 +336,10 @@
                     (t
                       (truth-data (= (valueof x) (valueof y)))))))
           ;; cond
-
+          ((= head-index 6)
+            ;; (atom* 6)
+            (eval-cond tail varenv atomenv stdin stdoutstream)
+            )
           (t
             nil)
           )
