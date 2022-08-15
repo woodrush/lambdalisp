@@ -224,6 +224,10 @@
 (defmacro defrec-lazy (name args body)
   `(def-lazy ,name (letrec-lazy ,name ,args ,body)))
 
+(defmacro-lazy -> (target &rest args)
+  (if (not args)
+    target
+    `(-> (,(car args) ,target) ,@(cdr args))))
 
 (defun compile-to-blc (expr)
   (to-blc-string (to-de-bruijn (curry expr))))

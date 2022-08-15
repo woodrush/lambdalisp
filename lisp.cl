@@ -290,6 +290,9 @@
 (def-lazy t-data
   (atom* (succ 8)))
 
+(defrec-lazy eval-cond (expr varenv atomenv stdin stdoutstream)
+  (let ((carclause ((cdr-data expr))))))
+
 (defrec-lazy eval (expr varenv atomenv stdin stdoutstream)
   (typematch expr
     ;; atom
@@ -320,11 +323,13 @@
           ;; eq
           ((= head-index 5)
             (let ((x (eval (car-data tail) varenv atomenv stdin stdoutstream))
-                  (y (eval (car-data (cdr-data tail)) varenv atomenv stdin stdoutstream)))
+                  (y (eval (-> tail cdr-data car-data) varenv atomenv stdin stdoutstream)))
               (cond ((or (not (isatom x)) (not (isatom y)))
                       nil)
                     (t
                       (truth-data (= (valueof x) (valueof y)))))))
+          ;; cond
+
           (t
             nil)
           )
