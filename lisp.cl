@@ -290,7 +290,7 @@
     (list "t")))
 
 (def-lazy initial-varenv
-  (list (list 9 (atom* 9)) (list 0 (atom* 1))))
+  (list (cons 9 (atom* 9)) (cons 0 (atom* 1))))
 
 (def-lazy t-data
   (atom* (succ 8)))
@@ -307,13 +307,34 @@
 (defrec-lazy varenv-lookup (varenv varval)
   (let ((pair (car varenv))
         (evarval (car pair))
-        (ebody (car (cdr pair))))
+        (ebody (cdr pair)))
     (cond ((isnil varenv)
             nil)
           ((= varval evarval)
             ebody)
           (t
             (varenv-lookup (cdr varenv) varval)))))
+
+(defrec-lazy eval-map-base (lexpr varenv atomenv stdin stdoutstream)
+  (cond ((isnil lexpr)
+          nil)
+        (t
+          (cons (eval (car-data lexpr) varenv atomenv stdin stdoutstream)
+                (eval-map-base (cdr-data lexpr) varenv atomenv stdin stdoutstream)))))
+
+(defrec-lazy prepend-envzip (argnames evargs env)
+  (cond ((or (isnil argnames) (isnil evargs))
+          env)
+        (t
+          (cons (cons (valueof (car-data argnames)) (car evargs))
+                (prepend-envzip (cdr-data argnames) (cdr evargs) env)))))
+
+(defun-lazy eval-lambda (lambdaexpr callargs varenv atomenv stdin stdoutstream)
+  (let ((argnames (-> lambdaexpr cdr-data car-data))
+        (lambdabody (-> lambdaexpr cdr-data cdr-data car-data))
+        (evargs (eval-map-base callargs varenv atomenv stdin stdoutstream))
+        (new-varenv (prepend-envzip argnames evargs varenv)))
+    (eval lambdabody new-varenv atomenv stdin stdoutstream)))
 
 (defrec-lazy eval (expr varenv atomenv stdin stdoutstream)
   (typematch expr
@@ -353,11 +374,16 @@
           ;; cond
           ((= head-index 6)
             (eval-cond tail varenv atomenv stdin stdoutstream))
+          ;; else: parse as lambda
           (t
-            nil)
+            (let ((lambdaexpr (eval head varenv atomenv stdin stdoutstream))
+                  (callargs tail))
+              (eval-lambda lambdaexpr callargs varenv atomenv stdin stdoutstream)))
           )
-        ;; list
-        nil
+        ;; list: parse as lambda
+        (let ((lambdaexpr head)
+              (callargs tail))
+          (eval-lambda lambdaexpr callargs varenv atomenv stdin stdoutstream))
         ;; nil
         nil
         ))
