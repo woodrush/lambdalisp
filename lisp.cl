@@ -330,8 +330,8 @@
 (defrec-lazy eval (expr varenv atomenv stdin stdout)
   (typematch expr
     ;; atom
-    (atom* 0)
-    ;; (varenv-lookup varenv (valueof expr))
+    (new-evalret (varenv-lookup varenv (valueof expr))
+                 varenv atomenv stdin stdout)
     ;; list
     (let ((head (car-data expr))
           (tail (cdr-data expr))
