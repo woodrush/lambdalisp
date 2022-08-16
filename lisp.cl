@@ -113,39 +113,31 @@
         (t (cons (f (car-data data))
                  (map-data-as-baselist f (cdr-data data))))))
 
-(defun-lazy printatom (atomenv expr)
-  ; (str2stream (list "a" "t" "o" "m"))
-  (str2stream (car ((valueof expr) cdr atomenv)))
-  ; (char2stream (car (car ((valueof expr) cdr atomenv))))
+(defun-lazy printatom (atomenv expr cont)
+  (append-list (car ((valueof expr) cdr atomenv)) cont))
+
+(defrec-lazy printexpr-helper (atomenv expr mode cont)
+  (if mode
+    (typematch expr
+      ;; atom
+      (printatom atomenv expr cont)
+      ;; list
+      (cons "(" (printexpr-helper atomenv expr nil (cons ")" cont)))
+      ;; nil
+      (cons "(" (cons ")" cont)))
+    (printexpr-helper atomenv (car-data expr) t
+      (typematch (cdr-data expr)
+        ;; atom
+        (cons " " (cons "." (cons " " (printatom atomenv (cdr-data expr) cont))))
+        ;; list
+        (cons " " (printexpr-helper atomenv (cdr-data expr) nil cont))
+        ;; nil
+        cont))
+    )
   )
 
-(defrec-lazy printexpr (atomenv expr)
-  (typematch expr
-    ;; atom
-    (printatom atomenv expr)
-    ;; list
-    (catstream
-            (char2stream "(")
-            ((letrec-lazy print-list (list)
-                (catstream
-                  (printexpr atomenv (car-data list))
-                  (typematch (cdr-data list)
-                    ;; atom
-                    (catstream
-
-                        (char2stream " ") (char2stream ".") (char2stream " ")
-                        ; (printexpr atomenv (cdr-data list))
-                        (printatom atomenv (cdr-data list)))
-                    ;; list
-                    (catstream (char2stream " ")
-                               (print-list (cdr-data list)))
-                    ;; nil
-                    nullstream
-                              )))
-              expr)
-            (char2stream ")"))
-    ;; nil
-    (catstream (char2stream "(") (char2stream ")"))))
+(defun-lazy printexpr (atomenv expr cont)
+  (printexpr-helper atomenv expr t cont))
 
 (defrec-lazy read-string (curstream stdin)
   (let ((c (car stdin)))
@@ -388,13 +380,13 @@
         (atomenv (cdr (cdr ret-parse)))
         (expr (car ret-parse))
         )
-    ((printexpr
+    (printexpr
         atomenv
         ;; (atom* 0)
         ;; expr
         (eval expr initial-varenv atomenv stdin nil)
+        (inflist 256)
         )
-     (inflist 256))
     )
 
   ;; (if (stringeq (list "A" "A") (list "A" "A"))
