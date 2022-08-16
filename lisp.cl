@@ -381,10 +381,15 @@
                 ;; cond
                 (eval-cond tail varenv atomenv stdin stdout)
                 ;; print
-                (let-parse-evalret (car-data tail) ret varenv atomenv stdin stdout
-                  (new-evalret ret
+                (if (isnil tail)
+                  (new-evalret nil
                                varenv atomenv stdin
-                                (append-list stdout (printexpr atomenv ret (list "\\n")))))
+                               (append-list stdout (list "\\n")))
+                  (let-parse-evalret (car-data tail) ret varenv atomenv stdin stdout
+                    (new-evalret ret
+                                 varenv atomenv stdin
+                                 (append-list stdout (printexpr atomenv ret nil)))))
+
                 ;; read
                 (let ((ret-parse (read-expr stdin atomenv))
                       (expr (-> ret-parse car))
@@ -425,9 +430,9 @@
               ;; (atom* 0)
               ;; (cons-data (cons-data (atom* 1) (atom* 1)) expr)
               ret-eval
-              (cons "\\n" (repl varenv atomenv stdin stdout))
+              (cons "\\n" (repl varenv atomenv stdin nil))
               ))
-        
+
       )
     )))))
 
