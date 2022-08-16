@@ -19,6 +19,7 @@
         (expr (map 'list #'(lambda (z) `(def-lazy ,(string (car z)) (succ ,(string (car (cdr z)))))) alphazip)))
     `(progn ,@expr)))
 (def-alphabet-lazy)
+;; (def-lazy "B" (succ "A"))
 
 (def-lazy "a" (succ (+ 64 32)))
 (defmacro def-alphabet-lazy ()
@@ -28,10 +29,6 @@
     `(progn ,@expr)))
 (def-alphabet-lazy)
 
-
-;; (def-lazy "B" (succ "A"))
-;; (def-lazy "C" (succ "B"))
-;; (def-lazy "D" (succ "C"))
 
 
 (defrec-lazy map (f list)
@@ -199,7 +196,6 @@
             stdin))))
 
 (defrec-lazy read-expr (stdin atomenv)
-  ;; (cons (atom* 0) (cons stdin atomenv))
   (let ((read-list
           (letrec-lazy read-list (stdin atomenv curexpr)
             (let ((stdin (read-skip-whitespace stdin))
@@ -218,62 +214,7 @@
                     (read-list (cdr stdin) atomenv nil))
                   (t
                     (read-atom stdin atomenv)
-                    ))))
-                    )
-
-;; (defrec-lazy read-expr (stdin atomenv)
-;;   (let ((stdin (read-skip-whitespace stdin)) (c (car stdin)))
-;;     (cond ((= "(" c)
-;;             (read-list stdin atomenv))
-;;           (t
-;;             (read-atom stdin atomenv)))))
-
-;; (defrec-lazy read-list (curlist stdin atomenv)
-;;   (let ((stdin (read-skip-whitespace stdin)) (c (car stdin)))
-;;     (cond ((or (= ")" c) (= 256 c))
-;;             (cons (cons type-list curlist) (cons atomenv (cdr stdin))))
-;;           ((= "(" c)
-;;             (let ((readoutstate (read-list nil (cdr stdin) atomenv))
-;;                   (readoutlist (car readoutstate))
-;;                   (atomenv (car (cdr readoutstate)))
-;;                   (stdin (cdr (cdr readoutstate))))
-;;               (read-list (append-element curlist readoutlist) stdin atomenv)))
-;;           (t
-;;             (let ((readoutstate (read-atom nullstream stdin))
-;;                   (readoutstream (car readoutstate))
-;;                   (stdin (cdr readoutstate))
-;;                   (ret-atomlookup (get-atomindex-env atomenv (readoutstream nil)))
-;;                   (ret-atom (atom* (car ret-atomlookup)))
-;;                   (ret-atomenv (cdr ret-atomlookup)))
-;;               ;; (cons (atom* 1) nil)
-;;               (read-list (append-element curlist
-;;               ;; (atom* 0)
-;;               ret-atom
-;;               )
-;;               stdin
-;;               ret-atomenv)
-;;               )
-;;               )
-;;               ))
-;;     )
-
-;; (defrec-lazy parseexpr (self stream)
-;;   (let ((c (car stream)))
-;;     (cond
-;;       ((= c "(")
-;;         (cons type-list (self self )))
-;;       ((= c ")"))
-;;       ((= c " "))
-;;       ((= c "\n")))))
-
-(def-lazy test
-  (list type-atom))
-
-(defrec-lazy f (x)
-  (cons "A" (f nil))
-  ;; (lambda (x) (cons "A" (x nil)))
-  )
-
+                    )))))
 
 
 (def-lazy initial-atomenv
@@ -293,7 +234,7 @@
   (list (cons 9 (atom* 9)) (cons 0 (atom* 1))))
 
 (def-lazy t-data
-  (atom* (succ 8)))
+  (atom* 9))
 
 (defrec-lazy eval-cond (clauselist varenv atomenv stdin stdoutstream)
   (let ((carclause (-> clauselist car-data))
