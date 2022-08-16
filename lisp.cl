@@ -10,6 +10,7 @@
 (def-lazy 3 (succ 2))
 (def-lazy 5 (succ 4))
 (def-lazy 6 (+ 4 2))
+(def-lazy 9 (succ 8))
 
 (def-lazy "A" (succ 64))
 (defmacro def-alphabet-lazy ()
@@ -275,7 +276,7 @@
 
 
 
-(def-lazy initialenv
+(def-lazy initial-atomenv
   (list
     (list "q" "u" "o" "t" "e")
     (list "c" "a" "r")
@@ -287,6 +288,9 @@
     (list "p" "r" "i" "n" "t")
     (list "r" "e" "a" "d")
     (list "t")))
+
+(def-lazy initial-varenv
+  (list (list 9 (atom* 9)) (list 0 (atom* 1))))
 
 (def-lazy t-data
   (atom* (succ 8)))
@@ -300,10 +304,21 @@
       (eval-cond (cdr-data clauselist) varenv atomenv stdin stdoutstream)
       (eval carbody varenv atomenv stdin stdoutstream))))
 
+(defrec-lazy varenv-lookup (varenv varval)
+  (let ((pair (car varenv))
+        (evarval (car pair))
+        (ebody (car (cdr pair))))
+    (cond ((isnil varenv)
+            nil)
+          ((= varval evarval)
+            ebody)
+          (t
+            (varenv-lookup (cdr varenv) varval)))))
+
 (defrec-lazy eval (expr varenv atomenv stdin stdoutstream)
   (typematch expr
     ;; atom
-    nil
+    (varenv-lookup varenv (valueof expr))
     ;; list
     (let ((head (car-data expr))
           (tail (cdr-data expr))
@@ -337,9 +352,7 @@
                       (truth-data (= (valueof x) (valueof y)))))))
           ;; cond
           ((= head-index 6)
-            ;; (atom* 6)
-            (eval-cond tail varenv atomenv stdin stdoutstream)
-            )
+            (eval-cond tail varenv atomenv stdin stdoutstream))
           (t
             nil)
           )
@@ -352,17 +365,17 @@
     nil))
 
 (defun-lazy main (stdin)
-  (let ((env initialenv)
-        (ret-parse (read-expr stdin env))
+  (let ((atomenv initial-atomenv)
+        (ret-parse (read-expr stdin atomenv))
         (stdin (car (cdr ret-parse)))
-        (env (cdr (cdr ret-parse)))
+        (atomenv (cdr (cdr ret-parse)))
         (expr (car ret-parse))
         )
     ((printexpr
-        env
+        atomenv
         ;; (atom* 0)
         ;; expr
-        (eval expr nil env stdin nil)
+        (eval expr initial-varenv atomenv stdin nil)
         )
      (inflist 256))
     )
