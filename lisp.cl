@@ -339,7 +339,7 @@
       (typematch head
         ;; atom
         (cond
-          ((<= 8 head-index)
+          ((<= 9 head-index)
             (let-parse-evalret head lambdaexpr varenv atomenv stdin stdout
               (eval-lambda lambdaexpr tail varenv atomenv stdin stdout))
             ;; (let ((lambdaexpr (eval head varenv atomenv stdin stdout))
@@ -385,6 +385,13 @@
                   (new-evalret ret
                                varenv atomenv stdin
                                 (append-list stdout (printexpr atomenv ret (list "\\n")))))
+                ;; read
+                (let ((ret-parse (read-expr stdin atomenv))
+                      (expr (-> ret-parse car))
+                      (stdin (-> ret-parse cdr car))
+                      (atomenv (-> ret-parse cdr cdr)))
+                  (new-evalret expr
+                               varenv atomenv stdin stdout))
                 )
               (head-index cdr)
               car))
