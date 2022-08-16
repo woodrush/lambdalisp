@@ -10,6 +10,7 @@
 (def-lazy 3 (succ 2))
 (def-lazy 5 (succ 4))
 (def-lazy 6 (+ 4 2))
+(def-lazy 7 (succ 6))
 (def-lazy 9 (succ 8))
 
 (def-lazy "A" (succ 64))
@@ -66,18 +67,23 @@
 (def-lazy char2stream
   cons)
 
-(defun-lazy catstream (stream1 stream2)
-  (lambda (stream) (stream1 (stream2 stream))))
+; (defun-lazy catstream (stream1 stream2)
+;   (lambda (stream) (stream1 (stream2 stream))))
+
+(defmacro-lazy catstream (&rest args)
+  `(lambda (stream) (-> stream ,@(reverse args))))
 
 (def-lazy nullstream (lambda (x) x))
 
-(defrec-lazy catstreamlist (streamlist)
-  (if (isnil streamlist)
-    nullstream
-    (catstream (car streamlist) (catstreamlist (cdr streamlist)))))
+; (defrec-lazy catstreamlist (streamlist)
+;   (if (isnil streamlist)
+;     nullstream
+;     (catstream (car streamlist) (catstreamlist (cdr streamlist)))))
 
-(defrec-lazy str2stream (s)
-  (catstreamlist (map char2stream s)))
+(defun-lazy str2stream (s)
+  ; (catstreamlist (map char2stream s))
+  (append-list s)
+  )
 
 (def-lazy typeof car)
 (def-lazy valueof cdr)
@@ -107,35 +113,37 @@
         (t (cons (f (car-data data))
                  (map-data-as-baselist f (cdr-data data))))))
 
+(defun-lazy printatom (atomenv expr)
+  ; (str2stream (list "a" "t" "o" "m"))
+  (str2stream (car ((valueof expr) cdr atomenv)))
+  ; (char2stream (car (car ((valueof expr) cdr atomenv))))
+  )
+
 (defrec-lazy printexpr (atomenv expr)
   (typematch expr
     ;; atom
-    (str2stream (car ((valueof expr) cdr atomenv)))
+    (printatom atomenv expr)
     ;; list
-    (catstreamlist
-      (list (char2stream "(")
+    (catstream
+            (char2stream "(")
             ((letrec-lazy print-list (list)
-                (cond ((isnil (car-data list))
-                        nullstream)
-                      ((isnil (cdr-data list))
-                          (printexpr atomenv (car-data list)))
-                      (t
-                          (typematch (cdr-data list)
-                            ;; atom
-                            (catstreamlist
-                              (list
-                                (printexpr atomenv (car-data list))
-                                (char2stream " ") (char2stream ".") (char2stream " ")
-                                (printexpr atomenv (cdr-data list))))
-                            ;; list
-                            (catstream (printexpr atomenv (car-data list))
-                              (catstream (char2stream " ")
-                                (print-list (cdr-data list))))
-                            ;; nil
-                            nullstream
-                                ))))
+                (catstream
+                  (printexpr atomenv (car-data list))
+                  (typematch (cdr-data list)
+                    ;; atom
+                    (catstream
+
+                        (char2stream " ") (char2stream ".") (char2stream " ")
+                        ; (printexpr atomenv (cdr-data list))
+                        (printatom atomenv (cdr-data list)))
+                    ;; list
+                    (catstream (char2stream " ")
+                               (print-list (cdr-data list)))
+                    ;; nil
+                    nullstream
+                              )))
               expr)
-            (char2stream ")")))
+            (char2stream ")"))
     ;; nil
     (catstream (char2stream "(") (char2stream ")"))))
 
@@ -217,18 +225,31 @@
                     )))))
 
 
+; (def-lazy initial-atomenv
+;   (list
+;     (list "q" "u" "o" "t" "e")
+;     (list "c" "a" "r")
+;     (list "c" "d" "r")
+;     (list "c" "o" "n" "s")
+;     (list "a" "t" "o" "m")
+;     (list "e" "q")
+;     (list "c" "o" "n" "d")
+;     (list "p" "r" "i" "n" "t")
+;     (list "r" "e" "a" "d")
+;     (list "t")))
+
 (def-lazy initial-atomenv
   (list
-    (list "q" "u" "o" "t" "e")
-    (list "c" "a" "r")
-    (list "c" "d" "r")
-    (list "c" "o" "n" "s")
-    (list "a" "t" "o" "m")
-    (list "e" "q")
-    (list "c" "o" "n" "d")
-    (list "p" "r" "i" "n" "t")
-    (list "r" "e" "a" "d")
-    (list "t")))
+    (list "Q" "U" "O" "T" "E")
+    (list "C" "A" "R")
+    (list "C" "D" "R")
+    (list "C" "O" "N" "S")
+    (list "A" "T" "O" "M")
+    (list "E" "Q")
+    (list "C" "O" "N" "D")
+    (list "P" "R" "I" "N" "T")
+    (list "R" "E" "A" "D")
+    (list "T")))
 
 (def-lazy initial-varenv
   (list (cons 9 (atom* 9)) (cons 0 (atom* 1))))
@@ -288,38 +309,67 @@
       (typematch head
         ;; atom
         (cond
-          ;; quote
-          ((= head-index 0)
-            (car-data tail))
-          ;; car
-          ((= head-index 1)
-            (car-data (eval (car-data tail) varenv atomenv stdin stdoutstream)))
-          ;; cdr
-          ((= head-index 2)
-            (cdr-data (eval (car-data tail) varenv atomenv stdin stdoutstream)))
-          ;; cons
-          ((= head-index 3)
-            (cons-data (eval (car-data tail) varenv atomenv stdin stdoutstream)
-                       (eval (-> tail cdr-data car-data) varenv atomenv stdin stdoutstream)))
-          ;; atom
-          ((= head-index 4)
-            (truth-data (isatom (eval (car-data tail) varenv atomenv stdin stdoutstream))))
-          ;; eq
-          ((= head-index 5)
-            (let ((x (eval (car-data tail) varenv atomenv stdin stdoutstream))
-                  (y (eval (-> tail cdr-data car-data) varenv atomenv stdin stdoutstream)))
-              (cond ((or (not (isatom x)) (not (isatom y)))
-                      nil)
-                    (t
-                      (truth-data (= (valueof x) (valueof y)))))))
-          ;; cond
-          ((= head-index 6)
-            (eval-cond tail varenv atomenv stdin stdoutstream))
-          ;; else: parse as lambda
-          (t
+          ((<= 7 head-index)
             (let ((lambdaexpr (eval head varenv atomenv stdin stdoutstream))
                   (callargs tail))
               (eval-lambda lambdaexpr callargs varenv atomenv stdin stdoutstream)))
+          (t
+            (->
+              (list
+                (car-data tail)
+                ;; car
+                (car-data (eval (car-data tail) varenv atomenv stdin stdoutstream))
+                ;; cdr
+                (cdr-data (eval (car-data tail) varenv atomenv stdin stdoutstream))
+                ;; cons
+                (cons-data (eval (car-data tail) varenv atomenv stdin stdoutstream)
+                           (eval (-> tail cdr-data car-data) varenv atomenv stdin stdoutstream))
+                ;; atom
+                (truth-data (isatom (eval (car-data tail) varenv atomenv stdin stdoutstream)))
+                ;; eq
+                (let ((x (eval (car-data tail) varenv atomenv stdin stdoutstream))
+                      (y (eval (-> tail cdr-data car-data) varenv atomenv stdin stdoutstream)))
+                  (cond ((or (not (isatom x)) (not (isatom y)))
+                          nil)
+                        (t
+                          (truth-data (= (valueof x) (valueof y))))))
+                ;; cond
+                (eval-cond tail varenv atomenv stdin stdoutstream)
+                )
+              (head-index cdr)
+              car))
+          ; ;; quote
+          ; ((= head-index 0)
+          ;   (car-data tail))
+          ; ;; car(car-data (eval (car-data tail) varenv atomenv stdin stdoutstream))
+          ; ((= head-index 1)
+          ;   (car-data (eval (car-data tail) varenv atomenv stdin stdoutstream)))
+          ; ;; cdr
+          ; ((= head-index 2)
+          ;   (cdr-data (eval (car-data tail) varenv atomenv stdin stdoutstream)))
+          ; ;; cons
+          ; ((= head-index 3)
+          ;   (cons-data (eval (car-data tail) varenv atomenv stdin stdoutstream)
+          ;              (eval (-> tail cdr-data car-data) varenv atomenv stdin stdoutstream)))
+          ; ;; atom
+          ; ((= head-index 4)
+          ;   (truth-data (isatom (eval (car-data tail) varenv atomenv stdin stdoutstream))))
+          ; ;; eq
+          ; ((= head-index 5)
+          ;   (let ((x (eval (car-data tail) varenv atomenv stdin stdoutstream))
+          ;         (y (eval (-> tail cdr-data car-data) varenv atomenv stdin stdoutstream)))
+          ;     (cond ((or (not (isatom x)) (not (isatom y)))
+          ;             nil)
+          ;           (t
+          ;             (truth-data (= (valueof x) (valueof y)))))))
+          ; ;; cond
+          ; ((= head-index 6)
+          ;   (eval-cond tail varenv atomenv stdin stdoutstream))
+          ; ;; else: parse as lambda
+          ; (t
+          ;   (let ((lambdaexpr (eval head varenv atomenv stdin stdoutstream))
+          ;         (callargs tail))
+          ;     (eval-lambda lambdaexpr callargs varenv atomenv stdin stdoutstream)))
           )
         ;; list: parse as lambda
         (let ((lambdaexpr head)

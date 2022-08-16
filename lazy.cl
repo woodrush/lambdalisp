@@ -56,6 +56,25 @@
 
 
 
+(defun count-occurrences-in (expr var)
+  (cond ((atom expr) (if (eq var expr) 1 0))
+        ((islambda expr)
+         (if (eq (lambdaarg-top expr) var)
+             0
+             (count-occurrences-in (cdr (cdr expr)) var)))
+        (t (reduce '+ (map 'list #'(lambda (x) (count-occurrences-in x var)) expr))
+        )))
+; (print (count-occurrences-in `(lambda (x) (y y y (lambda (y) y) x)) `y))
+
+(defun count-occurrences-in (expr var)
+  (cond ((atom expr) (if (eq var expr) 1 0))
+        ((islambda expr)
+         (if (eq (lambdaarg-top expr) var)
+             0
+             (count-occurrences-in (cdr (cdr expr)) var)))
+        (t (reduce '+ (map 'list #'(lambda (x) (count-occurrences-in x var)) expr))
+        )))
+
 (defun occurs-freely-in (expr var)
   (cond ((atom expr) (eq var expr))
         ((islambda expr)
