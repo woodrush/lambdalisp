@@ -371,15 +371,10 @@
                     (eval (-> tail cdr-data car-data) evalret
                       (lambda (cons-y evalret)
                         (cont (cons-data cons-x cons-y) evalret)))))
-
-                ;; (let-parse-evalret (car-data tail) c1 varenv atomenv stdin stdout
-                ;;   (let-parse-evalret (-> tail cdr-data car-data) c2 varenv atomenv stdin stdout
-                ;;     (new-evalret (cons-data c1 c2)
-                ;;                 varenv atomenv stdin stdout)))
                 ;; atom
-                (let-parse-evalret (car-data tail) ret varenv atomenv stdin stdout
-                  (new-evalret (truth-data (isatom ret))
-                              varenv atomenv stdin stdout))
+                (eval (car-data tail) evalret
+                  (lambda (expr evalret)
+                    (cont (truth-data (isatom expr)) evalret)))
                 ;; eq
                 (let-parse-evalret (car-data tail) x varenv atomenv stdin stdout
                   (let-parse-evalret (-> tail cdr-data car-data) y varenv atomenv stdin stdout
