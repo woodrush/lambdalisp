@@ -321,9 +321,7 @@
             ;; (list* (atom* 7) (list* (atom* 0)  argnames))
             ;; (list* (atom* 7) (list* (atom* 0) lambdabody))
             (evalret* (prepend-envzip argnames argvalues varenv) atomenv stdin)
-            cont
-              ))))
-            ))
+            cont))))))
 
 (defmacro-lazy evalret* (varenv atomenv stdin)
   `(list ,varenv ,atomenv ,stdin))
@@ -347,12 +345,9 @@
         ;; atom
         (cond
           ((<= 9 head-index)
-            (let-parse-evalret head lambdaexpr varenv atomenv stdin stdout
-              (eval-lambda lambdaexpr tail varenv atomenv stdin stdout))
-            ;; (let ((lambdaexpr (eval head varenv atomenv stdin stdout))
-            ;;       (callargs tail))
-            ;;   (eval-lambda lambdaexpr callargs varenv atomenv stdin stdout))
-              )
+            (eval head evalret
+              (lambda (expr evalret)
+                (eval-lambda expr tail evalret cont))))
           (t
             (->
               (list
@@ -400,9 +395,9 @@
                 (let ((ret-parse (read-expr stdin atomenv))
                       (expr (-> ret-parse car))
                       (stdin (-> ret-parse cdr car))
-                      (atomenv (-> ret-parse cdr cdr))
-                      (varenv (-> evalret car)))
-                  (cont expr (evalret* varenv atomenv stdin)))
+                      (atomenv (-> ret-parse cdr cdr)))
+                  (let-parse-evalret* evalret varenv atomenv stdin
+                    (cont expr (evalret* varenv atomenv stdin))))
                 )
               (head-index cdr)
               car))
@@ -410,9 +405,7 @@
         ;; list: parse as lambda
         (let ((lambdaexpr head)
               (callargs tail))
-          (eval-lambda lambdaexpr callargs evalret cont)
-          ;; (new-evalret (atom* 1) varenv atomenv stdin stdout)
-          )
+          (eval-lambda lambdaexpr callargs evalret cont))
         ;; nil
         (cont nil evalret)
         ))
