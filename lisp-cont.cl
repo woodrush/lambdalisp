@@ -334,90 +334,95 @@
       ,body))
 
 (defrec-lazy eval (expr evalret cont)
-  (let-parse-evalret* evalret varenv atomenv stdin
-    (typematch expr
-      ;; atom
-      (new-evalret (varenv-lookup varenv (valueof expr))
-                  varenv atomenv stdin stdout)
-      ;; list
-      (let ((head (car-data expr))
-            (tail (cdr-data expr))
-            (head-index (valueof head)))
-        (typematch head
-          ;; atom
-          (cond
-            ((<= 9 head-index)
-              (let-parse-evalret head lambdaexpr varenv atomenv stdin stdout
-                (eval-lambda lambdaexpr tail varenv atomenv stdin stdout))
-              ;; (let ((lambdaexpr (eval head varenv atomenv stdin stdout))
-              ;;       (callargs tail))
-              ;;   (eval-lambda lambdaexpr callargs varenv atomenv stdin stdout))
-                )
-            (t
-              (->
-                (list
-                  ;; quote
-                  (cont (car-data tail) (evalret* varenv atomenv stdin))
-                  ;; car
-                  (eval (car-data tail) (evalret* varenv atomenv stdin)
-                    (lambda (expr evalret)
-                      (cont (car-data expr) evalret)))
-                  ;; cdr
-                  (eval (car-data tail) (evalret* varenv atomenv stdin)
-                    (lambda (expr evalret)
-                      (cont (cdr-data expr) evalret)))
-                  ;; cons
-                  (let-parse-evalret (car-data tail) c1 varenv atomenv stdin stdout
-                    (let-parse-evalret (-> tail cdr-data car-data) c2 varenv atomenv stdin stdout
-                      (new-evalret (cons-data c1 c2)
-                                  varenv atomenv stdin stdout)))
-                  ;; atom
-                  (let-parse-evalret (car-data tail) ret varenv atomenv stdin stdout
-                    (new-evalret (truth-data (isatom ret))
-                                varenv atomenv stdin stdout))
-                  ;; eq
-                  (let-parse-evalret (car-data tail) x varenv atomenv stdin stdout
-                    (let-parse-evalret (-> tail cdr-data car-data) y varenv atomenv stdin stdout
-                      (new-evalret
-                        (cond ((or (not (isatom x)) (not (isatom y)))
-                                nil)
-                              (t
-                                (truth-data (= (valueof x) (valueof y)))))
-                        varenv atomenv stdin stdout)))
-                  ;; cond
-                  (eval-cond tail varenv atomenv stdin stdout)
-                  ;; print
-                  (if (isnil tail)
-                    (new-evalret nil
-                                varenv atomenv stdin
-                                (append-list stdout (list "\\n")))
-                    (let-parse-evalret (car-data tail) ret varenv atomenv stdin stdout
-                      (new-evalret ret
-                                  varenv atomenv stdin
-                                  (append-list stdout (printexpr atomenv ret nil)))))
+  (typematch expr
+    ;; atom
+    (new-evalret (varenv-lookup varenv (valueof expr))
+                varenv atomenv stdin stdout)
+    ;; list
+    (let ((head (car-data expr))
+          (tail (cdr-data expr))
+          (head-index (valueof head)))
+      (typematch head
+        ;; atom
+        (cond
+          ((<= 9 head-index)
+            (let-parse-evalret head lambdaexpr varenv atomenv stdin stdout
+              (eval-lambda lambdaexpr tail varenv atomenv stdin stdout))
+            ;; (let ((lambdaexpr (eval head varenv atomenv stdin stdout))
+            ;;       (callargs tail))
+            ;;   (eval-lambda lambdaexpr callargs varenv atomenv stdin stdout))
+              )
+          (t
+            (->
+              (list
+                ;; quote
+                (cont (car-data tail) evalret)
+                ;; car
+                (eval (car-data tail) evalret
+                  (lambda (expr evalret)
+                    (cont (car-data expr) evalret)))
+                ;; cdr
+                (eval (car-data tail) evalret
+                  (lambda (expr evalret)
+                    (cont (cdr-data expr) evalret)))
+                ;; cons
+                (eval (car-data tail) evalret
+                  (lambda (cons-x evalret)
+                    (eval (-> tail cdr-data car-data) evalret
+                      (lambda (cons-y evalret)
+                        (cont (cons-data cons-x cons-y) evalret)))))
 
-                  ;; read
-                  (let ((ret-parse (read-expr stdin atomenv))
-                        (expr (-> ret-parse car))
-                        (stdin (-> ret-parse cdr car))
-                        (atomenv (-> ret-parse cdr cdr)))
-                    (new-evalret expr
-                                varenv atomenv stdin stdout))
-                  )
-                (head-index cdr)
-                car))
-            )
-          ;; list: parse as lambda
-          (let ((lambdaexpr head)
-                (callargs tail))
-            (eval-lambda lambdaexpr callargs varenv atomenv stdin stdout)
-            ;; (new-evalret (atom* 1) varenv atomenv stdin stdout)
-            )
-          ;; nil
-          (new-evalret nil varenv atomenv stdin stdout)
-          ))
-      ;; nil
-      (new-evalret nil varenv atomenv stdin stdout))))
+                ;; (let-parse-evalret (car-data tail) c1 varenv atomenv stdin stdout
+                ;;   (let-parse-evalret (-> tail cdr-data car-data) c2 varenv atomenv stdin stdout
+                ;;     (new-evalret (cons-data c1 c2)
+                ;;                 varenv atomenv stdin stdout)))
+                ;; atom
+                (let-parse-evalret (car-data tail) ret varenv atomenv stdin stdout
+                  (new-evalret (truth-data (isatom ret))
+                              varenv atomenv stdin stdout))
+                ;; eq
+                (let-parse-evalret (car-data tail) x varenv atomenv stdin stdout
+                  (let-parse-evalret (-> tail cdr-data car-data) y varenv atomenv stdin stdout
+                    (new-evalret
+                      (cond ((or (not (isatom x)) (not (isatom y)))
+                              nil)
+                            (t
+                              (truth-data (= (valueof x) (valueof y)))))
+                      varenv atomenv stdin stdout)))
+                ;; cond
+                (eval-cond tail varenv atomenv stdin stdout)
+                ;; print
+                (if (isnil tail)
+                  (new-evalret nil
+                              varenv atomenv stdin
+                              (append-list stdout (list "\\n")))
+                  (let-parse-evalret (car-data tail) ret varenv atomenv stdin stdout
+                    (new-evalret ret
+                                varenv atomenv stdin
+                                (append-list stdout (printexpr atomenv ret nil)))))
+
+                ;; read
+                (let ((ret-parse (read-expr stdin atomenv))
+                      (expr (-> ret-parse car))
+                      (stdin (-> ret-parse cdr car))
+                      (atomenv (-> ret-parse cdr cdr)))
+                  (new-evalret expr
+                              varenv atomenv stdin stdout))
+                )
+              (head-index cdr)
+              car))
+          )
+        ;; list: parse as lambda
+        (let ((lambdaexpr head)
+              (callargs tail))
+          (eval-lambda lambdaexpr callargs varenv atomenv stdin stdout)
+          ;; (new-evalret (atom* 1) varenv atomenv stdin stdout)
+          )
+        ;; nil
+        (new-evalret nil varenv atomenv stdin stdout)
+        ))
+    ;; nil
+    (new-evalret nil varenv atomenv stdin stdout)))
 
 (defrec-lazy repl (varenv atomenv stdin stdout)
   (cons ">" (cons " " (if (= 256 (car stdin))
