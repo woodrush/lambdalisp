@@ -252,12 +252,12 @@
             (varenv-lookup (cdr varenv) varval)))))
 
 (defrec-lazy eval-map-base (lexpr curexpr evalret cont)
-    (cond ((isnil lexpr)
-            (cont curexpr evalret))
-          (t
-            (eval (car-data lexpr) evalret
-              (lambda (expr evalret)
-                (eval-map-base (cdr-data lexpr) (append-element curexpr expr) evalret cont))))))
+  (cond ((isnil lexpr)
+          (cont curexpr evalret))
+        (t
+          (eval (car-data lexpr) evalret
+            (lambda (expr evalret)
+              (eval-map-base (cdr-data lexpr) (append-element curexpr expr) evalret cont))))))
 
 (defrec-lazy prepend-envzip (argnames evargs env)
   (cond ((isnil argnames)
@@ -272,7 +272,7 @@
         (varenv-orig (car evalret)))
     (eval-map-base callargs nil evalret
       (lambda (argvalues evalret)
-        (let-parse-evalret* evalret varenv atomenv stdin gloalenv
+        (let-parse-evalret* evalret varenv atomenv stdin globalenv
           (eval
             lambdabody
             ;; (list* (atom* 7) (list* (atom* 0)  argnames))
