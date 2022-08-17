@@ -392,12 +392,16 @@
                       (let ((atomenv (-> evalret cdr car)))
                         (printexpr atomenv expr (cont expr evalret))))))
                 ;; read
-                (let ((ret-parse (read-expr stdin atomenv))
-                      (expr (-> ret-parse car))
-                      (stdin (-> ret-parse cdr car))
-                      (atomenv (-> ret-parse cdr cdr)))
-                  (let-parse-evalret* evalret varenv atomenv stdin
-                    (cont expr (evalret* varenv atomenv stdin))))
+                (let-parse-evalret* evalret varenv-old atomenv stdin
+                  (let ((ret-parse (read-expr stdin atomenv))
+                        (expr (-> ret-parse car))
+                        (stdin (-> ret-parse cdr car))
+                        (atomenv (-> ret-parse cdr cdr))
+                        (varenv (car evalret)))
+                      (cont expr (evalret* varenv atomenv stdin))
+                    ;; (let-parse-evalret* evalret varenv atomenv-old stdin-old
+                    ;;   (cont expr (evalret* varenv atomenv stdin)))
+                      ))
                 )
               (head-index cdr)
               car))
