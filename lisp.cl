@@ -1,11 +1,14 @@
 (load "./lazy.cl")
 
+(def-lazy stringtermchar 256)
+(def-lazy stringterm (inflist 256))
 
 (def-lazy "(" (+ 32 8))
 (def-lazy ")" (succ "("))
 (def-lazy " " 32)
 (def-lazy "." (+ (+ (+ 32 8) 4) 2))
 (def-lazy ">" (+ (+ (+ (+ 32 16) 8) 4) 2))
+(def-lazy "*" (+ (+ 32 8) 2))
 (def-lazy "\\n" (+ 8 2))
 
 (def-lazy 3 (succ 2))
@@ -14,6 +17,7 @@
 (def-lazy 7 (succ 6))
 (def-lazy 9 (succ 8))
 (def-lazy 10 (succ 9))
+(def-lazy 11 (succ 10))
 
 (def-lazy "A" (succ 64))
 (defmacro def-alphabet-lazy ()
@@ -129,7 +133,7 @@
 (defrec-lazy read-string (curstr stdin)
   (let ((c (car stdin)))
     (cond
-          ((or (= "(" c) (= ")" c) (= " " c) (= "\\n" c) (= 256 c))
+          ((or (= "(" c) (= ")" c) (= " " c) (= "\\n" c) (= stringtermchar c))
             (cons (reverse curstr nil) stdin))
           (t
             (read-string (cons (car stdin) curstr) (cdr stdin))))))
@@ -197,18 +201,19 @@
                     )))))
 
 
-; (def-lazy initial-atomenv
-;   (list
-;     (list "q" "u" "o" "t" "e")
-;     (list "c" "a" "r")
-;     (list "c" "d" "r")
-;     (list "c" "o" "n" "s")
-;     (list "a" "t" "o" "m")
-;     (list "e" "q")
-;     (list "c" "o" "n" "d")
-;     (list "p" "r" "i" "n" "t")
-;     (list "r" "e" "a" "d")
-;     (list "t")))
+;; (def-lazy initial-atomenv
+;;   (list
+;;     (list "q" "u" "o" "t" "e")
+;;     (list "c" "a" "r")
+;;     (list "c" "d" "r")
+;;     (list "c" "o" "n" "s")
+;;     (list "a" "t" "o" "m")
+;;     (list "e" "q")
+;;     (list "c" "o" "n" "d")
+;;     (list "p" "r" "i" "n" "t")
+;;     (list "r" "e" "a" "d")
+;;     (list "d" "e" "f")
+;;     (list "t")))
 
 (def-lazy initial-atomenv
   (list
@@ -224,11 +229,13 @@
     (list "D" "E" "F")
     (list "T")))
 
+(def-lazy maxforms 9)
+
 (def-lazy initial-varenv
-  (list (cons 10 (atom* 10))))
+  (list (cons maxforms (atom* maxforms))))
 
 (def-lazy t-data
-  (atom* 10))
+  (atom* maxforms))
 
 (defrec-lazy eval-cond (clauselist evalret cont)
   (let ((carclause (-> clauselist car-data))
@@ -287,10 +294,10 @@
   `(list ,varenv ,atomenv ,stdin ,globalenv))
 
 (defmacro-lazy let-parse-evalret* (evalret varenv atomenv stdin globalenv body)
-  `(let ((,varenv    (-> ,evalret car))
-         (,atomenv   (-> ,evalret cdr car))
-         (,stdin     (-> ,evalret cdr cdr car))
-         (,globalenv (-> ,evalret cdr cdr cdr car)))
+  `(let ((,varenv      (-> ,evalret car))
+         (,atomenv     (-> ,evalret cdr car))
+         (,stdin       (-> ,evalret cdr cdr car))
+         (,globalenv   (-> ,evalret cdr cdr cdr car)))
       ,body))
 
 (defrec-lazy length (l n)
@@ -302,7 +309,12 @@
   (typematch expr
     ;; atom
     (let-parse-evalret* evalret varenv atomenv stdin globalenv
-      (cont (varenv-lookup (append-list varenv globalenv) (valueof expr)) evalret))
+      (cont (varenv-lookup
+              (if (isnil globalenv)
+                varenv
+                (append-list varenv globalenv))
+              (valueof expr))
+            evalret))
     ;; list
     (let ((head (car-data expr))
           (tail (cdr-data expr))
@@ -310,7 +322,7 @@
       (typematch head
         ;; atom
         (cond
-          ((<= 10 head-index)
+          ((<= maxforms head-index)
             (eval head evalret
               (lambda (expr evalret)
                 (eval-lambda expr tail evalret cont))))
@@ -398,8 +410,8 @@
     ))
 
 (defrec-lazy repl (varenv atomenv stdin globalenv)
-  (cons ">" (cons " " (if (= 256 (car stdin))
-    (inflist 256)
+  (cons "*" (cons " " (if (= stringtermchar (car stdin))
+    stringterm
     (let (
         (ret-parse (read-expr stdin atomenv))
         (stdin (car (cdr ret-parse)))
@@ -411,10 +423,20 @@
         (lambda (expr evalret)
           (let-parse-evalret* evalret varenv atomenv stdin globalenv
             (printexpr atomenv expr (cons "\\n" (repl varenv atomenv stdin globalenv))))))
-    )))))
+    )
+    ))))
+
+(defrec-lazy list2inflist (l)
+  (if (isnil l)
+    (inflist 256)
+    (cons (car l) (list2inflist (cdr l)))))
 
 (defun-lazy main (stdin)
-  (repl initial-varenv initial-atomenv stdin nil))
+  ;; (cons ">" (cons (car stdin) nil))
+  (repl initial-varenv initial-atomenv (list2inflist stdin) nil)
+  )
 
 (format t (compile-to-ski-lazy main))
 ;; (format t (compile-to-blc-lazy main))
+;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
+;; (format t (write-to-string (curry (macroexpand-lazy main))))
