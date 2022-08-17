@@ -229,7 +229,7 @@
     (list "D" "E" "F")
     (list "T")))
 
-(def-lazy maxforms 9)
+(def-lazy maxforms 10)
 
 (def-lazy initial-varenv
   (list (cons maxforms (atom* maxforms))))
@@ -376,7 +376,8 @@
                         ;; Control flow
                         (if (<= 0 (length outstr 0))
                           (append-list outstr (cont expr evalret))
-                          (append-list outstr (cont expr evalret)))))))
+                          (append-list outstr (cont expr evalret)))
+                          ))))
                 ;; read
                 (let-parse-evalret* evalret varenv-old atomenv stdin globalenv
                   (let ((ret-parse (read-expr stdin atomenv))
@@ -433,7 +434,7 @@
 
 (defun-lazy main (stdin)
   ;; (cons ">" (cons (car stdin) nil))
-  (repl initial-varenv initial-atomenv (list2inflist stdin) nil)
+  (repl initial-varenv initial-atomenv stdin nil)
   )
 
 (format t (compile-to-ski-lazy main))

@@ -231,6 +231,28 @@
     `(cons ,item (list ,@items))
     `(cons ,item nil)))
 
+(defun-lazy nth (n list)
+  (-> list (n cdr) car))
+
+(defmacro-lazy nth (n list)
+  `(-> ,list (,n cdr) car))
+
+(def-lazy "A" (succ 64))
+(defmacro def-alphabet-lazy ()
+  (let* ((alphabet (coerce "ABCDEFGHIJKLMNOPQRSTUVWXYZ" `list))
+        (alphazip (mapcar #'list (cdr alphabet) alphabet))
+        (expr (map 'list #'(lambda (z) `(def-lazy ,(string (car z)) (succ ,(string (car (cdr z)))))) alphazip)))
+    `(progn ,@expr)))
+(def-alphabet-lazy)
+;; (def-lazy "B" (succ "A"))
+
+(def-lazy "a" (succ (+ 64 32)))
+(defmacro def-alphabet-lazy ()
+  (let* ((alphabet (coerce "abcdefghijklmnopqrstuvwxyz" `list))
+        (alphazip (mapcar #'list (cdr alphabet) alphabet))
+        (expr (map 'list #'(lambda (z) `(def-lazy ,(string (car z)) (succ ,(string (car (cdr z)))))) alphazip)))
+    `(progn ,@expr)))
+(def-alphabet-lazy)
 
 (def-lazy Y
   (lambda (f)
@@ -247,6 +269,7 @@
   (if (not args)
     target
     `(-> (,(car args) ,target) ,@(cdr args))))
+
 
 (defun compile-to-blc (expr)
   (to-blc-string (to-de-bruijn (curry expr))))
