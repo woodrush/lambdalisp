@@ -359,9 +359,12 @@
                   ;; quote
                   (cont (car-data tail) (evalret* varenv atomenv stdin))
                   ;; car
-                  (let-parse-evalret (car-data tail) ret varenv atomenv stdin stdout
-                    (new-evalret (car-data ret)
-                                varenv atomenv stdin stdout))
+                  (eval (car-data tail) (evalret* varenv atomenv stdin)
+                    (lambda (expr evalret)
+                      (cont (car-data expr) evalret)))
+                  ;; (let-parse-evalret (car-data tail) ret varenv atomenv stdin stdout
+                  ;;   (new-evalret (car-data ret)
+                  ;;               varenv atomenv stdin stdout))
                   ;; cdr
                   (let-parse-evalret (car-data tail) ret varenv atomenv stdin stdout
                     (new-evalret (cdr-data ret)
