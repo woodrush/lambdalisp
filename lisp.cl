@@ -295,48 +295,50 @@
           (t
             (varenv-lookup (cdr varenv) varval)))))
 
-(defrec-lazy eval-map-base (lexpr curexpr varenv atomenv stdin stdout)
-  (cond ((isnil lexpr)
-          (new-evalret curexpr varenv atomenv stdin stdout))
-        (t
-          (let-parse-evalret (car-data lexpr) ret varenv atomenv stdin stdout
-            (eval-map-base (cdr-data lexpr) (cons ret curexpr)
-                           varenv atomenv stdin stdout))
-          ;; (cons (eval (car-data lexpr) varenv atomenv stdin stdout)
-          ;;       (eval-map-base (cdr-data lexpr) varenv atomenv stdin stdout))
-                )))
+(defrec-lazy eval-map-base (lexpr curexpr evalret cont)
+    (cond ((isnil lexpr)
+            (cont curexpr evalret))
+          (t
+            (eval (car-data lexpr) evalret
+              (lambda (expr evalret)
+                (eval-map-base (cdr-data lexpr) (append-element curexpr expr) evalret cont))))))
 
 (defrec-lazy prepend-envzip (argnames evargs env)
-  (cond ((or (isnil argnames) (isnil evargs))
+  (cond ((isnil argnames)
           env)
         (t
-          (cons (cons (valueof (car-data argnames)) (car evargs))
-                (prepend-envzip (cdr-data argnames) (cdr evargs) env)))))
+          (cons (cons (valueof (car-data argnames)) (if (isnil evargs) nil (car evargs)))
+                (prepend-envzip (cdr-data argnames) (if (isnil evargs) nil (cdr evargs)) env)))))
 
-(defun-lazy eval-lambda (lambdaexpr callargs varenv atomenv stdin stdout)
+(defun-lazy eval-lambda (lambdaexpr callargs evalret cont)
   (let ((argnames (-> lambdaexpr cdr-data car-data))
         (lambdabody (-> lambdaexpr cdr-data cdr-data car-data)))
-        ;; (new-evalret (atom* 2) varenv atomenv stdin stdout)
-    (let-parse-evalret-raw (eval-map-base callargs nil varenv atomenv stdin stdout)
-      evargs varenv atomenv stdin stdout
-      ;; (new-evalret (atom* 2) varenv atomenv stdin stdout)
-      (eval lambdabody (prepend-envzip argnames evargs varenv) atomenv stdin stdout)
-      )
-      ))
+    (eval-map-base callargs nil evalret
+      (lambda (argvalues evalret)
+        (let-parse-evalret* evalret varenv atomenv stdin
+          (eval
+            lambdabody
+            ;; (list* (atom* 7) (list* (atom* 0)  argnames))
+            ;; (list* (atom* 7) (list* (atom* 0) lambdabody))
+            (evalret* (prepend-envzip argnames argvalues varenv) atomenv stdin)
+            cont
+              ))))
+            ))
 
 (defmacro-lazy evalret* (varenv atomenv stdin)
   `(list ,varenv ,atomenv ,stdin))
 
 (defmacro-lazy let-parse-evalret* (evalret varenv atomenv stdin body)
-  `(let ((varenv  (-> ,evalret car))
-         (atomenv (-> ,evalret cdr car))
-         (stdin   (-> ,evalret cdr cdr car)))
+  `(let ((,varenv  (-> ,evalret car))
+         (,atomenv (-> ,evalret cdr car))
+         (,stdin   (-> ,evalret cdr cdr car)))
       ,body))
 
 (defrec-lazy eval (expr evalret cont)
   (typematch expr
     ;; atom
-    (cont (varenv-lookup varenv (valueof expr)) evalret)
+    (let-parse-evalret* evalret varenv atomenv stdin
+      (cont (varenv-lookup varenv (valueof expr)) evalret))
     ;; list
     (let ((head (car-data expr))
           (tail (cdr-data expr))
@@ -400,10 +402,7 @@
                       (stdin (-> ret-parse cdr car))
                       (atomenv (-> ret-parse cdr cdr))
                       (varenv (-> evalret car)))
-                  (cont expr (evalret* varenv atomenv stdin))
-                  ;; (new-evalret expr
-                  ;;             varenv atomenv stdin stdout)
-                              )
+                  (cont expr (evalret* varenv atomenv stdin)))
                 )
               (head-index cdr)
               car))
@@ -411,14 +410,15 @@
         ;; list: parse as lambda
         (let ((lambdaexpr head)
               (callargs tail))
-          (eval-lambda lambdaexpr callargs varenv atomenv stdin stdout)
+          (eval-lambda lambdaexpr callargs evalret cont)
           ;; (new-evalret (atom* 1) varenv atomenv stdin stdout)
           )
         ;; nil
-        (new-evalret nil varenv atomenv stdin stdout)
+        (cont nil evalret)
         ))
     ;; nil
-    (new-evalret nil varenv atomenv stdin stdout)))
+    (cont nil evalret)
+    ))
 
 (defrec-lazy repl (varenv atomenv stdin stdout)
   (cons ">" (cons " " (if (= 256 (car stdin))
