@@ -275,14 +275,15 @@
       ,ret ,varenv ,atomenv ,stdin ,stdout ,body))
 
 
-(defrec-lazy eval-cond (clauselist varenv atomenv stdin stdout)
+(defrec-lazy eval-cond (clauselist evalret cont)
   (let ((carclause (-> clauselist car-data))
         (carcond (-> carclause car-data))
         (carbody (-> carclause cdr-data car-data)))
-    (let-parse-evalret carcond carcond-eval varenv atomenv stdin stdout
-      (if (isnil carcond-eval)
-          (eval-cond (cdr-data clauselist) varenv atomenv stdin stdout)
-          (eval carbody varenv atomenv stdin stdout)))))
+    (eval carcond evalret
+      (lambda (expr evalret)
+        (if (isnil expr)
+          (eval-cond (cdr-data clauselist) evalret cont)
+          (eval carbody evalret cont))))))
 
 (defrec-lazy varenv-lookup (varenv varval)
   (let ((pair (car varenv))
@@ -331,6 +332,11 @@
          (,atomenv (-> ,evalret cdr car))
          (,stdin   (-> ,evalret cdr cdr car)))
       ,body))
+
+(defrec-lazy length (l n)
+  (if (isnil l)
+    n
+    (length (cdr l) (succ n))))
 
 (defrec-lazy eval (expr evalret cont)
   (typematch expr
@@ -383,14 +389,19 @@
                                   (truth-data (= (valueof eq-x) (valueof eq-y)))))
                           evalret)))))
                 ;; cond
-                (eval-cond tail varenv atomenv stdin stdout)
+                (eval-cond tail evalret cont)
                 ;; print
                 (if (isnil tail)
                   (cons "\\n" (cont nil evalret))
                   (eval (car-data tail) evalret
                     (lambda (expr evalret)
-                      (let ((atomenv (-> evalret cdr car)))
-                        (printexpr atomenv expr (cont expr evalret))))))
+                      (let ((atomenv (-> evalret cdr car))
+                            (outstr (printexpr atomenv expr nil)))
+                        ;; Control flow
+                        (if (<= 0 (length outstr 0))
+                          (append-list outstr (cont expr evalret))
+                          (append-list outstr (cont expr evalret)))
+                        ))))
                 ;; read
                 (let-parse-evalret* evalret varenv-old atomenv stdin
                   (let ((ret-parse (read-expr stdin atomenv))
