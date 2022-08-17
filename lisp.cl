@@ -264,10 +264,11 @@
           (cons (cons (valueof (car-data argnames)) (if (isnil evargs) nil (car evargs)))
                 (prepend-envzip (cdr-data argnames) (if (isnil evargs) nil (cdr evargs)) env)))))
 
-(defun-lazy eval-lambda (lambdaexpr callargs evalret-orig cont)
+(defun-lazy eval-lambda (lambdaexpr callargs evalret cont)
   (let ((argnames (-> lambdaexpr cdr-data car-data))
-        (lambdabody (-> lambdaexpr cdr-data cdr-data car-data)))
-    (eval-map-base callargs nil evalret-orig
+        (lambdabody (-> lambdaexpr cdr-data cdr-data car-data))
+        (varenv-orig (car evalret)))
+    (eval-map-base callargs nil evalret
       (lambda (argvalues evalret)
         (let-parse-evalret* evalret varenv atomenv stdin
           (eval
@@ -277,7 +278,8 @@
             (evalret* (prepend-envzip argnames argvalues varenv) atomenv stdin)
             ;; Evaluate the rest of the argument in the original environment
             (lambda (expr evalret)
-              (cont expr evalret-orig))))))))
+              (let-parse-evalret* evalret varenv atomenv stdin
+                (cont expr (evalret* varenv-orig atomenv stdin))))))))))
 
 (defmacro-lazy evalret* (varenv atomenv stdin)
   `(list ,varenv ,atomenv ,stdin))
