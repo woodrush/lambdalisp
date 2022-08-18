@@ -11,6 +11,7 @@
 (def-lazy ">" (+ (+ (+ (+ 32 16) 8) 4) 2))
 (def-lazy "*" (+ (+ 32 8) 2))
 (def-lazy "'" (+ 32 (+ 4 (+ 2 1))))
+(def-lazy "\"" (+ 32 2))
 (def-lazy "\\n" (+ 8 2))
 
 (def-lazy 3 (succ 2))
@@ -51,8 +52,8 @@
 (defun-lazy truth-data (expr)
   (if expr t-data nil))
 
-(defun-lazy type-atom (t0 t1) t0)
-(defun-lazy type-list (t0 t1) t1)
+(defun-lazy type-atom   (t0 t1) t0)
+(defun-lazy type-list   (t0 t1) t1)
 
 (def-lazy typeof car)
 (def-lazy valueof cdr)
@@ -210,12 +211,15 @@
     (list "m" "a" "c" "r" "o")
     (list "w" "h" "e" "n")
     (list "l" "i" "s" "t")
-    (list "t")))
+    (list "t")
+    (list "e" "l" "s" "e")))
 
 (def-lazy maxforms 17)
 
 (def-lazy initial-varenv
-  (list (cons maxforms (atom* maxforms))))
+  (list
+    (cons maxforms (atom* maxforms))
+    (cons (succ maxforms) (atom* maxforms))))
 
 (def-lazy t-data
   (atom* maxforms))
@@ -413,7 +417,10 @@
                             (outstr (printexpr atomenv expr nil)))
                         ;; Control flow
                         (await-list outstr
-                          (append-list outstr (cont expr evalret)))))))
+                          ;; Do not print newline if there is a second argument
+                          (if (isnil (cdr-data tail))
+                            (append-list (append-element outstr "\\n") (cont expr evalret))
+                            (append-list outstr (cont expr evalret))))))))
                 ;; read
                 (let-parse-evalret* evalret varenv-old atomenv stdin globalenv
                   (let ((ret-parse (read-expr stdin atomenv))
@@ -467,7 +474,7 @@
     (cont nil evalret)))
 
 (defrec-lazy repl (varenv atomenv stdin globalenv)
-  (cons "*" (cons " " (if (= stringtermchar (car stdin))
+  (cons ">" (cons " " (if (= stringtermchar (car stdin))
     stringterm
     (let ((ret-parse (read-expr stdin atomenv))
           (stdin (car (cdr ret-parse)))
