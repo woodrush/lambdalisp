@@ -219,12 +219,12 @@
 (defrec-lazy eval-cond (clauselist evalret cont)
   (let ((carclause (-> clauselist car-data))
         (carcond (-> carclause car-data))
-        (carbody (-> carclause cdr-data car-data)))
+        (carbody (-> carclause cdr-data)))
     (eval carcond evalret
       (lambda (expr evalret)
         (if (isnil expr)
           (eval-cond (cdr-data clauselist) evalret cont)
-          (eval carbody evalret cont))))))
+          (eval-progn carbody evalret cont))))))
 
 (defrec-lazy varenv-lookup (varenv varval)
   (let ((pair (car varenv))
@@ -254,12 +254,12 @@
 
 (defun-lazy eval-lambda (lambdaexpr callargs evalret cont)
   (let ((argnames (-> lambdaexpr cdr-data car-data))
-        (lambdabody (-> lambdaexpr cdr-data cdr-data car-data))
+        (lambdabody (-> lambdaexpr cdr-data cdr-data))
         (varenv-orig (car evalret)))
     (eval-map-base callargs nil evalret
       (lambda (argvalues evalret)
         (let-parse-evalret* evalret varenv atomenv stdin globalenv
-          (eval
+          (eval-progn
             lambdabody
             (evalret* (prepend-envzip-basedata argnames argvalues varenv) atomenv stdin globalenv)
             (lambda (expr evalret)
@@ -276,19 +276,17 @@
 
 (defun-lazy eval-macro (lambdaexpr callargs evalret cont)
   (let ((argnames (-> lambdaexpr cdr-data car-data))
-        (lambdabody (-> lambdaexpr cdr-data cdr-data car-data))
+        (lambdabody (-> lambdaexpr cdr-data cdr-data))
         (varenv-orig (car evalret)))
     (let-parse-evalret* evalret varenv atomenv stdin globalenv
-      (eval
+      (eval-progn
         lambdabody
         (evalret* (prepend-envzip-data argnames callargs varenv) atomenv stdin globalenv)
         (lambda (expr evalret)
           (let-parse-evalret* evalret varenv atomenv stdin globalenv
             ;; Reset the variable stack to the original one
             ;; Evaluate the constructed expression again
-            (eval expr (evalret* varenv-orig atomenv stdin globalenv) cont)
-            ;; (cont expr (evalret* varenv-orig atomenv stdin globalenv))
-            ))))))
+            (eval expr (evalret* varenv-orig atomenv stdin globalenv) cont)))))))
 
 (defmacro-lazy evalret* (varenv atomenv stdin globalenv)
   `(list ,varenv ,atomenv ,stdin ,globalenv))
