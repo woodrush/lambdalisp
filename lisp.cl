@@ -50,7 +50,7 @@
   (if (isnil l) item (cons (car l) (append-list (cdr l) item))))
 
 (defun-lazy truth-data (expr)
-  (if expr t-data nil))
+  (if expr t-atom nil))
 
 (defun-lazy type-atom   (t0 t1) t0)
 (defun-lazy type-list   (t0 t1) t1)
@@ -209,30 +209,43 @@
     (list "w" "h" "i" "l" "e")
     (list "l" "a" "m" "b" "d" "a")
     (list "m" "a" "c" "r" "o")
-    (list "w" "h" "e" "n")
+    (list "d" "e" "f" "u" "n")
     (list "l" "i" "s" "t")
     (list "t")
-    (list "e" "l" "s" "e")))
+    (list "e" "l" "s" "e")
+    (list "h" "e" "l" "p")))
 
 (def-lazy maxforms 17)
 
 (def-lazy initial-varenv
   (list
+    ;; t
     (cons maxforms (atom* maxforms))
-    (cons (succ maxforms) (atom* maxforms))))
+    ;; else
+    (cons (succ maxforms) (atom* maxforms))
+    ;; help
+    (cons (succ (succ maxforms))
+      ((letrec-lazy help (n)
+        (cond ((<= n (succ (succ maxforms)))
+                (cons-data (atom* n) (help (succ n))))
+              (t
+                nil)))
+       0))))
 
-(def-lazy t-data
+(def-lazy t-atom
   (atom* maxforms))
 
 (defrec-lazy eval-cond (clauselist evalret cont)
-  (let ((carclause (-> clauselist car-data))
-        (carcond (-> carclause car-data))
-        (carbody (-> carclause cdr-data)))
-    (eval carcond evalret
-      (lambda (expr evalret)
-        (if (isnil expr)
-          (eval-cond (cdr-data clauselist) evalret cont)
-          (eval-progn carbody evalret cont))))))
+  (if (isnil clauselist)
+    (cont nil evalret)
+    (let ((carclause (-> clauselist car-data))
+          (carcond (-> carclause car-data))
+          (carbody (-> carclause cdr-data)))
+      (eval carcond evalret
+        (lambda (expr evalret)
+          (if (isnil expr)
+            (eval-cond (cdr-data clauselist) evalret cont)
+            (eval-progn carbody evalret cont)))))))
 
 (defrec-lazy varenv-lookup (varenv varval)
   (let ((pair (car varenv))
@@ -398,7 +411,7 @@
                       (lambda (eq-y evalret)
                         (cont
                           (cond ((and (isnil eq-x) (isnil eq-y))
-                                  t-data)
+                                  t-atom)
                                 ((or (isnil eq-x) (isnil eq-y))
                                   nil)
                                 ((or (not (isatom eq-x)) (not (isatom eq-y)))
