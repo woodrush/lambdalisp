@@ -21,6 +21,7 @@
 (def-lazy 11 (succ 10))
 (def-lazy 14 (+ 8 (+ 4 2)))
 (def-lazy 15 (succ (+ 8 (+ 4 2))))
+(def-lazy 17 (succ 16))
 
 
 (defrec-lazy map (f list)
@@ -88,11 +89,6 @@
 
 (defrec-lazy append-element-data (l item)
   (if (isnil l) (cons-data item nil) (cons-data (car-data l) (append-element-data (cdr-data l) item))))
-
-(defrec-lazy map-data-as-baselist (f data)
-  (cond ((isnil data) nil)
-        (t (cons (f (car-data data))
-                 (map-data-as-baselist f (cdr-data data))))))
 
 (defun-lazy printatom (atomenv expr cont)
   (append-list (car ((valueof expr) cdr atomenv)) cont))
@@ -206,9 +202,11 @@
     (list "w" "h" "i" "l" "e")
     (list "l" "a" "m" "b" "d" "a")
     (list "m" "a" "c" "r" "o")
+    (list "w" "h" "e" "n")
+    (list "l" "i" "s" "t")
     (list "t")))
 
-(def-lazy maxforms 15)
+(def-lazy maxforms 17)
 
 (def-lazy initial-varenv
   (list (cons maxforms (atom* maxforms))))
@@ -244,6 +242,16 @@
           (eval (car-data lexpr) evalret
             (lambda (expr evalret)
               (eval-map-base (cdr-data lexpr) (append-element curexpr expr) evalret cont))))))
+
+(defrec-lazy eval-list (body evalret cont)
+  (cond ((isnil body)
+          (cont nil evalret))
+        (t
+          (eval (car-data body) evalret
+            (lambda (expr-out evalret)
+              (eval-list (cdr-data body) evalret
+                (lambda (expr evalret)
+                  (cont (cons-data expr-out expr) evalret))))))))
 
 (defrec-lazy prepend-envzip-basedata (argnames evargs env)
   (cond ((isnil argnames)
@@ -434,6 +442,17 @@
                 (cont expr evalret)
                 ;; macro
                 (cont expr evalret)
+                ;; when
+                (let ((condition (car-data tail))
+                      (body (cdr-data tail)))
+                  (eval condition evalret
+                    (lambda (expr evalret)
+                      (cond ((isnil expr)
+                              (cont nil evalret))
+                            (t
+                              (eval-progn body evalret cont))))))
+                ;; list
+                (eval-list tail evalret cont)
                 ))))
         ;; list: parse as lambda
         (eval-lambdalike head tail evalret cont)
