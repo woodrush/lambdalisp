@@ -19,6 +19,7 @@
 (def-lazy 9 (succ 8))
 (def-lazy 10 (succ 9))
 (def-lazy 11 (succ 10))
+(def-lazy 14 (+ 8 (+ 4 2)))
 
 
 (defrec-lazy map (f list)
@@ -189,19 +190,23 @@
 
 (def-lazy initial-atomenv
   (list
-    (list "Q" "U" "O" "T" "E")
-    (list "C" "A" "R")
-    (list "C" "D" "R")
-    (list "C" "O" "N" "S")
-    (list "A" "T" "O" "M")
-    (list "E" "Q")
-    (list "C" "O" "N" "D")
-    (list "P" "R" "I" "N" "T")
-    (list "R" "E" "A" "D")
-    (list "D" "E" "F")
-    (list "T")))
+    (list "q" "u" "o" "t" "e")
+    (list "c" "a" "r")
+    (list "c" "d" "r")
+    (list "c" "o" "n" "s")
+    (list "a" "t" "o" "m")
+    (list "e" "q")
+    (list "c" "o" "n" "d")
+    (list "p" "r" "i" "n" "t")
+    (list "r" "e" "a" "d")
+    (list "d" "e" "f")
+    (list "l" "o" "c")
+    (list "l" "a" "m" "b" "d" "a")
+    (list "p" "r" "o" "g" "n")
+    (list "w" "h" "i" "l" "e")
+    (list "t")))
 
-(def-lazy maxforms 10)
+(def-lazy maxforms 14)
 
 (def-lazy initial-varenv
   (list (cons maxforms (atom* maxforms))))
@@ -357,7 +362,23 @@
                       (let-parse-evalret* evalret varenv atomenv stdin globalenv
                         (cont expr (evalret*
                                       varenv atomenv stdin
-                                      (prepend-envzip (cons-data varname nil) (cons expr nil) globalenv)))))))))))
+                                      (prepend-envzip (cons-data varname nil) (cons expr nil) globalenv)))))))
+                ;; loc
+                (let ((varname (-> tail car-data))
+                      (defbody (-> tail cdr-data car-data)))
+                  (eval defbody evalret
+                    (lambda (expr evalret)
+                      (let-parse-evalret* evalret varenv atomenv stdin globalenv
+                        (cont expr (evalret*
+                                      (prepend-envzip (cons-data varname nil) (cons expr nil) varenv)
+                                      atomenv stdin globalenv))))))
+                ;; lambda
+                nil
+                ;; progn
+                nil
+                ;; while
+                nil))))
+
         ;; list: parse as lambda
         (let ((lambdaexpr head)
               (callargs tail))
