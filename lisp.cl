@@ -463,6 +463,8 @@
   (eval lambdaexpr evalret
     (lambda (expr evalret)
       (cond
+        ((isnil expr)
+          (cont nil evalret))
         ((isatom expr)
           (eval-apply expr callargs evalret cont))
         ;; Macros - evaluate the result again
