@@ -11,6 +11,7 @@
 (def-lazy "-" (+ (+ (+ 32 8) 4) 1))
 (def-lazy "<" (+ (+ (+ 32 16) 8) 4))
 (def-lazy ">" (+ (+ (+ (+ 32 16) 8) 4) 2))
+(def-lazy "&" (+ (+ 32 4) 2))
 (def-lazy "*" (+ (+ 32 8) 2))
 (def-lazy "'" (+ 32 (+ 4 (+ 2 1))))
 (def-lazy "\"" (+ 32 2))
@@ -119,6 +120,19 @@
 
 (defrec-lazy append-element-data (l item)
   (if (isnil l) (cons-data item nil) (cons-data (car-data l) (append-element-data (cdr-data l) item))))
+
+(defun-lazy length-data (list)
+  ((letrec-lazy length-data (l n)
+      (if (isnil l)
+        n
+        (length-data (cdr-data l) (succ n))))
+    list 0))
+
+(defrec-lazy drop-data (n list)
+  (cond ((or (isnil list) (<= n 0))
+          list)
+        (t
+          (drop-data (pred n) (cdr-data list)))))
 
 
 ;;================================================================
@@ -256,7 +270,8 @@
     (list "e" "l" "s" "e")
     (list "h" "e" "l" "p")
     (list "\\" "s")
-    (list " ")))
+    (list " ")
+    (list "&" "r" "e" "s" "t")))
 
 (def-lazy maxforms 18)
 
@@ -265,6 +280,7 @@
 (def-lazy lambda-atom (atom* 13))
 (def-lazy macro-atom (atom* 14))
 (def-lazy t-atom (atom* maxforms))
+(def-lazy rest-atom (atom* (succ 22)))
 
 (def-lazy initial-varenv
   (list
@@ -275,7 +291,7 @@
     ;; \s -> whitespace
     (cons 21 (atom* 22))
     ;; help
-    (cons (succ (succ maxforms))
+    (cons (succ (succ (succ maxforms)))
       ((letrec-lazy help (n)
         (cond ((<= n (succ (succ maxforms)))
                 (cons-data (atom* n) (help (succ n))))
@@ -354,16 +370,32 @@
           (cons (cons (valueof (car-data argnames)) (if (isnil evargs) nil (car evargs)))
                 (prepend-envzip-basedata (cdr-data argnames) (if (isnil evargs) nil (cdr evargs)) env)))))
 
+(defrec-lazy find-rest (argnames)
+  (cond ((isnil argnames)
+          nil)
+        ((= (valueof (car-data argnames)) (valueof rest-atom))
+          (-> argnames cdr-data car-data))
+        (t
+          (find-rest (cdr-data argnames)))))
+
 (defun-lazy eval-lambda (lambdaexpr callargs evalret cont)
   (let ((argnames (-> lambdaexpr cdr-data car-data))
+        (restvar (find-rest argnames))
         (lambdabody (-> lambdaexpr cdr-data cdr-data))
         (varenv-orig (car evalret)))
-    (eval-map-base callargs nil evalret
+    (eval-list callargs evalret
       (lambda (argvalues evalret)
         (let-parse-evalret* evalret varenv atomenv stdin globalenv
           (eval-progn
             lambdabody
-            (evalret* (prepend-envzip-basedata argnames argvalues varenv) atomenv stdin globalenv)
+            (evalret*
+              (if (isnil restvar)
+                (prepend-envzip-data argnames argvalues varenv)
+                (prepend-envzip-data
+                  (cons-data restvar argnames)
+                  (cons-data (drop-data (- (length-data argnames) 2) argvalues) argvalues)
+                  varenv))
+              atomenv stdin globalenv)
             (lambda (expr evalret)
               (let-parse-evalret* evalret varenv atomenv stdin globalenv
                 ;; Reset the variable environment to the original one
@@ -378,12 +410,20 @@
 
 (defun-lazy eval-macro (lambdaexpr callargs evalret cont)
   (let ((argnames (-> lambdaexpr cdr-data car-data))
-        (lambdabody (-> lambdaexpr cdr-data cdr-data))
-        (varenv-orig (car evalret)))
-    (let-parse-evalret* evalret varenv atomenv stdin globalenv
+        (restvar (find-rest argnames))
+        (lambdabody (-> lambdaexpr cdr-data cdr-data)))
+    ;; For macros, do not evaluate the arguments, and pass their quoted values
+    (let-parse-evalret* evalret varenv-orig atomenv stdin globalenv
       (eval-progn
         lambdabody
-        (evalret* (prepend-envzip-data argnames callargs varenv) atomenv stdin globalenv)
+        (evalret*
+          (if (isnil restvar)
+            (prepend-envzip-data argnames callargs varenv)
+            (prepend-envzip-data
+              (cons-data restvar argnames)
+              (cons-data (drop-data (- (length-data argnames) 2) callargs) callargs)
+              varenv))
+          atomenv stdin globalenv)
         (lambda (expr evalret)
           (let-parse-evalret* evalret varenv atomenv stdin globalenv
             ;; Reset the variable stack to the original one
@@ -414,11 +454,13 @@
   (eval lambdaexpr evalret
     (lambda (expr evalret)
       (cond
+        ((isatom expr)
+          (eval-apply expr callargs evalret cont))
         ;; Macros - evaluate the result again
-        ((= (valueof macro-atom) (valueof (car-data expr)))
+        ((= (valueof (car-data expr)) (valueof macro-atom))
           (eval-macro expr callargs evalret cont))
         ;; Lambdas
-        ((= (valueof lambda-atom) (valueof (car-data expr)))
+        ((= (valueof (car-data expr)) (valueof lambda-atom))
           (eval-lambda expr callargs evalret cont))
         (t
           (eval-apply expr callargs evalret cont))))))
