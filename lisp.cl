@@ -10,6 +10,7 @@
 (def-lazy "." (+ (+ (+ 32 8) 4) 2))
 (def-lazy ">" (+ (+ (+ (+ 32 16) 8) 4) 2))
 (def-lazy "*" (+ (+ 32 8) 2))
+(def-lazy "'" (+ 32 (+ 4 (+ 2 1))))
 (def-lazy "\\n" (+ 8 2))
 
 (def-lazy 3 (succ 2))
@@ -182,6 +183,11 @@
     (let ((stdin (read-skip-whitespace stdin)) (c (car stdin)))
             (cond ((= "(" c)
                     (read-list (cdr stdin) atomenv nil))
+                  ((= "'" c)
+                    (let ((ret (read-expr (cdr stdin) atomenv))
+                          (expr (car ret))
+                          (rest (cdr ret)))
+                      (cons (list* (atom* 0) expr) rest)))
                   (t
                     (read-atom stdin atomenv))))))
 
@@ -452,8 +458,7 @@
                             (t
                               (eval-progn body evalret cont))))))
                 ;; list
-                (eval-list tail evalret cont)
-                ))))
+                (eval-list tail evalret cont)))))
         ;; list: parse as lambda
         (eval-lambdalike head tail evalret cont)
         ;; nil
