@@ -33,12 +33,16 @@
         (length (cdr l) (succ n))))
     list 0))
 
+(defmacro-lazy await-list (list body)
+  `(if (<= 0 (length ,list))
+    ,body
+    ,body))
+
 (defrec-lazy append-element (l item)
   (if (isnil l) (cons item nil) (cons (car l) (append-element (cdr l) item))))
 
 (defrec-lazy append-list (l item)
   (if (isnil l) item (cons (car l) (append-list (cdr l) item))))
-
 
 (defmacro-lazy typematch (expr atomcase listcase nilcase)
   `(if (isnil ,expr)
@@ -333,14 +337,10 @@
                   (eval (car-data tail) evalret
                     (lambda (expr evalret)
                       (let ((atomenv (-> evalret cdr car))
-                            (outstr (printexpr atomenv expr nil))
-                            )
-                        ;; (printexpr atomenv expr (cont expr evalret))
+                            (outstr (printexpr atomenv expr nil)))
                         ;; Control flow
-                        (if (<= 0 (length outstr))
-                          (append-list outstr (cont expr evalret))
-                          (append-list outstr (cont expr evalret)))
-                          ))))
+                        (await-list outstr
+                          (append-list outstr (cont expr evalret)))))))
                 ;; read
                 (let-parse-evalret* evalret varenv-old atomenv stdin globalenv
                   (let ((ret-parse (read-expr stdin atomenv))
@@ -378,8 +378,7 @@
         (lambda (expr evalret)
           (let-parse-evalret* evalret varenv atomenv stdin globalenv
             (let ((outstr (printexpr atomenv expr nil)))
-              (if (<= 0 (length outstr))
-                (append-list outstr (cons "\\n" (repl varenv atomenv stdin globalenv)))
+              (await-list outstr
                 (append-list outstr (cons "\\n" (repl varenv atomenv stdin globalenv)))))))))))))
 
 (defrec-lazy list2inflist (l)
