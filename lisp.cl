@@ -41,6 +41,9 @@
 (def-lazy 26 (+ 16 (+ 8 2)))
 (def-lazy 27 (+ 16 (+ 8 (+ 2 1))))
 (def-lazy 28 (+ 16 (+ 8 4)))
+(def-lazy 29 (+ 16 (+ 8 (+ 4 1))))
+(def-lazy 30 (+ 16 (+ 8 (+ 4 2))))
+(def-lazy 31 (+ 16 (+ 8 (+ 4 (+ 2 1)))))
 
 
 ;;================================================================
@@ -310,7 +313,7 @@
 ;; (def-lazy lambda-atom (atom* 13))
 ;; (def-lazy macro-atom (atom* 14))
 ;; (def-lazy t-atom (atom* maxforms))
-;; (def-lazy rest-atom (atom* (succ 22)))
+;; (def-lazy &rest-atom (atom* (succ 22)))
 ;; (def-lazy \s-index 20)
 ;; (def-lazy whitespace-index 21)
 
@@ -334,7 +337,7 @@
 (def-lazy help-index 19)
 (def-lazy \s-index 20)
 (def-lazy whitespace-index 21)
-(def-lazy rest-atom (atom* 22))
+(def-lazy &rest-atom (atom* 22))
 
 (def-lazy while-index 23)
 (def-lazy while-atom (atom* 23))
@@ -343,19 +346,52 @@
 (def-lazy +-atom (atom* 26))
 (def-lazy --atom (atom* 27))
 (def-lazy <=-atom (atom* 28))
+(def-lazy not-atom (atom* 29))
+(def-lazy and-atom (atom* 30))
+(def-lazy or-atom (atom* 31))
+(def-lazy =-atom (atom* 32))
 
 
 (defun lisp2data (expr)
-  (cond ((atom expr)
+  (cond ((eq nil expr)
+          nil)
+        ((atom expr)
           (intern (concatenate 'string (write-to-string expr) "-ATOM")))
         (t
           `(list* ,@(mapcar #'lisp2data expr)))))
 
-(defmacro def-aslisp-lazy (name expr)
+(defmacro def-as-lisp-lazy (name expr)
   `(def-lazy ,name ,(lisp2data expr)))
 
-(def-aslisp-lazy <=-expr
+(def-as-lisp-lazy <=-expr
   (lambda (x y) (atom (- x y))))
+
+(def-as-lisp-lazy --expr
+  (lambda (x y)
+    (cond ((atom x) nil)
+          ((atom y) x)
+          (else (- (cdr x) (cdr y))))))
+
+(def-as-lisp-lazy +-expr
+  (lambda (x y)
+    (cond ((atom y) x)
+          (else (+ (cons t x) (cdr y))))))
+
+(def-as-lisp-lazy while-expr
+  (macro (x &rest y)
+    (list 'cond (list x (cons 'progn y) (cons 'while (cons x y))))))
+
+(def-as-lisp-lazy not-expr
+  (lambda (x) (cond (x nil) (else t))))
+
+(def-as-lisp-lazy and-expr
+  (lambda (x y) (cond (x y) (else nil))))
+
+(def-as-lisp-lazy or-expr
+  (lambda (x y) (cond (x t) (else y))))
+
+(def-as-lisp-lazy =-expr
+  (lambda (x y) (and (<= x y) (<= y x))))
 
 (def-lazy initial-varenv
   (list
@@ -373,29 +409,15 @@
               (t
                 nil)))
        0))
-    ;; while
-    (cons while-index
-      (list* macro-atom (list* x-atom rest-atom y-atom)
-        (list* list-atom (list* quote-atom cond-atom)
-          (list* list-atom x-atom
-            (list* cons-atom (list* quote-atom progn-atom) y-atom)
-            (list* cons-atom (list* quote-atom while-atom) (list* cons-atom x-atom y-atom))))))
-    (cons (valueof +-atom)
-      (list* lambda-atom (list* x-atom y-atom)
-        (list* cond-atom
-          (list* (list* atom-atom y-atom) x-atom)
-          (list* else-atom (list* +-atom (list* cons-atom t-atom x-atom) (list* cdr-atom y-atom))))))
-    (cons (valueof --atom)
-      (list* lambda-atom (list* x-atom y-atom)
-        (list* cond-atom
-          (list* (list* atom-atom x-atom) nil)
-          (list* (list* atom-atom y-atom) x-atom)
-          (list* else-atom (list* --atom (list* cdr-atom x-atom) (list* cdr-atom y-atom))))))
-    (cons (valueof <=-atom)
-      (list* lambda-atom (list* x-atom y-atom)
-        (list* atom-atom (list* --atom x-atom y-atom))))
+    (cons (valueof while-atom) while-expr)
+    (cons (valueof +-atom) +-expr)
+    (cons (valueof --atom) --expr)
     (cons (valueof <=-atom) <=-expr)
-       ))
+    (cons (valueof not-atom) not-expr)
+    (cons (valueof and-atom) and-expr)
+    (cons (valueof or-atom) or-expr)
+    (cons (valueof =-atom) =-expr)
+    ))
 
 (defun-lazy truth-data (expr)
   (if expr t-atom nil))
@@ -471,7 +493,7 @@
 (defrec-lazy find-rest (argnames)
   (cond ((isnil argnames)
           nil)
-        ((= (valueof (car-data argnames)) (valueof rest-atom))
+        ((= (valueof (car-data argnames)) (valueof &rest-atom))
           (-> argnames cdr-data car-data))
         (t
           (find-rest (cdr-data argnames)))))
