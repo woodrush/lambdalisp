@@ -1,9 +1,6 @@
 (load "./lazy.cl")
 
 
-(def-lazy stringtermchar 256)
-(def-lazy stringterm (inflist 256))
-
 (def-lazy "(" (+ 32 8))
 (def-lazy ")" (succ "("))
 (def-lazy " " 32)
@@ -26,11 +23,14 @@
 (def-lazy 9 (succ 8))
 (def-lazy 10 (succ 9))
 (def-lazy 11 (succ 10))
+(def-lazy 12 (+ 8 4))
 (def-lazy 13 (+ 8 (+ 4 1)))
 (def-lazy 14 (+ 8 (+ 4 2)))
 (def-lazy 15 (succ (+ 8 (+ 4 2))))
 (def-lazy 17 (succ 16))
 (def-lazy 18 (+ 16 2))
+(def-lazy 19 (succ (+ 16 2)))
+(def-lazy 20 (+ 16 4))
 (def-lazy 21 (+ 16 (+ 4 1)))
 (def-lazy 22 (+ 16 (+ 4 2)))
 
@@ -167,6 +167,9 @@
 ;;================================================================
 ;; Parser
 ;;================================================================
+(def-lazy stringtermchar 256)
+(def-lazy stringterm (inflist 256))
+
 (defrec-lazy reverse (list curlist)
   (if (isnil list) curlist (reverse (cdr list) (cons (car list) curlist))))
 
@@ -269,11 +272,11 @@
     (list "<" "-")
     (list "d" "e" "f" "v" "a" "r")
     (list "p" "r" "o" "g" "n")
-    (list "w" "h" "i" "l" "e")
+    ;; (list "w" "h" "i" "l" "e")
     (list "l" "a" "m" "b" "d" "a")
     (list "m" "a" "c" "r" "o")
-    (list "d" "e" "f" "u" "n")
-    (list "d" "e" "f" "m" "a" "c" "r" "o")
+    ;; (list "d" "e" "f" "u" "n")
+    ;; (list "d" "e" "f" "m" "a" "c" "r" "o")
     (list "l" "i" "s" "t")
     (list "t")
     (list "e" "l" "s" "e")
@@ -282,14 +285,27 @@
     (list " ")
     (list "&" "r" "e" "s" "t")))
 
-(def-lazy maxforms 18)
+;; (def-lazy maxforms 18)
+
+;; (def-lazy quote-atom (atom* 0))
+;; (def-lazy def-atom (atom* 9))
+;; (def-lazy lambda-atom (atom* 13))
+;; (def-lazy macro-atom (atom* 14))
+;; (def-lazy t-atom (atom* maxforms))
+;; (def-lazy rest-atom (atom* (succ 22)))
+;; (def-lazy \s-index 20)
+;; (def-lazy whitespace-index 21)
+
+(def-lazy maxforms 15)
 
 (def-lazy quote-atom (atom* 0))
 (def-lazy def-atom (atom* 9))
-(def-lazy lambda-atom (atom* 13))
-(def-lazy macro-atom (atom* 14))
+(def-lazy lambda-atom (atom* 12))
+(def-lazy macro-atom (atom* 13))
 (def-lazy t-atom (atom* maxforms))
-(def-lazy rest-atom (atom* (succ 22)))
+(def-lazy rest-atom (atom* 20))
+(def-lazy \s-index 18)
+(def-lazy whitespace-index 19)
 
 (def-lazy initial-varenv
   (list
@@ -298,7 +314,7 @@
     ;; else
     (cons (succ maxforms) (atom* maxforms))
     ;; \s -> whitespace
-    (cons 21 (atom* 22))
+    (cons \s-index (atom* whitespace-index))
     ;; help
     (cons (succ (succ (succ maxforms)))
       ((letrec-lazy help (n)
@@ -449,15 +465,15 @@
             (lambda (expr evalret)
               (eval-progn (cdr-data proglist) evalret cont))))))
 
-(defrec-lazy eval-while (condition body evalret cont)
-  (eval condition evalret
-    (lambda (expr evalret)
-      (cond ((isnil expr)
-              (cont nil evalret))
-            (t
-              (eval-progn body evalret
-                (lambda (expr evalret)
-                  (eval-while condition body evalret cont))))))))
+;; (defrec-lazy eval-while (condition body evalret cont)
+;;   (eval condition evalret
+;;     (lambda (expr evalret)
+;;       (cond ((isnil expr)
+;;               (cont nil evalret))
+;;             (t
+;;               (eval-progn body evalret
+;;                 (lambda (expr evalret)
+;;                   (eval-while condition body evalret cont))))))))
 
 (defrec-lazy eval-apply (lambdaexpr callargs evalret cont)
   (eval lambdaexpr evalret
@@ -585,20 +601,21 @@
                                       (prepend-envzip-basedata (cons-data varname nil) (cons expr nil) globalenv)))))))
                 ;; progn
                 (eval-progn tail evalret cont)
-                ;; while
-                (eval-while (car-data tail) (cdr-data tail) evalret cont)
+                ;; ;; while
+                ;; (eval-while (car-data tail) (cdr-data tail) evalret cont)
                 ;; lambda
                 (cont expr evalret)
                 ;; macro
                 (cont expr evalret)
-                ;; defun
-                (eval (list* def-atom (-> tail car-data) (cons-data lambda-atom (-> tail cdr-data)))
-                      evalret cont)
-                ;; defmacro
-                (eval (list* def-atom (-> tail car-data) (cons-data macro-atom (-> tail cdr-data)))
-                      evalret cont)
-                ;; cons
-                (eval-list tail evalret cont)))))
+                ;; ;; defun
+                ;; (eval (list* def-atom (-> tail car-data) (cons-data lambda-atom (-> tail cdr-data)))
+                ;;       evalret cont)
+                ;; ;; defmacro
+                ;; (eval (list* def-atom (-> tail car-data) (cons-data macro-atom (-> tail cdr-data)))
+                ;;       evalret cont)
+                ;; list
+                (eval-list tail evalret cont)
+                ))))
         ;; cons: parse as lambda
         (eval-apply head tail evalret cont)
         ;; nil
@@ -624,20 +641,19 @@
               (await-list outstr
                 (append-list outstr (cons "\\n" (repl varenv atomenv stdin globalenv)))))))))))))
 
-(defrec-lazy list2inflist (l)
-  (if (isnil l)
-    (inflist 256)
-    (cons (car l) (list2inflist (cdr l)))))
-
 (defun-lazy main (stdin)
   (repl initial-varenv initial-atomenv stdin nil))
 
 
-;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
-
+;;================================================================
+;; Code output
+;;================================================================
 (format t (compile-to-ski-lazy main))
 ;; (format t (compile-to-blc-lazy main))
 
 ;; ;; Print lambda term
 ;; (setf *print-right-margin* 800)
 ;; (format t (write-to-string (curry (macroexpand-lazy main))))
+
+;; ;; Print in curried De Bruijn notation
+;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
