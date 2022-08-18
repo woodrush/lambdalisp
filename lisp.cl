@@ -278,12 +278,22 @@
 (defrec-lazy eval-progn (proglist evalret cont)
   (cond ((isnil proglist)
           (cont nil evalret))
-        ((isnil (cdr proglist))
-          (eval (car proglist) evalret cont))
+        ((isnil (cdr-data proglist))
+          (eval (car-data proglist) evalret cont))
         (t
-          (eval (car proglist) evalret
+          (eval (car-data proglist) evalret
             (lambda (expr evalret)
-              (eval-progn (cdr proglist) evalret cont))))))
+              (eval-progn (cdr-data proglist) evalret cont))))))
+
+(defrec-lazy eval-while (condition body evalret cont)
+  (eval condition evalret
+    (lambda (expr evalret)
+      (cond ((isnil expr)
+              (cont nil evalret))
+            (t
+              (eval-progn body evalret
+                (lambda (expr evalret)
+                  (eval-while condition body evalret cont))))))))
 
 (defrec-lazy eval (expr evalret cont)
   (typematch expr
@@ -385,7 +395,7 @@
                 ;; progn
                 (eval-progn tail evalret cont)
                 ;; while
-                nil
+                (eval-while (car-data tail) (cdr-data tail) evalret cont)
                 ;; lambda
                 nil
                 ))))
