@@ -355,16 +355,18 @@
                 (lambda (expr evalret)
                   (eval-while condition body evalret cont))))))))
 
-(defrec-lazy eval-lambdalike (lambdaexpr callargs evalret cont)
+(defrec-lazy eval-apply (lambdaexpr callargs evalret cont)
   (eval lambdaexpr evalret
     (lambda (expr evalret)
       (cond
         ;; Macros - evaluate the result again
-        ((= 14 (valueof (car-data expr)))
+        ((= (valueof macro-atom) (valueof (car-data expr)))
           (eval-macro expr callargs evalret cont))
         ;; Lambdas
+        ((= (valueof lambda-atom) (valueof (car-data expr)))
+          (eval-lambda expr callargs evalret cont))
         (t
-          (eval-lambda expr callargs evalret cont))))))
+          (eval-apply expr callargs evalret cont))))))
 
 (defrec-lazy eval (expr evalret cont)
   (typematch expr
@@ -385,7 +387,7 @@
         (cond
           ;; Evaluate as a lambda
           ((<= maxforms head-index)
-            (eval-lambdalike head tail evalret cont))
+            (eval-apply head tail evalret cont))
           ;; Evaluate as a special form
           (t
             (nth head-index
@@ -483,7 +485,7 @@
                 ;; list
                 (eval-list tail evalret cont)))))
         ;; list: parse as lambda
-        (eval-lambdalike head tail evalret cont)
+        (eval-apply head tail evalret cont)
         ;; nil
         (cont nil evalret)))
     ;; nil
