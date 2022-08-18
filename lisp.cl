@@ -20,6 +20,7 @@
 (def-lazy 10 (succ 9))
 (def-lazy 11 (succ 10))
 (def-lazy 14 (+ 8 (+ 4 2)))
+(def-lazy 15 (succ (+ 8 (+ 4 2))))
 
 
 (defrec-lazy map (f list)
@@ -45,6 +46,15 @@
 (defrec-lazy append-list (l item)
   (if (isnil l) item (cons (car l) (append-list (cdr l) item))))
 
+(defun-lazy truth-data (expr)
+  (if expr t-data nil))
+
+(defun-lazy type-atom (t0 t1) t0)
+(defun-lazy type-list (t0 t1) t1)
+
+(def-lazy typeof car)
+(def-lazy valueof cdr)
+
 (defmacro-lazy typematch (expr atomcase listcase nilcase)
   `(if (isnil ,expr)
       ,nilcase
@@ -58,15 +68,6 @@
     nil
     ;; nil
     t))
-
-(defun-lazy truth-data (expr)
-  (if expr t-data nil))
-
-(defun-lazy type-atom (t0 t1) t0)
-(defun-lazy type-list (t0 t1) t1)
-
-(def-lazy typeof car)
-(def-lazy valueof cdr)
 
 (defmacro-lazy car-data (data)
   `(car (valueof ,data)))
@@ -204,9 +205,10 @@
     (list "p" "r" "o" "g" "n")
     (list "w" "h" "i" "l" "e")
     (list "l" "a" "m" "b" "d" "a")
+    (list "m" "a" "c" "r" "o")
     (list "t")))
 
-(def-lazy maxforms 14)
+(def-lazy maxforms 15)
 
 (def-lazy initial-varenv
   (list (cons maxforms (atom* maxforms))))
@@ -243,12 +245,12 @@
             (lambda (expr evalret)
               (eval-map-base (cdr-data lexpr) (append-element curexpr expr) evalret cont))))))
 
-(defrec-lazy prepend-envzip (argnames evargs env)
+(defrec-lazy prepend-envzip-basedata (argnames evargs env)
   (cond ((isnil argnames)
           env)
         (t
           (cons (cons (valueof (car-data argnames)) (if (isnil evargs) nil (car evargs)))
-                (prepend-envzip (cdr-data argnames) (if (isnil evargs) nil (cdr evargs)) env)))))
+                (prepend-envzip-basedata (cdr-data argnames) (if (isnil evargs) nil (cdr evargs)) env)))))
 
 (defun-lazy eval-lambda (lambdaexpr callargs evalret cont)
   (let ((argnames (-> lambdaexpr cdr-data car-data))
@@ -259,11 +261,34 @@
         (let-parse-evalret* evalret varenv atomenv stdin globalenv
           (eval
             lambdabody
-            (evalret* (prepend-envzip argnames argvalues varenv) atomenv stdin globalenv)
+            (evalret* (prepend-envzip-basedata argnames argvalues varenv) atomenv stdin globalenv)
             (lambda (expr evalret)
               (let-parse-evalret* evalret varenv atomenv stdin globalenv
-                ;; Evaluate the rest of the argument in the original environment
+                ;; Reset the variable environment to the original one
                 (cont expr (evalret* varenv-orig atomenv stdin globalenv))))))))))
+
+(defrec-lazy prepend-envzip-data (argnames evargs env)
+  (cond ((isnil argnames)
+          env)
+        (t
+          (cons (cons (valueof (car-data argnames)) (if (isnil evargs) nil (car-data evargs)))
+                (prepend-envzip-data (cdr-data argnames) (if (isnil evargs) nil (cdr-data evargs)) env)))))
+
+(defun-lazy eval-macro (lambdaexpr callargs evalret cont)
+  (let ((argnames (-> lambdaexpr cdr-data car-data))
+        (lambdabody (-> lambdaexpr cdr-data cdr-data car-data))
+        (varenv-orig (car evalret)))
+    (let-parse-evalret* evalret varenv atomenv stdin globalenv
+      (eval
+        lambdabody
+        (evalret* (prepend-envzip-data argnames callargs varenv) atomenv stdin globalenv)
+        (lambda (expr evalret)
+          (let-parse-evalret* evalret varenv atomenv stdin globalenv
+            ;; Reset the variable stack to the original one
+            ;; Evaluate the constructed expression again
+            (eval expr (evalret* varenv-orig atomenv stdin globalenv) cont)
+            ;; (cont expr (evalret* varenv-orig atomenv stdin globalenv))
+            ))))))
 
 (defmacro-lazy evalret* (varenv atomenv stdin globalenv)
   `(list ,varenv ,atomenv ,stdin ,globalenv))
@@ -295,6 +320,17 @@
                 (lambda (expr evalret)
                   (eval-while condition body evalret cont))))))))
 
+(defrec-lazy eval-lambdalike (lambdaexpr callargs evalret cont)
+  (eval lambdaexpr evalret
+    (lambda (expr evalret)
+      (cond
+        ;; Macros - evaluate the result again
+        ((= 14 (valueof (car-data expr)))
+          (eval-macro expr callargs evalret cont))
+        ;; Lambdas
+        (t
+          (eval-lambda expr callargs evalret cont))))))
+
 (defrec-lazy eval (expr evalret cont)
   (typematch expr
     ;; atom
@@ -312,10 +348,10 @@
       (typematch head
         ;; atom
         (cond
+          ;; Evaluate as a lambda
           ((<= maxforms head-index)
-            (eval head evalret
-              (lambda (expr evalret)
-                (eval-lambda expr tail evalret cont))))
+            (eval-lambdalike head tail evalret cont))
+          ;; Evaluate as a special form
           (t
             (nth head-index
               (list
@@ -382,7 +418,7 @@
                       (let-parse-evalret* evalret varenv atomenv stdin globalenv
                         (cont expr (evalret*
                                       varenv atomenv stdin
-                                      (prepend-envzip (cons-data varname nil) (cons expr nil) globalenv)))))))
+                                      (prepend-envzip-basedata (cons-data varname nil) (cons expr nil) globalenv)))))))
                 ;; loc
                 (let ((varname (-> tail car-data))
                       (defbody (-> tail cdr-data car-data)))
@@ -390,20 +426,19 @@
                     (lambda (expr evalret)
                       (let-parse-evalret* evalret varenv atomenv stdin globalenv
                         (cont expr (evalret*
-                                      (prepend-envzip (cons-data varname nil) (cons expr nil) varenv)
+                                      (prepend-envzip-basedata (cons-data varname nil) (cons expr nil) varenv)
                                       atomenv stdin globalenv))))))
                 ;; progn
                 (eval-progn tail evalret cont)
                 ;; while
                 (eval-while (car-data tail) (cdr-data tail) evalret cont)
                 ;; lambda
-                nil
+                (cont expr evalret)
+                ;; macro
+                (cont expr evalret)
                 ))))
-
         ;; list: parse as lambda
-        (let ((lambdaexpr head)
-              (callargs tail))
-          (eval-lambda lambdaexpr callargs evalret cont))
+        (eval-lambdalike head tail evalret cont)
         ;; nil
         (cont nil evalret)))
     ;; nil
