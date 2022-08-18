@@ -8,11 +8,14 @@
 (def-lazy ")" (succ "("))
 (def-lazy " " 32)
 (def-lazy "." (+ (+ (+ 32 8) 4) 2))
+(def-lazy "-" (+ (+ (+ 32 8) 4) 1))
+(def-lazy "<" (+ (+ (+ 32 16) 8) 4))
 (def-lazy ">" (+ (+ (+ (+ 32 16) 8) 4) 2))
 (def-lazy "*" (+ (+ 32 8) 2))
 (def-lazy "'" (+ 32 (+ 4 (+ 2 1))))
 (def-lazy "\"" (+ 32 2))
 (def-lazy "\\n" (+ 8 2))
+(def-lazy "\\" (+ 64 (+ 16 (+ 8 4))))
 
 (def-lazy 3 (succ 2))
 (def-lazy 5 (succ 4))
@@ -26,8 +29,13 @@
 (def-lazy 15 (succ (+ 8 (+ 4 2))))
 (def-lazy 17 (succ 16))
 (def-lazy 18 (+ 16 2))
+(def-lazy 21 (+ 16 (+ 4 1)))
+(def-lazy 22 (+ 16 (+ 4 2)))
 
 
+;;================================================================
+;; Basic functions
+;;================================================================
 (defrec-lazy map (f list)
   (if (isnil list)
     nil
@@ -40,6 +48,7 @@
         (length (cdr l) (succ n))))
     list 0))
 
+;; Stops the evaluation until the stdin is supplied sufficiently for `body`
 (defmacro-lazy await-list (list body)
   `(if (<= 0 (length ,list))
     ,body
@@ -51,25 +60,42 @@
 (defrec-lazy append-list (l item)
   (if (isnil l) item (cons (car l) (append-list (cdr l) item))))
 
-(defun-lazy truth-data (expr)
-  (if expr t-atom nil))
 
-(defun-lazy type-atom   (t0 t1) t0)
-(defun-lazy type-list   (t0 t1) t1)
+;;================================================================
+;; Data structure
+;;================================================================
+;; - There are three data types, {atom, cons, nil}.
+;; - The data structure for each type is as follows:
+;;   - atom:
+;;      (type-atom [number])
+;;   - cons:
+;;      (type-cons ([car] . [cdr]))
+;;   - nil: (is equal to `nil` in the base environment)
+;;      nil
+;; - `type-atom` and `type-cons` are type enums defined below.
+;;
+;; Manipulating data lists
+;; - Functions for manipulating lists in the data environment
+;;   are all suffixed by `-data`. For example, the function for
+;;   `car` in the data structure is `car-data`.
+;;   Note that `(car-data data)` and `(car data)` thus yield different results.
+
+(defun-lazy type-atom (t0 t1) t0)
+(defun-lazy type-cons (t0 t1) t1)
 
 (def-lazy typeof car)
 (def-lazy valueof cdr)
 
-(defmacro-lazy typematch (expr atomcase listcase nilcase)
+(defmacro-lazy typematch (expr atomcase conscase nilcase)
   `(if (isnil ,expr)
       ,nilcase
-      ((typeof ,expr) ,atomcase ,listcase)))
+      ((typeof ,expr) ,atomcase ,conscase)))
 
 (defun-lazy isatom (expr)
   (typematch expr
     ;; atom
     t
-    ;; list
+    ;; cons
     nil
     ;; nil
     t))
@@ -81,7 +107,7 @@
   `(cdr (valueof ,data)))
 
 (defmacro-lazy cons-data (x y)
-  `(cons type-list (cons ,x ,y)))
+  `(cons type-cons (cons ,x ,y)))
 
 (defmacro-lazy atom* (value)
   `(cons type-atom ,value))
@@ -94,6 +120,10 @@
 (defrec-lazy append-element-data (l item)
   (if (isnil l) (cons-data item nil) (cons-data (car-data l) (append-element-data (cdr-data l) item))))
 
+
+;;================================================================
+;; Printing
+;;================================================================
 (defun-lazy printatom (atomenv expr cont)
   (append-list (car ((valueof expr) cdr atomenv)) cont))
 
@@ -102,7 +132,7 @@
     (typematch expr
       ;; atom
       (printatom atomenv expr cont)
-      ;; list
+      ;; cons
       (cons "(" (printexpr-helper atomenv expr nil (cons ")" cont)))
       ;; nil
       (cons "(" (cons ")" cont)))
@@ -110,7 +140,7 @@
       (typematch (cdr-data expr)
         ;; atom
         (cons " " (cons "." (cons " " (printatom atomenv (cdr-data expr) cont))))
-        ;; list
+        ;; cons
         (cons " " (printexpr-helper atomenv (cdr-data expr) nil cont))
         ;; nil
         cont))))
@@ -118,6 +148,10 @@
 (defun-lazy printexpr (atomenv expr cont)
   (printexpr-helper atomenv expr t cont))
 
+
+;;================================================================
+;; Parser
+;;================================================================
 (defrec-lazy reverse (list curlist)
   (if (isnil list) curlist (reverse (cdr list) (cons (car list) curlist))))
 
@@ -194,6 +228,10 @@
                   (t
                     (read-atom stdin atomenv))))))
 
+
+;;================================================================
+;; Environment
+;;================================================================
 (def-lazy initial-atomenv
   (list
     (list "q" "u" "o" "t" "e")
@@ -205,8 +243,8 @@
     (list "c" "o" "n" "d")
     (list "p" "r" "i" "n" "t")
     (list "r" "e" "a" "d")
-    (list "d" "e" "f")
-    (list "d" "e" "f" "g")
+    (list "<" "-")
+    (list "d" "e" "f" "v" "a" "r")
     (list "p" "r" "o" "g" "n")
     (list "w" "h" "i" "l" "e")
     (list "l" "a" "m" "b" "d" "a")
@@ -216,9 +254,17 @@
     (list "l" "i" "s" "t")
     (list "t")
     (list "e" "l" "s" "e")
-    (list "h" "e" "l" "p")))
+    (list "h" "e" "l" "p")
+    (list "\\" "s")
+    (list " ")))
 
 (def-lazy maxforms 18)
+
+(def-lazy quote-atom (atom* 0))
+(def-lazy def-atom (atom* 9))
+(def-lazy lambda-atom (atom* 13))
+(def-lazy macro-atom (atom* 14))
+(def-lazy t-atom (atom* maxforms))
 
 (def-lazy initial-varenv
   (list
@@ -226,6 +272,8 @@
     (cons maxforms (atom* maxforms))
     ;; else
     (cons (succ maxforms) (atom* maxforms))
+    ;; \s -> whitespace
+    (cons 21 (atom* 22))
     ;; help
     (cons (succ (succ maxforms))
       ((letrec-lazy help (n)
@@ -235,11 +283,28 @@
                 nil)))
        0))))
 
-(def-lazy quote-atom (atom* 0))
-(def-lazy def-atom (atom* 9))
-(def-lazy lambda-atom (atom* 13))
-(def-lazy macro-atom (atom* 14))
-(def-lazy t-atom (atom* maxforms))
+(defun-lazy truth-data (expr)
+  (if expr t-atom nil))
+
+
+;;================================================================
+;; Evaluation helpers
+;;================================================================
+;; For all eval-like functions:
+;; - The return type is `string`. Continuation-passing is used for chaining evaluations.
+;; - The continuation has the type:
+;;     cont :: expr -> evalret -> string
+;; - The format of the global state is specified in `evalret*` and `let-parse-evalret*`.
+
+(defmacro-lazy evalret* (varenv atomenv stdin globalenv)
+  `(list ,varenv ,atomenv ,stdin ,globalenv))
+
+(defmacro-lazy let-parse-evalret* (evalret varenv atomenv stdin globalenv body)
+  `(let ((,varenv      (-> ,evalret car))
+         (,atomenv     (-> ,evalret cdr car))
+         (,stdin       (-> ,evalret cdr cdr car))
+         (,globalenv   (-> ,evalret cdr cdr cdr car)))
+      ,body))
 
 (defrec-lazy eval-cond (clauselist evalret cont)
   (if (isnil clauselist)
@@ -325,16 +390,6 @@
             ;; Evaluate the constructed expression again
             (eval expr (evalret* varenv-orig atomenv stdin globalenv) cont)))))))
 
-(defmacro-lazy evalret* (varenv atomenv stdin globalenv)
-  `(list ,varenv ,atomenv ,stdin ,globalenv))
-
-(defmacro-lazy let-parse-evalret* (evalret varenv atomenv stdin globalenv body)
-  `(let ((,varenv      (-> ,evalret car))
-         (,atomenv     (-> ,evalret cdr car))
-         (,stdin       (-> ,evalret cdr cdr car))
-         (,globalenv   (-> ,evalret cdr cdr cdr car)))
-      ,body))
-
 (defrec-lazy eval-progn (proglist evalret cont)
   (cond ((isnil proglist)
           (cont nil evalret))
@@ -368,6 +423,13 @@
         (t
           (eval-apply expr callargs evalret cont))))))
 
+
+;;================================================================
+;; eval
+;;================================================================
+;; eval :: expr -> evalret -> (expr -> evalret) -> string
+;; cont :: expr -> evalret -> string
+
 (defrec-lazy eval (expr evalret cont)
   (typematch expr
     ;; atom
@@ -378,7 +440,7 @@
                 (append-list varenv globalenv))
               (valueof expr))
             evalret))
-    ;; list
+    ;; cons
     (let ((head (car-data expr))
           (tail (cdr-data expr))
           (head-index (valueof head)))
@@ -450,7 +512,7 @@
                         (atomenv (-> ret-parse cdr cdr))
                         (varenv (car evalret)))
                       (cont expr (evalret* varenv atomenv stdin globalenv))))
-                ;; def
+                ;; <-
                 (let ((varname (-> tail car-data))
                       (defbody (-> tail cdr-data car-data)))
                   (eval defbody evalret
@@ -459,7 +521,7 @@
                         (cont expr (evalret*
                                       (prepend-envzip-basedata (cons-data varname nil) (cons expr nil) varenv)
                                       atomenv stdin globalenv))))))
-                ;; defg
+                ;; defvar
                 (let ((varname (-> tail car-data))
                       (defbody (-> tail cdr-data car-data)))
                   (eval defbody evalret
@@ -482,15 +544,19 @@
                 ;; defmacro
                 (eval (list* def-atom (-> tail car-data) (cons-data macro-atom (-> tail cdr-data)))
                       evalret cont)
-                ;; list
+                ;; cons
                 (eval-list tail evalret cont)))))
-        ;; list: parse as lambda
+        ;; cons: parse as lambda
         (eval-apply head tail evalret cont)
         ;; nil
         (cont nil evalret)))
     ;; nil
     (cont nil evalret)))
 
+
+;;================================================================
+;; User interface
+;;================================================================
 (defrec-lazy repl (varenv atomenv stdin globalenv)
   (cons ">" (cons " " (if (= stringtermchar (car stdin))
     stringterm
