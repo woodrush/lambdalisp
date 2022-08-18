@@ -5,6 +5,7 @@
 (def-lazy ")" (succ "("))
 (def-lazy " " 32)
 (def-lazy "." (+ (+ (+ 32 8) 4) 2))
+(def-lazy "+" (+ (+ (+ 32 8) 2) 1))
 (def-lazy "-" (+ (+ (+ 32 8) 4) 1))
 (def-lazy "<" (+ (+ (+ 32 16) 8) 4))
 (def-lazy ">" (+ (+ (+ (+ 32 16) 8) 4) 2))
@@ -12,6 +13,7 @@
 (def-lazy "*" (+ (+ 32 8) 2))
 (def-lazy "'" (+ 32 (+ 4 (+ 2 1))))
 (def-lazy "\"" (+ 32 2))
+(def-lazy "=" (+ 32 (+ 16 (+ 8 (+ 4 1)))))
 (def-lazy ";" (+ 32 (+ 16 (+ 8 (+ 2 1)))))
 (def-lazy "\\n" (+ 8 2))
 (def-lazy "\\" (+ 64 (+ 16 (+ 8 4))))
@@ -33,6 +35,12 @@
 (def-lazy 20 (+ 16 4))
 (def-lazy 21 (+ 16 (+ 4 1)))
 (def-lazy 22 (+ 16 (+ 4 2)))
+(def-lazy 23 (+ 16 (+ 4 (+ 2 1))))
+(def-lazy 24 (+ 16 8))
+(def-lazy 25 (+ 16 (+ 8 1)))
+(def-lazy 26 (+ 16 (+ 8 2)))
+(def-lazy 27 (+ 16 (+ 8 (+ 2 1))))
+(def-lazy 28 (+ 16 (+ 8 4)))
 
 
 ;;================================================================
@@ -269,21 +277,31 @@
     (list "c" "o" "n" "d")
     (list "p" "r" "i" "n" "t")
     (list "r" "e" "a" "d")
-    (list "<" "-")
+    (list "s" "e" "t" "q")
     (list "d" "e" "f" "v" "a" "r")
     (list "p" "r" "o" "g" "n")
-    ;; (list "w" "h" "i" "l" "e")
     (list "l" "a" "m" "b" "d" "a")
     (list "m" "a" "c" "r" "o")
-    ;; (list "d" "e" "f" "u" "n")
-    ;; (list "d" "e" "f" "m" "a" "c" "r" "o")
+    (list "d" "e" "f" "u" "n")
+    (list "d" "e" "f" "m" "a" "c" "r" "o")
     (list "l" "i" "s" "t")
     (list "t")
     (list "e" "l" "s" "e")
     (list "h" "e" "l" "p")
     (list "\\" "s")
     (list " ")
-    (list "&" "r" "e" "s" "t")))
+    (list "&" "r" "e" "s" "t")
+    (list "w" "h" "i" "l" "e")
+    (list "x")
+    (list "y")
+    (list "+")
+    (list "-")
+    (list "<" "=")
+    (list "n" "o" "t")
+    (list "a" "n" "d")
+    (list "o" "r")
+    (list "=")
+    ))
 
 ;; (def-lazy maxforms 18)
 
@@ -296,33 +314,88 @@
 ;; (def-lazy \s-index 20)
 ;; (def-lazy whitespace-index 21)
 
-(def-lazy maxforms 15)
+(def-lazy maxforms 17)
 
 (def-lazy quote-atom (atom* 0))
+(def-lazy car-atom (atom* 1))
+(def-lazy cdr-atom (atom* 2))
+(def-lazy cons-atom (atom* 3))
+(def-lazy atom-atom (atom* 4))
+(def-lazy cond-atom (atom* 6))
 (def-lazy def-atom (atom* 9))
+(def-lazy progn-atom (atom* 11))
 (def-lazy lambda-atom (atom* 12))
 (def-lazy macro-atom (atom* 13))
-(def-lazy t-atom (atom* maxforms))
-(def-lazy rest-atom (atom* 20))
-(def-lazy \s-index 18)
-(def-lazy whitespace-index 19)
+(def-lazy list-atom (atom* 16))
+(def-lazy t-atom (atom* 17))
+(def-lazy t-index 17)
+(def-lazy else-index 18)
+(def-lazy else-atom (atom* else-index))
+(def-lazy help-index 19)
+(def-lazy \s-index 20)
+(def-lazy whitespace-index 21)
+(def-lazy rest-atom (atom* 22))
+
+(def-lazy while-index 23)
+(def-lazy while-atom (atom* 23))
+(def-lazy x-atom (atom* 24))
+(def-lazy y-atom (atom* 25))
+(def-lazy +-atom (atom* 26))
+(def-lazy --atom (atom* 27))
+(def-lazy <=-atom (atom* 28))
+
+
+(defun lisp2data (expr)
+  (cond ((atom expr)
+          (intern (concatenate 'string (write-to-string expr) "-ATOM")))
+        (t
+          `(list* ,@(mapcar #'lisp2data expr)))))
+
+(defmacro def-aslisp-lazy (name expr)
+  `(def-lazy ,name ,(lisp2data expr)))
+
+(def-aslisp-lazy <=-expr
+  (lambda (x y) (atom (- x y))))
 
 (def-lazy initial-varenv
   (list
     ;; t
-    (cons maxforms (atom* maxforms))
+    (cons t-index (atom* t-index))
     ;; else
-    (cons (succ maxforms) (atom* maxforms))
+    (cons else-index (atom* t-index))
     ;; \s -> whitespace
     (cons \s-index (atom* whitespace-index))
     ;; help
-    (cons (succ (succ (succ maxforms)))
+    (cons help-index
       ((letrec-lazy help (n)
-        (cond ((<= n (succ (succ maxforms)))
+        (cond ((<= n help-index)
                 (cons-data (atom* n) (help (succ n))))
               (t
                 nil)))
-       0))))
+       0))
+    ;; while
+    (cons while-index
+      (list* macro-atom (list* x-atom rest-atom y-atom)
+        (list* list-atom (list* quote-atom cond-atom)
+          (list* list-atom x-atom
+            (list* cons-atom (list* quote-atom progn-atom) y-atom)
+            (list* cons-atom (list* quote-atom while-atom) (list* cons-atom x-atom y-atom))))))
+    (cons (valueof +-atom)
+      (list* lambda-atom (list* x-atom y-atom)
+        (list* cond-atom
+          (list* (list* atom-atom y-atom) x-atom)
+          (list* else-atom (list* +-atom (list* cons-atom t-atom x-atom) (list* cdr-atom y-atom))))))
+    (cons (valueof --atom)
+      (list* lambda-atom (list* x-atom y-atom)
+        (list* cond-atom
+          (list* (list* atom-atom x-atom) nil)
+          (list* (list* atom-atom y-atom) x-atom)
+          (list* else-atom (list* --atom (list* cdr-atom x-atom) (list* cdr-atom y-atom))))))
+    (cons (valueof <=-atom)
+      (list* lambda-atom (list* x-atom y-atom)
+        (list* atom-atom (list* --atom x-atom y-atom))))
+    (cons (valueof <=-atom) <=-expr)
+       ))
 
 (defun-lazy truth-data (expr)
   (if expr t-atom nil))
@@ -581,7 +654,7 @@
                         (atomenv (-> ret-parse cdr cdr))
                         (varenv (car evalret)))
                       (cont expr (evalret* varenv atomenv stdin globalenv))))
-                ;; <-
+                ;; setq
                 (let ((varname (-> tail car-data))
                       (defbody (-> tail cdr-data car-data)))
                   (eval defbody evalret
@@ -607,12 +680,12 @@
                 (cont expr evalret)
                 ;; macro
                 (cont expr evalret)
-                ;; ;; defun
-                ;; (eval (list* def-atom (-> tail car-data) (cons-data lambda-atom (-> tail cdr-data)))
-                ;;       evalret cont)
-                ;; ;; defmacro
-                ;; (eval (list* def-atom (-> tail car-data) (cons-data macro-atom (-> tail cdr-data)))
-                ;;       evalret cont)
+                ;; defun
+                (eval (list* def-atom (-> tail car-data) (cons-data lambda-atom (-> tail cdr-data)))
+                      evalret cont)
+                ;; defmacro
+                (eval (list* def-atom (-> tail car-data) (cons-data macro-atom (-> tail cdr-data)))
+                      evalret cont)
                 ;; list
                 (eval-list tail evalret cont)
                 ))))
