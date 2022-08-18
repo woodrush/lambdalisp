@@ -15,6 +15,7 @@
 (def-lazy "*" (+ (+ 32 8) 2))
 (def-lazy "'" (+ 32 (+ 4 (+ 2 1))))
 (def-lazy "\"" (+ 32 2))
+(def-lazy ";" (+ 32 (+ 16 (+ 8 (+ 2 1)))))
 (def-lazy "\\n" (+ 8 2))
 (def-lazy "\\" (+ 64 (+ 16 (+ 8 4))))
 
@@ -208,10 +209,18 @@
         (t
           nil)))
 
+(defrec-lazy skip-comment (stdin)
+  (cond ((= (car stdin) "\\n")
+          (cdr stdin))
+        (t
+          (skip-comment (cdr stdin)))))
+
 (defrec-lazy read-skip-whitespace (stdin)
   (let ((c (car stdin)))
     (cond ((or (= " " c) (= "\\n" c) (= stringtermchar c))
             (read-skip-whitespace (cdr stdin)))
+          ((= ";" c)
+            (read-skip-whitespace (skip-comment stdin)))
           (t
             stdin))))
 
