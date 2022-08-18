@@ -201,9 +201,9 @@
     (list "r" "e" "a" "d")
     (list "d" "e" "f")
     (list "l" "o" "c")
-    (list "l" "a" "m" "b" "d" "a")
     (list "p" "r" "o" "g" "n")
     (list "w" "h" "i" "l" "e")
+    (list "l" "a" "m" "b" "d" "a")
     (list "t")))
 
 (def-lazy maxforms 14)
@@ -274,6 +274,16 @@
          (,stdin       (-> ,evalret cdr cdr car))
          (,globalenv   (-> ,evalret cdr cdr cdr car)))
       ,body))
+
+(defrec-lazy eval-progn (proglist evalret cont)
+  (cond ((isnil proglist)
+          (cont nil evalret))
+        ((isnil (cdr proglist))
+          (eval (car proglist) evalret cont))
+        (t
+          (eval (car proglist) evalret
+            (lambda (expr evalret)
+              (eval-progn (cdr proglist) evalret cont))))))
 
 (defrec-lazy eval (expr evalret cont)
   (typematch expr
@@ -372,12 +382,13 @@
                         (cont expr (evalret*
                                       (prepend-envzip (cons-data varname nil) (cons expr nil) varenv)
                                       atomenv stdin globalenv))))))
+                ;; progn
+                (eval-progn tail evalret cont)
+                ;; while
+                nil
                 ;; lambda
                 nil
-                ;; progn
-                nil
-                ;; while
-                nil))))
+                ))))
 
         ;; list: parse as lambda
         (let ((lambdaexpr head)
