@@ -1,6 +1,8 @@
 (load "./lazy.cl")
 
 
+(def-lazy " " 32)
+
 (defmacro-lazy do-continuation* (top &rest proc)
   (cond ((not proc)
           top)
@@ -78,7 +80,9 @@
     (cons6 (regread reg enum-A) (regread reg enum-B) (regread reg enum-C) (regread reg enum-D) (regread reg enum-SP)  value               )))
 
 (defrec-lazy invert (n)
-  (cons (not (car n)) (invert (cdr n))))
+  (if (isnil n)
+    nil
+    (cons (not (car n)) (invert (cdr n)))))
 
 (defrec-lazy add-carry (n m carry)
   (cond ((isnil n)
@@ -90,7 +94,7 @@
               (cons (not carry) (add-carry (cdr n) (cdr m) carry)))
             (if (car m)
               (cons (not carry) (add-carry (cdr n) (cdr m) carry))
-              (cons carry       (add-carry (cdr n) (cdr m) (not carry))))))))
+              (cons carry       (add-carry (cdr n) (cdr m) nil)))))))
 
 (defmacro-lazy add (n m)
   `(add-carry ,n ,m nil))
@@ -124,12 +128,13 @@
             (cons nil (int2bit* n (cdr invpowerlist)))))))
 
 (defmacro-lazy int2bit (n)
-  `(int2bit* ,n invpowerlist))
+  `(reverse (int2bit* ,n invpowerlist)))
 
 
 ;; (defun-lazy mov-imm (src dst))
 ;; (defun-lazy mov-reg (src dst))
 
+(defun-lazy truth2int (x) (x 1 0))
 
 (defun-lazy main (stdin)
   (do-continuation
@@ -148,12 +153,32 @@
     ;; (cons (car ret4))
     (let ((n (int2bit 32))))
     (let ((m (int2bit 4))))
-    ;; (let ((x (add n m))))
-    (let ((c (bit2int (list t nil nil t t t nil nil)))))
+    (let ((a (int2bit 2))))
+    (let ((zx (add (add n m) a))))
+    (let ((zy (add (add (add n m) m) a))))
+    (let ((zz (sub (add (add n m) m) a))))
+    ;; (let ((c (bit2int (list t nil nil t t t nil nil)))))
     ;; (let ((c (bit2int x))))
-    (let ((d (bit2int (int2bit (+ 4 32))))))
-    (cons c)
-    (cons d)
+    ;; ;; (let ((d (bit2int (int2bit (+ 4 32))))))
+    ;; (let ((e (bit2int x))))
+    (cons (+ "0" (length zx)))
+    (cons " ")
+    (cons (bit2int zx))
+    (cons (bit2int zy))
+    (cons (bit2int zz))
+    (cons " ")
+    (cons (+ "0" (-> zx car truth2int)))
+    (cons (+ "0" (-> zx cdr car truth2int)))
+    (cons (+ "0" (-> zx cdr cdr car truth2int)))
+    (cons (+ "0" (-> zx cdr cdr cdr car truth2int)))
+    (cons (+ "0" (-> zx cdr cdr cdr cdr car truth2int)))
+    (cons (+ "0" (-> zx cdr cdr cdr cdr cdr car truth2int)))
+    (cons (+ "0" (-> zx cdr cdr cdr cdr cdr cdr car truth2int)))
+    (cons (+ "0" (-> zx cdr cdr cdr cdr cdr cdr cdr car truth2int)))
+
+    ;; (cons c)
+    ;; ;; (cons d)
+    ;; (cons e)
     (inflist 256)))
 
 
