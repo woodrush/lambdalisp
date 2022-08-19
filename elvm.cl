@@ -23,13 +23,15 @@
 ;; (def-lazy zero-int (take 24 (inflist nil)))
 (def-lazy "0" (+ 32 16))
 
-(def-lazy zero-int "0")
+(def-lazy zero-int (list "0"))
 (def-lazy init-memory nil)
 
 (defrec-lazy memory-lookup-cont (memory address cont)
   (cond
     ((isnil address)
-      (cont memory))
+      (if (isnil memory)
+        (cont zero-int)
+        (cont memory)))
     ((isnil memory)
       (cont zero-int))
     (t
@@ -52,14 +54,19 @@
   (do-continuation
     (let ((memory init-memory)))
     (let ((address (list t t nil))))
-    (let ((value "A")))
+    (let ((value (list "A"))))
     (let ((memory (memory-write memory address value))))
     (<- (ret) (memory-lookup-cont memory address))
-    (let ((ret "0")))
-    (cons ret)
-    (inflist 256))
-  ;; (cons "A" (cons "B" (inflist 256)))
-  )
+    ;; (let ((ret2 "B")))
+    (<- (ret2) (memory-lookup-cont memory (list t t t)))
+    (<- (ret3) (memory-lookup-cont memory (list t t nil nil)))
+    (let ((memory (memory-write memory (list t t nil nil) value))))
+    (<- (ret4) (memory-lookup-cont memory (list t t nil nil)))
+    (cons (car ret))
+    (cons (car ret2))
+    (cons (car ret3))
+    (cons (car ret4))
+    (inflist 256)))
 
 
 
