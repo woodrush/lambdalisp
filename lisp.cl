@@ -17,6 +17,8 @@
 (def-lazy ";" (+ 32 (+ 16 (+ 8 (+ 2 1)))))
 (def-lazy "\\n" (+ 8 2))
 (def-lazy "\\" (+ 64 (+ 16 (+ 8 4))))
+(def-lazy "0" (+ 32 16))
+(def-lazy "9" (+ 32 (+ 16 (+ 8 1))))
 
 (def-lazy 3 (succ 2))
 (def-lazy 5 (succ 4))
@@ -44,6 +46,7 @@
 (def-lazy 29 (+ 16 (+ 8 (+ 4 1))))
 (def-lazy 30 (+ 16 (+ 8 (+ 4 2))))
 (def-lazy 31 (+ 16 (+ 8 (+ 4 (+ 2 1)))))
+
 
 
 ;;================================================================
@@ -93,16 +96,17 @@
 ;;   `car` in the data structure is `car-data`.
 ;;   Note that `(car-data data)` and `(car data)` thus yield different results.
 
-(defun-lazy type-atom (t0 t1) t0)
-(defun-lazy type-cons (t0 t1) t1)
+(defun-lazy type-atom (t0 t1 t2) t0)
+(defun-lazy type-cons (t0 t1 t2) t1)
+(defun-lazy type-int  (t0 t1 t2) t2)
 
 (def-lazy typeof car)
 (def-lazy valueof cdr)
 
-(defmacro-lazy typematch (expr atomcase conscase nilcase)
+(defmacro-lazy typematch (expr atomcase conscase nilcase intcase)
   `(if (isnil ,expr)
       ,nilcase
-      ((typeof ,expr) ,atomcase ,conscase)))
+      ((typeof ,expr) ,atomcase ,conscase, intcase)))
 
 (defun-lazy isatom (expr)
   (typematch expr
@@ -111,6 +115,8 @@
     ;; cons
     nil
     ;; nil
+    t
+    ;; int
     t))
 
 (defmacro-lazy car-data (data)
@@ -129,6 +135,9 @@
   (if (not args)
     `(cons-data ,arg nil)
     `(cons-data ,arg (list* ,@args))))
+
+(defmacro-lazy int* (sign value)
+  `(cons type-int (cons ,sign ,value)))
 
 (defrec-lazy append-element-data (l item)
   (if (isnil l) (cons-data item nil) (cons-data (car-data l) (append-element-data (cdr-data l) item))))
@@ -153,6 +162,31 @@
 (defun-lazy printatom (atomenv expr cont)
   (append-list (car ((valueof expr) cdr atomenv)) cont))
 
+(defun-lazy div-mod-rawint (n m)
+  ((letrec-lazy div-mod-rawint (n m q)
+    (cond ((< n m)
+            (cons q n))
+          (t
+            (div-mod-rawint (- n m) m (succ q)))))
+    n m 0))
+
+(defrec-lazy rawint2string (n)
+  ((letrec-lazy rawint2string (n cur-s)
+    (cond ((iszero n)
+            cur-s)
+          (t
+            (let ((qr (div-mod-rawint n 10)))
+              (rawint2string (car qr) (cons (+ "0" (cdr qr)) cur-s))))))
+    n nil))
+
+(defun-lazy print-int (expr cont)
+  (cond ((-> expr valueof cdr iszero)
+          (cons "0" cont))
+        ((-> expr valueof car)
+          (append-list (rawint2string (-> expr valueof cdr)) cont))
+        (t
+          (cons "-" (append-list (rawint2string (-> expr valueof cdr)) cont)))))
+
 (defrec-lazy printexpr-helper (atomenv expr mode cont)
   (if mode
     (typematch expr
@@ -161,7 +195,9 @@
       ;; cons
       (cons "(" (printexpr-helper atomenv expr nil (cons ")" cont)))
       ;; nil
-      (cons "(" (cons ")" cont)))
+      (cons "(" (cons ")" cont))
+      ;; int
+      (print-int expr cont))
     (printexpr-helper atomenv (car-data expr) t
       (typematch (cdr-data expr)
         ;; atom
@@ -169,7 +205,9 @@
         ;; cons
         (cons " " (printexpr-helper atomenv (cdr-data expr) nil cont))
         ;; nil
-        cont))))
+        cont
+        ;; int
+        (print-int expr cont)))))
 
 (defun-lazy printexpr (atomenv expr cont)
   (printexpr-helper atomenv expr t cont))
@@ -181,14 +219,17 @@
 (def-lazy stringtermchar 256)
 (def-lazy stringterm (inflist 256))
 
-(defrec-lazy reverse (list curlist)
-  (if (isnil list) curlist (reverse (cdr list) (cons (car list) curlist))))
+(defrec-lazy reverse-helper (list curlist)
+  (if (isnil list) curlist (reverse-helper (cdr list) (cons (car list) curlist))))
+
+(defmacro-lazy reverse (list)
+  `(reverse-helper ,list nil))
 
 (defrec-lazy read-string (curstr stdin)
   (let ((c (car stdin)))
     (cond
           ((or (= "(" c) (= ")" c) (= " " c) (= "\\n" c) (= stringtermchar c))
-            (cons (reverse curstr nil) stdin))
+            (cons (reverse curstr) stdin))
           (t
             (read-string (cons (car stdin) curstr) (cdr stdin))))))
 
@@ -241,6 +282,18 @@
 (defrec-lazy reverse-base2data (list curlist)
   (if (isnil list) curlist (reverse-base2data (cdr list) (cons-data (car list) curlist))))
 
+(defmacro-lazy within-int (c)
+  `(and (<= "0" c) (<= c "9")))
+
+(defun-lazy read-int (stdin sign atomenv)
+  ((letrec-lazy read-int (stdin cur-n)
+      (let ((c (car stdin)))
+        (cond ((or (<= c (pred "0")) (<= (succ "9") c))
+                (cons (int* sign cur-n) (cons stdin atomenv)))
+              (t
+                (read-int (cdr stdin) (+ (* 10 cur-n) (- c "0")))))))
+    stdin 0))
+
 (defrec-lazy read-expr (stdin atomenv)
   (let ((read-list
           (letrec-lazy read-list (stdin atomenv curexpr)
@@ -262,6 +315,10 @@
                           (expr (car ret))
                           (rest (cdr ret)))
                       (cons (list* quote-atom expr) rest)))
+                  ((and (<= "0" c) (<= c "9"))
+                    (read-int stdin t atomenv))
+                  ((and (= "-" c) (and (<= "0" (-> stdin cdr car)) (<= (-> stdin cdr car) "9")))
+                    (read-int (cdr stdin) nil atomenv))
                   (t
                     (read-atom stdin atomenv))))))
 
@@ -714,9 +771,13 @@
         ;; cons: parse as lambda
         (eval-apply head tail evalret cont)
         ;; nil
+        (cont nil evalret)
+        ;; int
         (cont nil evalret)))
     ;; nil
-    (cont nil evalret)))
+    (cont nil evalret)
+    ;; int
+    (cont expr evalret)))
 
 
 ;;================================================================
