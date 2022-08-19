@@ -185,7 +185,8 @@
 (defmacro-lazy or (x &rest r)
   (if (not r) x `(,x t (or ,@r))))
 
-(defun-lazy xor (x y) (x (not y) y))
+(defun-lazy xor (x y) (if x (not y) y))
+(defun-lazy xnor (x y) (if x y (not y)))
 
 (defun-lazy succ (n f x) (f (n f x)))
 (defun-lazy pred (n f x) (n ((lambda (g h) (h (g f)))) (lambda (u) x) (lambda (u) u)))
@@ -194,6 +195,7 @@
 (defun-lazy - (m n) (n pred m))
 (defun-lazy iszero (n) (n (lambda (x) nil) t))
 (defun-lazy <= (m n) (iszero (- m n)))
+(defun-lazy < (m n) (<= (succ m) n))
 (defun-lazy >= (m n) (<= n m))
 (defun-lazy = (m n) (and (<= m n) (<= n m)))
 (defun-lazy 0 (f x) x)
