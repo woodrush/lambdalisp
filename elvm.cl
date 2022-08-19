@@ -70,16 +70,42 @@
 
 (defun-lazy reg-write (reg regptr value)
   (regptr
-    (cons6  value           (regread enum-B) (regread enum-C) (regread enum-D) (regread enum-SP) (regread enum-BP))
-    (cons6 (regread enum-A)  value           (regread enum-C) (regread enum-D) (regread enum-SP) (regread enum-BP))
-    (cons6 (regread enum-A) (regread enum-B)  value           (regread enum-D) (regread enum-SP) (regread enum-BP))
-    (cons6 (regread enum-A) (regread enum-B) (regread enum-C)  value           (regread enum-SP) (regread enum-BP))
-    (cons6 (regread enum-A) (regread enum-B) (regread enum-C) (regread enum-D)  value            (regread enum-BP))
-    (cons6 (regread enum-A) (regread enum-B) (regread enum-C) (regread enum-D) (regread enum-SP)  value           )))
+    (cons6  value               (regread reg enum-B) (regread reg enum-C) (regread reg enum-D) (regread reg enum-SP) (regread reg enum-BP))
+    (cons6 (regread reg enum-A)  value               (regread reg enum-C) (regread reg enum-D) (regread reg enum-SP) (regread reg enum-BP))
+    (cons6 (regread reg enum-A) (regread reg enum-B)  value               (regread reg enum-D) (regread reg enum-SP) (regread reg enum-BP))
+    (cons6 (regread reg enum-A) (regread reg enum-B) (regread reg enum-C)  value               (regread reg enum-SP) (regread reg enum-BP))
+    (cons6 (regread reg enum-A) (regread reg enum-B) (regread reg enum-C) (regread reg enum-D)  value                (regread reg enum-BP))
+    (cons6 (regread reg enum-A) (regread reg enum-B) (regread reg enum-C) (regread reg enum-D) (regread reg enum-SP)  value               )))
+
+(defrec-lazy invert (n)
+  (cons (not (car n)) (invert (cdr n))))
+
+(defrec-lazy add-carry (n m carry)
+  (cond ((isnil n)
+          nil)
+        (t
+          (if (car n)
+            (if (car m)
+              (cons carry       (add (cdr n) (cdr m) t))
+              (cons (not carry) (add (cdr n) (cdr m) carry)))
+            (if (car m)
+              (cons (not carry) (add (cdr n) (cdr m) carry))
+              (cons carry       (add (cdr n) (cdr m) (not carry))))))))
+
+(defmacro-lazy add (n m)
+  `(add-carry ,n ,m nil))
+
+(defmacro-lazy sub (n m)
+  `(add-carry ,n (invert ,m) t))
+
 
 (defun-lazy mov-imm (src dst))
 (defun-lazy mov-reg (src dst))
 
+(defun-lazy halfadd (x y)
+  (if x
+    (if y
+      (cons ))))
 
 (defun-lazy main (stdin)
   (do-continuation
