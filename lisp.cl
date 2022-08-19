@@ -54,6 +54,7 @@
 (def-lazy 36 (+ 32 4))
 (def-lazy 37 (+ 32 (+ 4 1)))
 (def-lazy 38 (+ 32 (+ 4 2)))
+(def-lazy 39 (+ 32 (+ 4 (+ 2 1))))
 
 
 
@@ -418,6 +419,7 @@
     (list "/")
     (list "%")
     (list "<" "=")
+    (list "i" "s" "i" "n" "t")
     (list "t")
     (list "e" "l" "s" "e")
     (list "h" "e" "l" "p")
@@ -434,10 +436,11 @@
     (list ">" "=")
     (list "<")
     (list ">")
+    (list "u" "n" "q" "u" "o" "t" "e")
     ))
 
 
-(def-lazy maxforms 23)
+(def-lazy maxforms 24)
 
 (def-lazy quote-atom (atom* 0))
 (def-lazy car-atom (atom* 1))
@@ -449,27 +452,27 @@
 (def-lazy progn-atom (atom* 11))
 (def-lazy lambda-atom (atom* 12))
 (def-lazy macro-atom (atom* 13))
-(def-lazy list-atom (atom* 16))
-(def-lazy <=-atom (atom* 22))
-(def-lazy t-atom (atom* 23))
-(def-lazy t-index 23)
-(def-lazy else-atom (atom* 24))
-(def-lazy help-index 25)
-(def-lazy \s-index 26)
-(def-lazy whitespace-index 27)
-(def-lazy &rest-atom (atom* 28))
+(def-lazy list-atom  (atom* 16))
+(def-lazy <=-atom    (atom* 22))
+(def-lazy isint-atom (atom* 23))
+(def-lazy t-atom     (atom* 24))
+(def-lazy t-index           24)
+(def-lazy else-atom  (atom* 25))
+(def-lazy help-index        26)
+(def-lazy \s-index          27)
+(def-lazy whitespace-index  28)
+(def-lazy &rest-atom (atom* 29))
 
-(def-lazy while-atom (atom* 29))
-(def-lazy x-atom (atom* 30))
-(def-lazy y-atom (atom* 31))
-(def-lazy not-atom (atom* 32))
-(def-lazy and-atom (atom* 33))
-(def-lazy or-atom (atom* 34))
-(def-lazy =-atom (atom* 35))
-(def-lazy >=-atom (atom* 36))
-(def-lazy <-atom (atom* 37))
-(def-lazy >-atom (atom* 38))
-
+(def-lazy while-atom (atom* 30))
+(def-lazy x-atom     (atom* 31))
+(def-lazy y-atom     (atom* 32))
+(def-lazy not-atom   (atom* 33))
+(def-lazy and-atom   (atom* 34))
+(def-lazy or-atom    (atom* 35))
+(def-lazy =-atom     (atom* 36))
+(def-lazy >=-atom    (atom* 37))
+(def-lazy <-atom     (atom* 38))
+(def-lazy >-atom     (atom* 39))
 
 (defun lisp2data (expr)
   (cond ((eq nil expr)
@@ -530,8 +533,7 @@
     (cons (valueof =-atom) =-expr)
     (cons (valueof >=-atom) >=-expr)
     (cons (valueof <-atom) <-expr)
-    (cons (valueof >-atom) >-expr)
-    ))
+    (cons (valueof >-atom) >-expr)))
 
 (defun-lazy truth-data (expr)
   (if expr t-atom nil))
@@ -846,6 +848,8 @@
                 (eval-arith mod-int (car-data tail) (-> tail cdr-data car-data) evalret cont)
                 ;; <=
                 (eval-arith <=-int (car-data tail) (-> tail cdr-data car-data) evalret cont)
+                ;; isint
+                (cont (truth-data (isint (car-data tail))) evalret)
                 ))))
         ;; cons: parse as lambda
         (eval-apply head tail evalret cont)
