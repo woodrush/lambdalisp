@@ -86,11 +86,11 @@
         (t
           (if (car n)
             (if (car m)
-              (cons carry       (add (cdr n) (cdr m) t))
-              (cons (not carry) (add (cdr n) (cdr m) carry)))
+              (cons carry       (add-carry (cdr n) (cdr m) t))
+              (cons (not carry) (add-carry (cdr n) (cdr m) carry)))
             (if (car m)
-              (cons (not carry) (add (cdr n) (cdr m) carry))
-              (cons carry       (add (cdr n) (cdr m) (not carry))))))))
+              (cons (not carry) (add-carry (cdr n) (cdr m) carry))
+              (cons carry       (add-carry (cdr n) (cdr m) (not carry))))))))
 
 (defmacro-lazy add (n m)
   `(add-carry ,n ,m nil))
@@ -98,31 +98,62 @@
 (defmacro-lazy sub (n m)
   `(add-carry ,n (invert ,m) t))
 
+(def-lazy powerlist
+  (cons 1 (cons 2 (cons 4 (cons 8 (cons 16 (cons 32 (cons 64 (cons 128 nil)))))))))
 
-(defun-lazy mov-imm (src dst))
-(defun-lazy mov-reg (src dst))
+(def-lazy invpowerlist
+  (cons 128 (cons 64 (cons 32 (cons 16 (cons 8 (cons 4 (cons 2 (cons 1 nil)))))))))
 
-(defun-lazy halfadd (x y)
-  (if x
-    (if y
-      (cons ))))
+(defrec-lazy bit2int* (n powerlist)
+  (cond ((isnil powerlist)
+          0)
+        (t
+          (if (car n)
+            (+ (car powerlist) (bit2int* (cdr n) (cdr powerlist)))
+            (bit2int* (cdr n) (cdr powerlist))))))
+
+(defmacro-lazy bit2int (n)
+  `(bit2int* ,n powerlist))
+
+(defrec-lazy int2bit* (n invpowerlist)
+  (cond ((isnil invpowerlist)
+          nil)
+        (t
+          (if (<= (car invpowerlist) n)
+            (cons t   (int2bit* (- n (car invpowerlist)) (cdr invpowerlist)))
+            (cons nil (int2bit* n (cdr invpowerlist)))))))
+
+(defmacro-lazy int2bit (n)
+  `(int2bit* ,n invpowerlist))
+
+
+;; (defun-lazy mov-imm (src dst))
+;; (defun-lazy mov-reg (src dst))
+
 
 (defun-lazy main (stdin)
   (do-continuation
-    (let ((memory init-memory)))
-    (let ((address (list t t nil))))
-    (let ((value (list "A"))))
-    (let ((memory (memory-write memory address value))))
-    (<- (ret) (memory-lookup-cont memory address))
-    ;; (let ((ret2 "B")))
-    (<- (ret2) (memory-lookup-cont memory (list t t t)))
-    (<- (ret3) (memory-lookup-cont memory (list t t nil nil)))
-    (let ((memory (memory-write memory (list t t nil nil) value))))
-    (<- (ret4) (memory-lookup-cont memory (list t t nil nil)))
-    (cons (car ret))
-    (cons (car ret2))
-    (cons (car ret3))
-    (cons (car ret4))
+    ;; (let ((memory init-memory)))
+    ;; (let ((address (list t t nil))))
+    ;; (let ((value (list "A"))))
+    ;; (let ((memory (memory-write memory address value))))
+    ;; (<- (ret) (memory-lookup-cont memory address))
+    ;; (<- (ret2) (memory-lookup-cont memory (list t t t)))
+    ;; (<- (ret3) (memory-lookup-cont memory (list t t nil nil)))
+    ;; (let ((memory (memory-write memory (list t t nil nil) value))))
+    ;; (<- (ret4) (memory-lookup-cont memory (list t t nil nil)))
+    ;; (cons (car ret))
+    ;; (cons (car ret2))
+    ;; (cons (car ret3))
+    ;; (cons (car ret4))
+    (let ((n (int2bit 32))))
+    (let ((m (int2bit 4))))
+    ;; (let ((x (add n m))))
+    (let ((c (bit2int (list t nil nil t t t nil nil)))))
+    ;; (let ((c (bit2int x))))
+    (let ((d (bit2int (int2bit (+ 4 32))))))
+    (cons c)
+    (cons d)
     (inflist 256)))
 
 
