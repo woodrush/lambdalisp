@@ -574,9 +574,10 @@
 ;; Evaluation helpers
 ;;================================================================
 ;; For all eval-like functions:
-;; - The return type is `string`. Continuation-passing is used for chaining evaluations.
+;; - All eval-like functions never return anything.
+;;   Every eval-like function always evaluates the continuation with its return value at the end.
 ;; - The continuation has the type:
-;;     cont :: expr -> evalret -> string
+;;     cont :: expr -> evalret -> t
 ;; - The format of the global state is specified in `evalret*` and `let-parse-evalret*`.
 
 (defmacro-lazy evalret* (varenv atomenv stdin globalenv stdout)
@@ -749,8 +750,10 @@
 ;;================================================================
 ;; eval
 ;;================================================================
-;; eval :: expr -> evalret -> (expr -> evalret) -> string
-;; cont :: expr -> evalret -> string
+;; - `eval` never returns anything - it always evaluates the
+;;   provided continuation with its return value at the end.
+;; eval :: expr -> evalret -> (expr -> evalret -> t) -> t
+;; cont :: expr -> evalret -> t
 
 (defrec-lazy eval (expr evalret cont)
   (typematch expr
