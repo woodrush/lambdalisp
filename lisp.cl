@@ -48,6 +48,12 @@
 (def-lazy 29 (+ 16 (+ 8 (+ 4 1))))
 (def-lazy 30 (+ 16 (+ 8 (+ 4 2))))
 (def-lazy 31 (+ 16 (+ 8 (+ 4 (+ 2 1)))))
+(def-lazy 33 (+ 32 1))
+(def-lazy 34 (+ 32 2))
+(def-lazy 35 (+ 32 (+ 2 1)))
+(def-lazy 36 (+ 32 4))
+(def-lazy 37 (+ 32 (+ 4 1)))
+(def-lazy 38 (+ 32 (+ 4 2)))
 
 
 
@@ -82,15 +88,17 @@
 ;;================================================================
 ;; Data structure
 ;;================================================================
-;; - There are three data types, {atom, cons, nil}.
+;; - There are four data types, {atom, cons, nil, int}.
 ;; - The data structure for each type is as follows:
 ;;   - atom:
-;;      (type-atom [number])
+;;      (type-atom [index in atomenv])
 ;;   - cons:
 ;;      (type-cons ([car] . [cdr]))
 ;;   - nil: (is equal to `nil` in the base environment)
 ;;      nil
-;; - `type-atom` and `type-cons` are type enums defined below.
+;;   - int:
+;;      (type-cons ([sign] . [number]))
+;; - `type-atom`, `type-cons`, and `type-int` are type enums defined below.
 ;;
 ;; Manipulating data lists
 ;; - Functions for manipulating lists in the data environment
@@ -423,18 +431,11 @@
     (list "a" "n" "d")
     (list "o" "r")
     (list "=")
+    (list ">" "=")
+    (list "<")
+    (list ">")
     ))
 
-;; (def-lazy maxforms 18)
-
-;; (def-lazy quote-atom (atom* 0))
-;; (def-lazy def-atom (atom* 9))
-;; (def-lazy lambda-atom (atom* 13))
-;; (def-lazy macro-atom (atom* 14))
-;; (def-lazy t-atom (atom* maxforms))
-;; (def-lazy &rest-atom (atom* (succ 22)))
-;; (def-lazy \s-index 20)
-;; (def-lazy whitespace-index 21)
 
 (def-lazy maxforms 23)
 
@@ -449,26 +450,25 @@
 (def-lazy lambda-atom (atom* 12))
 (def-lazy macro-atom (atom* 13))
 (def-lazy list-atom (atom* 16))
+(def-lazy <=-atom (atom* 22))
 (def-lazy t-atom (atom* 23))
 (def-lazy t-index 23)
-(def-lazy else-index 18)
-(def-lazy else-atom (atom* else-index))
-(def-lazy help-index 19)
-(def-lazy \s-index 20)
-(def-lazy whitespace-index 21)
-(def-lazy &rest-atom (atom* 22))
+(def-lazy else-atom (atom* 24))
+(def-lazy help-index 25)
+(def-lazy \s-index 26)
+(def-lazy whitespace-index 27)
+(def-lazy &rest-atom (atom* 28))
 
-(def-lazy while-index 23)
-(def-lazy while-atom (atom* 23))
-(def-lazy x-atom (atom* 24))
-(def-lazy y-atom (atom* 25))
-(def-lazy +-atom (atom* 26))
-(def-lazy --atom (atom* 27))
-(def-lazy <=-atom (atom* 28))
-(def-lazy not-atom (atom* 29))
-(def-lazy and-atom (atom* 30))
-(def-lazy or-atom (atom* 31))
-(def-lazy =-atom (atom* 32))
+(def-lazy while-atom (atom* 29))
+(def-lazy x-atom (atom* 30))
+(def-lazy y-atom (atom* 31))
+(def-lazy not-atom (atom* 32))
+(def-lazy and-atom (atom* 33))
+(def-lazy or-atom (atom* 34))
+(def-lazy =-atom (atom* 35))
+(def-lazy >=-atom (atom* 36))
+(def-lazy <-atom (atom* 37))
+(def-lazy >-atom (atom* 38))
 
 
 (defun lisp2data (expr)
@@ -481,20 +481,6 @@
 
 (defmacro def-as-lisp-lazy (name expr)
   `(def-lazy ,name ,(lisp2data expr)))
-
-(def-as-lisp-lazy <=-expr
-  (lambda (x y) (atom (- x y))))
-
-(def-as-lisp-lazy --expr
-  (lambda (x y)
-    (cond ((atom x) nil)
-          ((atom y) x)
-          (else (- (cdr x) (cdr y))))))
-
-(def-as-lisp-lazy +-expr
-  (lambda (x y)
-    (cond ((atom y) x)
-          (else (+ (cons t x) (cdr y))))))
 
 (def-as-lisp-lazy while-expr
   (macro (x &rest y)
@@ -512,12 +498,21 @@
 (def-as-lisp-lazy =-expr
   (lambda (x y) (and (<= x y) (<= y x))))
 
+(def-as-lisp-lazy >-expr
+  (lambda (x y) (not (<= x y))))
+
+(def-as-lisp-lazy >=-expr
+  (lambda (x y) (<= y x)))
+
+(def-as-lisp-lazy <-expr
+  (lambda (x y) (not (<= y x))))
+
 (def-lazy initial-varenv
   (list
     ;; t
-    (cons t-index (atom* t-index))
+    (cons (valueof t-atom) t-atom)
     ;; else
-    (cons else-index (atom* t-index))
+    (cons (valueof else-atom) t-atom)
     ;; \s -> whitespace
     (cons \s-index (atom* whitespace-index))
     ;; help
@@ -529,13 +524,13 @@
                 nil)))
        0))
     (cons (valueof while-atom) while-expr)
-    ;; (cons (valueof +-atom) +-expr)
-    ;; (cons (valueof --atom) --expr)
-    (cons (valueof <=-atom) <=-expr)
     (cons (valueof not-atom) not-expr)
     (cons (valueof and-atom) and-expr)
     (cons (valueof or-atom) or-expr)
     (cons (valueof =-atom) =-expr)
+    (cons (valueof >=-atom) >=-expr)
+    (cons (valueof <-atom) <-expr)
+    (cons (valueof >-atom) >-expr)
     ))
 
 (defun-lazy truth-data (expr)
