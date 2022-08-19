@@ -10,7 +10,9 @@
 (def-lazy "<" (+ (+ (+ 32 16) 8) 4))
 (def-lazy ">" (+ (+ (+ (+ 32 16) 8) 4) 2))
 (def-lazy "&" (+ (+ 32 4) 2))
+(def-lazy "%" (+ (+ 32 4) 1))
 (def-lazy "*" (+ (+ 32 8) 2))
+(def-lazy "/" (+ (+ 32 8) (+ (+ 4 2) 1)))
 (def-lazy "'" (+ 32 (+ 4 (+ 2 1))))
 (def-lazy "\"" (+ 32 2))
 (def-lazy "=" (+ 32 (+ 16 (+ 8 (+ 4 1)))))
@@ -119,6 +121,17 @@
     ;; int
     t))
 
+(defun-lazy isint (expr)
+  (typematch expr
+    ;; atom
+    nil
+    ;; cons
+    nil
+    ;; nil
+    nil
+    ;; int
+    t))
+
 (defmacro-lazy car-data (data)
   `(car (valueof ,data)))
 
@@ -157,11 +170,8 @@
 
 
 ;;================================================================
-;; Printing
+;; Integers
 ;;================================================================
-(defun-lazy printatom (atomenv expr cont)
-  (append-list (car ((valueof expr) cdr atomenv)) cont))
-
 (defun-lazy div-mod-rawint (n m)
   ((letrec-lazy div-mod-rawint (n m q)
     (cond ((< n m)
@@ -169,6 +179,46 @@
           (t
             (div-mod-rawint (- n m) m (succ q)))))
     n m 0))
+
+(defmacro-lazy signof (n)
+  `(-> ,n valueof car))
+
+(defmacro-lazy int-valueof (n)
+  `(-> ,n valueof cdr))
+
+(defun-lazy add-int (n m)
+  (let ((sign-n (signof n))
+        (sign-m (signof m))
+        (n (int-valueof n))
+        (m (int-valueof m)))
+    (cond ((and sign-n (not sign-m))
+            (if (<= n m)
+              (int* nil (- m n))
+              (int* t (- n m))))
+          ((and (not sign-n) sign-m)
+            (if (<= m n)
+              (int* nil (- n m))
+              (int* t (- m n))))
+          (t
+            (int* sign-n (+ n m))))))
+
+(defmacro-lazy sub-int (n m)
+  `(add-int ,n (int* (not (signof ,m)) (int-valueof ,m))))
+
+(defun-lazy mult-int (n m)
+  (int* (xnor (signof n) (signof m)) (* (int-valueof n) (int-valueof m))))
+
+(defun-lazy div-int (n m)
+  (int* (xnor (signof n) (signof m)) (car (div-mod-rawint (int-valueof n) (int-valueof m)))))
+
+(defun-lazy mod-int (n m)
+  (int* (xnor (signof n) (signof m)) (cdr (div-mod-rawint (int-valueof n) (int-valueof m)))))
+
+;;================================================================
+;; Printing
+;;================================================================
+(defun-lazy printatom (atomenv expr cont)
+  (append-list (car ((valueof expr) cdr atomenv)) cont))
 
 (defrec-lazy rawint2string (n)
   ((letrec-lazy rawint2string (n cur-s)
@@ -345,6 +395,11 @@
     (list "d" "e" "f" "u" "n")
     (list "d" "e" "f" "m" "a" "c" "r" "o")
     (list "l" "i" "s" "t")
+    (list "+")
+    (list "-")
+    (list "*")
+    (list "/")
+    (list "%")
     (list "t")
     (list "e" "l" "s" "e")
     (list "h" "e" "l" "p")
@@ -354,8 +409,6 @@
     (list "w" "h" "i" "l" "e")
     (list "x")
     (list "y")
-    (list "+")
-    (list "-")
     (list "<" "=")
     (list "n" "o" "t")
     (list "a" "n" "d")
@@ -374,7 +427,7 @@
 ;; (def-lazy \s-index 20)
 ;; (def-lazy whitespace-index 21)
 
-(def-lazy maxforms 17)
+(def-lazy maxforms 22)
 
 (def-lazy quote-atom (atom* 0))
 (def-lazy car-atom (atom* 1))
@@ -387,8 +440,8 @@
 (def-lazy lambda-atom (atom* 12))
 (def-lazy macro-atom (atom* 13))
 (def-lazy list-atom (atom* 16))
-(def-lazy t-atom (atom* 17))
-(def-lazy t-index 17)
+(def-lazy t-atom (atom* 22))
+(def-lazy t-index 22)
 (def-lazy else-index 18)
 (def-lazy else-atom (atom* else-index))
 (def-lazy help-index 19)
@@ -467,8 +520,8 @@
                 nil)))
        0))
     (cons (valueof while-atom) while-expr)
-    (cons (valueof +-atom) +-expr)
-    (cons (valueof --atom) --expr)
+    ;; (cons (valueof +-atom) +-expr)
+    ;; (cons (valueof --atom) --expr)
     (cons (valueof <=-atom) <=-expr)
     (cons (valueof not-atom) not-expr)
     (cons (valueof and-atom) and-expr)
@@ -644,6 +697,16 @@
         (t
           (eval-apply expr callargs evalret cont))))))
 
+(defmacro-lazy eval-arith (arithfunc n m evalret cont)
+  `(eval ,n ,evalret
+    (lambda (expr1 evalret)
+      (if (not (isint expr1))
+        (,cont nil evalret)
+        (eval ,m evalret
+          (lambda (expr2 evalret)
+            (if (not (isint expr2))
+              (,cont nil evalret)
+              (,cont (,arithfunc expr1 expr2) evalret))))))))
 
 ;;================================================================
 ;; eval
@@ -767,6 +830,16 @@
                       evalret cont)
                 ;; list
                 (eval-list tail evalret cont)
+                ;; +
+                (eval-arith add-int (car-data tail) (-> tail cdr-data car-data) evalret cont)
+                ;; -
+                (eval-arith sub-int (car-data tail) (-> tail cdr-data car-data) evalret cont)
+                ;; *
+                (eval-arith mult-int (car-data tail) (-> tail cdr-data car-data) evalret cont)
+                ;; /
+                (eval-arith div-int (car-data tail) (-> tail cdr-data car-data) evalret cont)
+                ;; %
+                (eval-arith mod-int (car-data tail) (-> tail cdr-data car-data) evalret cont)
                 ))))
         ;; cons: parse as lambda
         (eval-apply head tail evalret cont)
