@@ -55,6 +55,9 @@
 (def-lazy 37 (+ 32 (+ 4 1)))
 (def-lazy 38 (+ 32 (+ 4 2)))
 (def-lazy 39 (+ 32 (+ 4 (+ 2 1))))
+(def-lazy 40 (+ 32 8))
+(def-lazy 41 (+ 32 (+ 8 1)))
+(def-lazy 42 (+ 32 (+ 8 2)))
 
 
 
@@ -436,7 +439,9 @@
     (list ">" "=")
     (list "<")
     (list ">")
+    (list "p" "r" "i" "n" "t" "q")
     (list "u" "n" "q" "u" "o" "t" "e")
+    (list "\\" "n")
     ))
 
 
@@ -447,7 +452,9 @@
 (def-lazy cdr-atom (atom* 2))
 (def-lazy cons-atom (atom* 3))
 (def-lazy atom-atom (atom* 4))
+(def-lazy eq-atom   (atom* 5))
 (def-lazy cond-atom (atom* 6))
+(def-lazy print-atom (atom* 7))
 (def-lazy def-atom (atom* 9))
 (def-lazy progn-atom (atom* 11))
 (def-lazy lambda-atom (atom* 12))
@@ -459,7 +466,7 @@
 (def-lazy t-index           24)
 (def-lazy else-atom  (atom* 25))
 (def-lazy help-index        26)
-(def-lazy \s-index          27)
+(def-lazy esc-s-atom (atom* 27))
 (def-lazy whitespace-index  28)
 (def-lazy &rest-atom (atom* 29))
 
@@ -473,6 +480,9 @@
 (def-lazy >=-atom    (atom* 37))
 (def-lazy <-atom     (atom* 38))
 (def-lazy >-atom     (atom* 39))
+(def-lazy printq-atom  (atom* 40))
+(def-lazy unquote-atom (atom* 41))
+(def-lazy esc-n-atom      (atom* 42))
 
 (defun lisp2data (expr)
   (cond ((eq nil expr)
@@ -510,6 +520,26 @@
 (def-as-lisp-lazy <-expr
   (lambda (x y) (not (<= y x))))
 
+(def-as-lisp-lazy printq-expr
+  (macro (&rest x)
+    (cond
+      ((atom x)
+        nil)
+      ((and (not (atom (car x))) (eq 'unquote (car (car x))))
+        (list 'progn
+          (list 'print (car (cdr (car x))) 't)
+          (list 'print 'esc-s 't)
+          (cons 'printq (cdr x))))
+      ((eq 'esc-n (car x))
+        (list 'progn
+          (list 'print)
+          (cons 'printq (cdr x))))
+      (t
+        (list 'progn
+          (list 'print (list 'quote (car x)) 't)
+          (list 'print 'esc-s 't)
+          (cons 'printq (cdr x)))))))
+
 (def-lazy initial-varenv
   (list
     ;; t
@@ -517,7 +547,7 @@
     ;; else
     (cons (valueof else-atom) t-atom)
     ;; \s -> whitespace
-    (cons \s-index (atom* whitespace-index))
+    (cons (valueof esc-s-atom) (atom* whitespace-index))
     ;; help
     (cons help-index
       ((letrec-lazy help (n)
@@ -533,7 +563,8 @@
     (cons (valueof =-atom) =-expr)
     (cons (valueof >=-atom) >=-expr)
     (cons (valueof <-atom) <-expr)
-    (cons (valueof >-atom) >-expr)))
+    (cons (valueof >-atom) >-expr)
+    (cons (valueof printq-atom) printq-expr)))
 
 (defun-lazy truth-data (expr)
   (if expr t-atom nil))
@@ -849,8 +880,9 @@
                 ;; <=
                 (eval-arith <=-int (car-data tail) (-> tail cdr-data car-data) evalret cont)
                 ;; isint
-                (cont (truth-data (isint (car-data tail))) evalret)
-                ))))
+                (eval (car-data tail) evalret
+                  (lambda (expr evalret)
+                    (cont (truth-data (isint expr)) evalret)))))))
         ;; cons: parse as lambda
         (eval-apply head tail evalret cont)
         ;; nil
