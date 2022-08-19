@@ -214,6 +214,15 @@
 (defun-lazy mod-int (n m)
   (int* (xnor (signof n) (signof m)) (cdr (div-mod-rawint (int-valueof n) (int-valueof m)))))
 
+(defun-lazy <=-int (n m)
+  (if (signof n)
+    (if (signof m)
+      (truth-data (<= (int-valueof n) (int-valueof m)))
+      nil)
+    (if (signof m)
+      t-atom
+      (truth-data (<= (int-valueof m) (int-valueof n))))))
+
 ;;================================================================
 ;; Printing
 ;;================================================================
@@ -400,6 +409,7 @@
     (list "*")
     (list "/")
     (list "%")
+    (list "<" "=")
     (list "t")
     (list "e" "l" "s" "e")
     (list "h" "e" "l" "p")
@@ -409,7 +419,6 @@
     (list "w" "h" "i" "l" "e")
     (list "x")
     (list "y")
-    (list "<" "=")
     (list "n" "o" "t")
     (list "a" "n" "d")
     (list "o" "r")
@@ -427,7 +436,7 @@
 ;; (def-lazy \s-index 20)
 ;; (def-lazy whitespace-index 21)
 
-(def-lazy maxforms 22)
+(def-lazy maxforms 23)
 
 (def-lazy quote-atom (atom* 0))
 (def-lazy car-atom (atom* 1))
@@ -440,8 +449,8 @@
 (def-lazy lambda-atom (atom* 12))
 (def-lazy macro-atom (atom* 13))
 (def-lazy list-atom (atom* 16))
-(def-lazy t-atom (atom* 22))
-(def-lazy t-index 22)
+(def-lazy t-atom (atom* 23))
+(def-lazy t-index 23)
 (def-lazy else-index 18)
 (def-lazy else-atom (atom* else-index))
 (def-lazy help-index 19)
@@ -840,6 +849,8 @@
                 (eval-arith div-int (car-data tail) (-> tail cdr-data car-data) evalret cont)
                 ;; %
                 (eval-arith mod-int (car-data tail) (-> tail cdr-data car-data) evalret cont)
+                ;; <=
+                (eval-arith <=-int (car-data tail) (-> tail cdr-data car-data) evalret cont)
                 ))))
         ;; cons: parse as lambda
         (eval-apply head tail evalret cont)
