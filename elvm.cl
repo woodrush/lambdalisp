@@ -50,6 +50,37 @@
         (cons (memory-write (car memory) (cdr address) value) (cdr memory))
         (cons (car memory) (memory-write (cdr memory) (cdr address) value))))))
 
+(defun-lazy enum-A  (r0 r1 r2 r3 r4 r5) r0)
+(defun-lazy enum-B  (r0 r1 r2 r3 r4 r5) r1)
+(defun-lazy enum-C  (r0 r1 r2 r3 r4 r5) r2)
+(defun-lazy enum-D  (r0 r1 r2 r3 r4 r5) r3)
+(defun-lazy enum-SP (r0 r1 r2 r3 r4 r5) r4)
+(defun-lazy enum-BP (r0 r1 r2 r3 r4 r5) r5)
+(defun-lazy cons6 (r0 r1 r2 r3 r4 r5 f) (f r0 r1 r2 r3 r4 r5))
+
+(def-lazy *A  0)
+(def-lazy *B  1)
+(def-lazy *C  2)
+(def-lazy *D  3)
+(def-lazy *SP 4)
+(def-lazy *BP 5)
+
+(defmacro-lazy regread (reg regptr)
+  `(,reg ,regptr))
+
+(defun-lazy reg-write (reg regptr value)
+  (regptr
+    (cons6  value           (regread enum-B) (regread enum-C) (regread enum-D) (regread enum-SP) (regread enum-BP))
+    (cons6 (regread enum-A)  value           (regread enum-C) (regread enum-D) (regread enum-SP) (regread enum-BP))
+    (cons6 (regread enum-A) (regread enum-B)  value           (regread enum-D) (regread enum-SP) (regread enum-BP))
+    (cons6 (regread enum-A) (regread enum-B) (regread enum-C)  value           (regread enum-SP) (regread enum-BP))
+    (cons6 (regread enum-A) (regread enum-B) (regread enum-C) (regread enum-D)  value            (regread enum-BP))
+    (cons6 (regread enum-A) (regread enum-B) (regread enum-C) (regread enum-D) (regread enum-SP)  value           )))
+
+(defun-lazy mov-imm (src dst))
+(defun-lazy mov-reg (src dst))
+
+
 (defun-lazy main (stdin)
   (do-continuation
     (let ((memory init-memory)))
