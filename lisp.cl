@@ -290,12 +290,6 @@
 (def-lazy stringtermchar 256)
 (def-lazy stringterm (inflist 256))
 
-(defrec-lazy reverse-helper (list curlist)
-  (if (isnil list) curlist (reverse-helper (cdr list) (cons (car list) curlist))))
-
-(defmacro-lazy reverse (list)
-  `(reverse-helper ,list nil))
-
 (defrec-lazy read-string (curstr stdin)
   (let ((c (car stdin)))
     (cond

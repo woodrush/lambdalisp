@@ -36,11 +36,11 @@
     ((lookup (env var)
        (let ((i (position var env :test #'equal)))
          (if i (+ 1 i) (decorate-varname var)))))
-    (if (not (atom body))
-        (if (islambda body)
-            `(abs ,@(to-de-bruijn (lambdabody body) (cons (lambdaarg-top body) env)))
-            `(app ,@(to-de-bruijn (car body) env) ,@(to-de-bruijn (car (cdr body)) env)))
-        (list (lookup env body)))))
+    (if (atom body)
+        (list (lookup env body))
+        (if (not (islambda body))
+            `(app ,@(to-de-bruijn (car body) env) ,@(to-de-bruijn (car (cdr body)) env))
+            `(abs ,@(to-de-bruijn (lambdabody body) (cons (lambdaarg-top body) env)))))))
 
 (defun to-blc-string (body)
   (labels
@@ -238,6 +238,22 @@
 
 (defmacro-lazy nth (n list)
   `(-> ,list (,n cdr) car))
+
+(defrec-lazy reverse-helper (list curlist)
+  (if (isnil list) curlist (reverse-helper (cdr list) (cons (car list) curlist))))
+
+(defmacro-lazy reverse (list)
+  `(reverse-helper ,list nil))
+
+(defrec-lazy take* (n list ret)
+  (cond
+    ((iszero n)
+      (reverse ret))
+    (t
+      (take* (pred n) (cdr list) (cons (car list) ret)))))
+
+(defmacro-lazy take (n list)
+  `(take ,n ,list nil))
 
 (def-lazy "A" (succ 64))
 (defmacro def-alphabet-lazy ()
