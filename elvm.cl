@@ -13,6 +13,13 @@
             `(do-continuation*
                 ,(append body `((lambda ,arglist ,top)))
                 ,@(cdr proc))))
+        ((eq 'let* (car (car proc)))
+          (let* ((topproc (car proc))
+                 (varname (car (cdr topproc)))
+                 (body (car (cdr (cdr topproc)))))
+            `(do-continuation*
+                ,(append `(let ((,varname ,body))) `(,top))
+                ,@(cdr proc))))
         (t
           `(do-continuation*
               ,(append (car proc) `(,top))
@@ -22,22 +29,25 @@
   `(do-continuation* ,@(reverse proc)))
 
 
-;; (def-lazy zero-int (take 24 (inflist nil)))
+;; (def-lazy int-zero (take 24 (inflist nil)))
 (def-lazy "0" (+ 32 16))
 
-(def-lazy zero-int (list "0"))
+(def-lazy int-zero (list nil nil nil nil nil nil nil nil))
+
+
+;;================================================================
+;; Memory
+;;================================================================
 (def-lazy init-memory nil)
 
-(defrec-lazy memory-lookup-cont (memory address cont)
+(defrec-lazy memory-lookup (memory address)
   (cond
-    ((isnil address)
-      (if (isnil memory)
-        (cont zero-int)
-        (cont memory)))
     ((isnil memory)
-      (cont zero-int))
+      int-zero)
+    ((isnil address)
+      memory)
     (t
-      (memory-lookup-cont (memory (car address)) (cdr address) cont))))
+      (memory-lookup (memory (car address)) (cdr address)))))
 
 (defrec-lazy memory-write (memory address value)
   (cond
@@ -52,33 +62,37 @@
         (cons (memory-write (car memory) (cdr address) value) (cdr memory))
         (cons (car memory) (memory-write (cdr memory) (cdr address) value))))))
 
-(defun-lazy enum-A  (r0 r1 r2 r3 r4 r5) r0)
-(defun-lazy enum-B  (r0 r1 r2 r3 r4 r5) r1)
-(defun-lazy enum-C  (r0 r1 r2 r3 r4 r5) r2)
-(defun-lazy enum-D  (r0 r1 r2 r3 r4 r5) r3)
-(defun-lazy enum-SP (r0 r1 r2 r3 r4 r5) r4)
-(defun-lazy enum-BP (r0 r1 r2 r3 r4 r5) r5)
+
+;;================================================================
+;; Registers
+;;================================================================
+(defun-lazy reg-A  (r0 r1 r2 r3 r4 r5) r0)
+(defun-lazy reg-B  (r0 r1 r2 r3 r4 r5) r1)
+(defun-lazy reg-C  (r0 r1 r2 r3 r4 r5) r2)
+(defun-lazy reg-D  (r0 r1 r2 r3 r4 r5) r3)
+(defun-lazy reg-SP (r0 r1 r2 r3 r4 r5) r4)
+(defun-lazy reg-BP (r0 r1 r2 r3 r4 r5) r5)
 (defun-lazy cons6 (r0 r1 r2 r3 r4 r5 f) (f r0 r1 r2 r3 r4 r5))
 
-(def-lazy *A  0)
-(def-lazy *B  1)
-(def-lazy *C  2)
-(def-lazy *D  3)
-(def-lazy *SP 4)
-(def-lazy *BP 5)
+(def-lazy init-reg
+  (cons6 int-zero int-zero int-zero int-zero int-zero int-zero))
 
-(defmacro-lazy regread (reg regptr)
+(defmacro-lazy reg-read (reg regptr)
   `(,reg ,regptr))
 
 (defun-lazy reg-write (reg regptr value)
   (regptr
-    (cons6  value               (regread reg enum-B) (regread reg enum-C) (regread reg enum-D) (regread reg enum-SP) (regread reg enum-BP))
-    (cons6 (regread reg enum-A)  value               (regread reg enum-C) (regread reg enum-D) (regread reg enum-SP) (regread reg enum-BP))
-    (cons6 (regread reg enum-A) (regread reg enum-B)  value               (regread reg enum-D) (regread reg enum-SP) (regread reg enum-BP))
-    (cons6 (regread reg enum-A) (regread reg enum-B) (regread reg enum-C)  value               (regread reg enum-SP) (regread reg enum-BP))
-    (cons6 (regread reg enum-A) (regread reg enum-B) (regread reg enum-C) (regread reg enum-D)  value                (regread reg enum-BP))
-    (cons6 (regread reg enum-A) (regread reg enum-B) (regread reg enum-C) (regread reg enum-D) (regread reg enum-SP)  value               )))
+    (cons6  value               (reg-read reg reg-B) (reg-read reg reg-C) (reg-read reg reg-D) (reg-read reg reg-SP) (reg-read reg reg-BP))
+    (cons6 (reg-read reg reg-A)  value               (reg-read reg reg-C) (reg-read reg reg-D) (reg-read reg reg-SP) (reg-read reg reg-BP))
+    (cons6 (reg-read reg reg-A) (reg-read reg reg-B)  value               (reg-read reg reg-D) (reg-read reg reg-SP) (reg-read reg reg-BP))
+    (cons6 (reg-read reg reg-A) (reg-read reg reg-B) (reg-read reg reg-C)  value               (reg-read reg reg-SP) (reg-read reg reg-BP))
+    (cons6 (reg-read reg reg-A) (reg-read reg reg-B) (reg-read reg reg-C) (reg-read reg reg-D)  value                (reg-read reg reg-BP))
+    (cons6 (reg-read reg reg-A) (reg-read reg reg-B) (reg-read reg reg-C) (reg-read reg reg-D) (reg-read reg reg-SP)  value               )))
 
+
+;;================================================================
+;; Arithmetic
+;;================================================================
 (defrec-lazy invert (n)
   (if (isnil n)
     nil
@@ -102,6 +116,10 @@
 (defmacro-lazy sub (n m)
   `(add-carry ,n (invert ,m) t))
 
+
+;;================================================================
+;; I/O
+;;================================================================
 (def-lazy powerlist
   (cons 1 (cons 2 (cons 4 (cons 8 (cons 16 (cons 32 (cons 64 (cons 128 nil)))))))))
 
@@ -122,6 +140,8 @@
 (defrec-lazy int2bit* (n invpowerlist)
   (cond ((isnil invpowerlist)
           nil)
+        ((iszero n)
+          (cons nil (int2bit* n (cdr invpowerlist))))
         (t
           (if (<= (car invpowerlist) n)
             (cons t   (int2bit* (- n (car invpowerlist)) (cdr invpowerlist)))
@@ -131,38 +151,58 @@
   `(reverse (int2bit* ,n invpowerlist)))
 
 
-;; (defun-lazy mov-imm (src dst))
-;; (defun-lazy mov-reg (src dst))
+;;================================================================
+;; Instructions
+;;================================================================
+(defun-lazy inst-mov-imm (imm *dst reg memory program cont)
+  (cont (reg-write reg *dst imm) memory program))
+
+(defun-lazy inst-mov-reg (*src *dst reg memory program cont)
+  (cont (reg-write reg *dst (reg-read reg *src)) memory program))
+
 
 (defun-lazy truth2int (x) (x 1 0))
 
 (defun-lazy main (stdin)
   (do-continuation
-    ;; (let ((memory init-memory)))
-    ;; (let ((address (list t t nil))))
+    (let* memory init-memory)
+    (let* reg init-reg)
+    (let* address (list t t nil))
     ;; (let ((value (list "A"))))
     ;; (let ((memory (memory-write memory address value))))
-    ;; (<- (ret) (memory-lookup-cont memory address))
-    ;; (<- (ret2) (memory-lookup-cont memory (list t t t)))
-    ;; (<- (ret3) (memory-lookup-cont memory (list t t nil nil)))
-    ;; (let ((memory (memory-write memory (list t t nil nil) value))))
-    ;; (<- (ret4) (memory-lookup-cont memory (list t t nil nil)))
+    ;; (let* ret  (memory-lookup memory address))
+    ;; (let* ret2 (memory-lookup memory (list t t t)))
+    ;; (let* ret3 (memory-lookup memory (list t t nil nil)))
+    ;; (let* ret4 (memory-lookup memory (list t t nil nil)))
     ;; (cons (car ret))
     ;; (cons (car ret2))
     ;; (cons (car ret3))
     ;; (cons (car ret4))
-    (let ((n (int2bit 32))))
-    (let ((m (int2bit 4))))
-    (let ((a (int2bit 2))))
-    (let ((zx (add (add n m) a))))
-    (let ((zy (add (add (add n m) m) a))))
-    (let ((zz (sub (add (add n m) m) a))))
+
+    ;; (let* memory (memory-write memory address (int2bit 32)))
+    ;; (let* n (memory-lookup memory address))
+
+    ;; (let* reg (reg-write reg reg-B (int2bit 32)))
+    ;; (let* n (reg-read reg reg-B))
+
+    ;; (let* n (int2bit 32))
+
+    (<- (reg memory program) (inst-mov-imm (int2bit 32) reg-A reg memory nil))
+    (<- (reg memory program) (inst-mov-reg reg-A reg-B reg memory nil))
+    (let* n (reg-read reg reg-B))
+
+    (let* m (int2bit 4))
+    (let* a (int2bit 2))
+    (let* zx (add (add n m) a))
+    (let* zy (add (add (add n m) m) a))
+    (let* zz (sub (add (add n m) m) a))
     ;; (let ((c (bit2int (list t nil nil t t t nil nil)))))
     ;; (let ((c (bit2int x))))
     ;; ;; (let ((d (bit2int (int2bit (+ 4 32))))))
     ;; (let ((e (bit2int x))))
     (cons (+ "0" (length zx)))
     (cons " ")
+    (cons (bit2int n))
     (cons (bit2int zx))
     (cons (bit2int zy))
     (cons (bit2int zz))
