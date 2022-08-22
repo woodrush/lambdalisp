@@ -1,16 +1,58 @@
 (load "./lazy.cl")
 
+(def-lazy "A" (cons t (cons nil (cons t (cons t (cons t (cons t (cons t (cons nil nil)))))))))
+(def-lazy "B" (cons t (cons nil (cons t (cons t (cons t (cons t (cons nil (cons t nil)))))))))
+(def-lazy "C" (cons t (cons nil (cons t (cons t (cons t (cons t (cons nil (cons nil nil)))))))))
+(def-lazy "D" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons t (cons t nil)))))))))
+(def-lazy "E" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons t (cons nil nil)))))))))
+(def-lazy "F" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons nil (cons t nil)))))))))
+(def-lazy "G" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons nil (cons nil nil)))))))))
+(def-lazy "H" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons t (cons t nil)))))))))
+(def-lazy "I" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons t (cons nil nil)))))))))
+(def-lazy "J" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
+(def-lazy "K" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons nil (cons nil nil)))))))))
+(def-lazy "L" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons t (cons t nil)))))))))
+(def-lazy "M" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons t (cons nil nil)))))))))
+(def-lazy "N" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons nil (cons t nil)))))))))
+(def-lazy "O" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons nil (cons nil nil)))))))))
+(def-lazy "P" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t (cons t nil)))))))))
+(def-lazy "Q" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t (cons nil nil)))))))))
+(def-lazy "R" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil (cons t nil)))))))))
+(def-lazy "S" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil (cons nil nil)))))))))
+(def-lazy "T" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t (cons t nil)))))))))
+(def-lazy "U" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t (cons nil nil)))))))))
+(def-lazy "V" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons nil (cons t nil)))))))))
+(def-lazy "W" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons nil (cons nil nil)))))))))
+(def-lazy "X" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons t (cons t nil)))))))))
+(def-lazy "Y" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons t (cons nil nil)))))))))
+(def-lazy "Z" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons nil (cons t nil)))))))))
+
+(def-lazy "(" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t nil)))))))))
+(def-lazy ")" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil nil)))))))))
+(def-lazy "*" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
+(def-lazy " " (cons t (cons t (cons nil (cons t (cons t (cons t (cons t (cons t nil)))))))))
+(def-lazy "." (cons t (cons t (cons nil (cons t (cons nil (cons nil (cons nil (cons t nil)))))))))
+(def-lazy ">" (cons t (cons t (cons nil (cons nil (cons nil (cons nil (cons nil (cons t nil)))))))))
+(def-lazy "\\n" (cons t (cons t (cons t (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
+
+(defrec-lazy =-bit (n m)
+  (cond ((isnil n)
+          t)
+        ((xnor (car n) (car m))
+          (=-bit (cdr n) (cdr m)))
+        (t
+          nil)))
 
 (def-lazy stringtermchar 256)
 (def-lazy stringterm nil)
 
-(def-lazy "(" (+ 32 8))
-(def-lazy ")" (succ "("))
-(def-lazy " " 32)
-(def-lazy "." (+ (+ (+ 32 8) 4) 2))
-(def-lazy ">" (+ (+ (+ (+ 32 16) 8) 4) 2))
-(def-lazy "*" (+ (+ 32 8) 2))
-(def-lazy "\\n" (+ 8 2))
+;; (def-lazy "(" (+ 32 8))
+;; (def-lazy ")" (succ "("))
+;; (def-lazy " " 32)
+;; (def-lazy "." (+ (+ (+ 32 8) 4) 2))
+;; (def-lazy ">" (+ (+ (+ (+ 32 16) 8) 4) 2))
+;; (def-lazy "*" (+ (+ 32 8) 2))
+;; (def-lazy "\\n" (+ 8 2))
 
 (def-lazy 3 (succ 2))
 (def-lazy 5 (succ 4))
@@ -36,7 +78,9 @@
 (defmacro-lazy await-list (l body)
   `(if (<= 0 (length ,l))
     ,body
-    ,body))
+    ,body)
+    ;; body
+    )
 
 (defrec-lazy append-element (l item)
   (if (isnil l) (cons item nil) (cons (car l) (append-element (cdr l) item))))
@@ -128,7 +172,7 @@
 (defrec-lazy read-string (curstr stdin)
   (let ((c (car stdin)))
     (cond
-          ((or (= "(" c) (= ")" c) (= " " c) (= "\\n" c)
+          ((or (=-bit "(" c) (=-bit ")" c) (=-bit " " c) (=-bit "\\n" c)
           ;; (= stringtermchar c)
           )
             (cons (reverse curstr nil) stdin))
@@ -161,14 +205,14 @@
         ((or  (and (not (isnil s1)) (isnil s2))
               (and (isnil s1) (not (isnil s2))))
           nil)
-        ((= (car s1) (car s2))
+        ((=-bit (car s1) (car s2))
           (stringeq (cdr s1) (cdr s2)))
         (t
           nil)))
 
 (defrec-lazy read-skip-whitespace (stdin)
   (let ((c (car stdin)))
-    (cond ((or (= " " c) (= "\\n" c)
+    (cond ((or (=-bit " " c) (=-bit "\\n" c)
     ;; (= stringtermchar c)
     )
             (read-skip-whitespace (cdr stdin)))
@@ -183,7 +227,7 @@
           (letrec-lazy read-list (stdin atomenv curexpr)
             (let ((stdin (read-skip-whitespace stdin))
                   (c (car stdin)))
-              (cond ((= ")" c)
+              (cond ((=-bit ")" c)
                       (cons (reverse-base2data curexpr nil) (cons (cdr stdin) atomenv)))
                     (t
                       (let ((ret (read-expr stdin atomenv))
@@ -192,7 +236,7 @@
                             (atomenv (cdr (cdr ret))))
                         (read-list stdin atomenv (cons ret-expr curexpr)))))))))
     (let ((stdin (read-skip-whitespace stdin)) (c (car stdin)))
-            (cond ((= "(" c)
+            (cond ((=-bit "(" c)
                     (read-list (cdr stdin) atomenv nil))
                   (t
                     (read-atom stdin atomenv))))))
@@ -402,8 +446,8 @@
 
 ;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
 
-;; (format t (compile-to-ski-lazy main))
-(format t (compile-to-blc-lazy main))
+(format t (compile-to-ski-lazy main))
+;; (format t (compile-to-blc-lazy main))
 
 ;; ;; Print lambda term
 ;; (setf *print-right-margin* 800)
