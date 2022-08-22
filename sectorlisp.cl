@@ -2,7 +2,7 @@
 
 
 (def-lazy stringtermchar 256)
-(def-lazy stringterm (inflist 256))
+(def-lazy stringterm nil)
 
 (def-lazy "(" (+ 32 8))
 (def-lazy ")" (succ "("))
@@ -21,20 +21,20 @@
 (def-lazy 11 (succ 10))
 
 
-(defrec-lazy map (f list)
-  (if (isnil list)
+(defrec-lazy map (f l)
+  (if (isnil l)
     nil
-    (cons (f (car list)) (map f (cdr list)))))
+    (cons (f (car l)) (map f (cdr l)))))
 
-(defrec-lazy length (list)
+(defrec-lazy length (l)
   ((letrec-lazy length (l n)
       (if (isnil l)
         n
         (length (cdr l) (succ n))))
-    list 0))
+    l 0))
 
-(defmacro-lazy await-list (list body)
-  `(if (<= 0 (length ,list))
+(defmacro-lazy await-list (l body)
+  `(if (<= 0 (length ,l))
     ,body
     ,body))
 
@@ -64,8 +64,8 @@
 (defun-lazy type-atom (t0 t1) t0)
 (defun-lazy type-list (t0 t1) t1)
 
-(def-lazy typeof car)
-(def-lazy valueof cdr)
+(def-lazy typeof car*)
+(def-lazy valueof cdr*)
 
 (defmacro-lazy car-data (data)
   `(car (valueof ,data)))
@@ -93,7 +93,7 @@
                  (map-data-as-baselist f (cdr-data data))))))
 
 (defun-lazy printatom (atomenv expr cont)
-  (append-list (car ((valueof expr) cdr atomenv)) cont))
+  (append-list (car ((valueof expr) cdr* atomenv)) cont))
 
 (defrec-lazy printexpr-helper (atomenv expr mode cont)
   (if mode
@@ -116,13 +116,21 @@
 (defun-lazy printexpr (atomenv expr cont)
   (printexpr-helper atomenv expr t cont))
 
-(defrec-lazy reverse (list curlist)
-  (if (isnil list) curlist (reverse (cdr list) (cons (car list) curlist))))
+;; (defrec-lazy reverse (l curlist)
+;;   (if (isnil l) curlist (reverse (cdr l) (cons (car l) curlist))))
+
+(defrec-lazy reverse (l curlist)
+  (if (isnil l) curlist (reverse (cdr l) (cons (car l) curlist))))
+
+;; (defmacro-lazy reverse (l)
+;;   `(reverse-helper ,l nil))
 
 (defrec-lazy read-string (curstr stdin)
   (let ((c (car stdin)))
     (cond
-          ((or (= "(" c) (= ")" c) (= " " c) (= "\\n" c) (= stringtermchar c))
+          ((or (= "(" c) (= ")" c) (= " " c) (= "\\n" c)
+          ;; (= stringtermchar c)
+          )
             (cons (reverse curstr nil) stdin))
           (t
             (read-string (cons (car stdin) curstr) (cdr stdin))))))
@@ -160,13 +168,15 @@
 
 (defrec-lazy read-skip-whitespace (stdin)
   (let ((c (car stdin)))
-    (cond ((or (= " " c) (= "\\n" c) (= stringtermchar c))
+    (cond ((or (= " " c) (= "\\n" c)
+    ;; (= stringtermchar c)
+    )
             (read-skip-whitespace (cdr stdin)))
           (t
             stdin))))
 
-(defrec-lazy reverse-base2data (list curlist)
-  (if (isnil list) curlist (reverse-base2data (cdr list) (cons-data (car list) curlist))))
+(defrec-lazy reverse-base2data (l curlist)
+  (if (isnil l) curlist (reverse-base2data (cdr l) (cons-data (car l) curlist))))
 
 (defrec-lazy read-expr (stdin atomenv)
   (let ((read-list
@@ -368,7 +378,7 @@
     (cont nil evalret)))
 
 (defrec-lazy repl (varenv atomenv stdin globalenv)
-  (cons "*" (cons " " (if (= stringtermchar (car stdin))
+  (cons "*" (cons " " (if (isnil (cdr stdin)) ;(= stringtermchar (car stdin))
     stringterm
     (let ((ret-parse (read-expr stdin atomenv))
           (stdin (car (cdr ret-parse)))
@@ -383,7 +393,7 @@
 
 (defrec-lazy list2inflist (l)
   (if (isnil l)
-    (inflist 256)
+    stringterm
     (cons (car l) (list2inflist (cdr l)))))
 
 (defun-lazy main (stdin)
@@ -392,8 +402,8 @@
 
 ;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
 
-(format t (compile-to-ski-lazy main))
-;; (format t (compile-to-blc-lazy main))
+;; (format t (compile-to-ski-lazy main))
+(format t (compile-to-blc-lazy main))
 
 ;; ;; Print lambda term
 ;; (setf *print-right-margin* 800)

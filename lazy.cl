@@ -170,34 +170,41 @@
 
 (defun-lazy t (x y) x)
 (defun-lazy nil (x y) y)
-(defun-lazy cons (x y f) (f x y))
+;; (defun-lazy cons (x y f) (f x y))
+(defun-lazy car* (l) (l t))
+(defun-lazy cdr* (l) (l nil))
+;; (defmacro-lazy car (l) `(,l t))
+;; (defmacro-lazy cdr (l) `(,l nil))
 (defun-lazy car (l) (l t))
 (defun-lazy cdr (l) (l nil))
-(defun-lazy isnil (l) ((lambda (a) (a (lambda (v n x) nil) t)) l))
-(defun-lazy inflist (item)
-  ((lambda (x) (x x))
-   (lambda (self)
-     (cons item (self self)))))
+(defmacro-lazy cons (x y) `(lambda (f) (f ,x ,y)))
 
-(defun-lazy not (x) (x nil t))
-(defun-lazy and (x y) (x y nil))
+(defmacro-lazy isnil (l) `((lambda (a) (a (lambda (v n x) nil) t)) ,l))
+(defmacro-lazy inflist (item)
+  `((lambda (x) (x x))
+    (lambda (self)
+      (cons ,item (self self)))))
+
+(defmacro-lazy not (x) `(,x nil t))
+(defmacro-lazy and (x y) `(,x ,y nil))
 ;; (defun-lazy or (x y) (x t y))
 (defmacro-lazy or (x &rest r)
   (if (not r) x `(,x t (or ,@r))))
 
-(defun-lazy xor (x y) (if x (not y) y))
+(defmacro-lazy xor (x y) `(if ,x (not ,y) ,y))
 (defun-lazy xnor (x y) (if x y (not y)))
 
-(defun-lazy succ (n f x) (f (n f x)))
+(defmacro-lazy succ (n) `(lambda (f x) (f (,n f x))))
 (defun-lazy pred (n f x) (n ((lambda (g h) (h (g f)))) (lambda (u) x) (lambda (u) u)))
-(defun-lazy + (m n f x) (m f (n f x)))
-(defun-lazy * (m n f x) (m (n f) x))
-(defun-lazy - (m n) (n pred m))
-(defun-lazy iszero (n) (n (lambda (x) nil) t))
-(defun-lazy <= (m n) (iszero (- m n)))
-(defun-lazy < (m n) (<= (succ m) n))
-(defun-lazy >= (m n) (<= n m))
-(defun-lazy = (m n) (and (<= m n) (<= n m)))
+(defmacro-lazy + (m n) `(lambda (f x) (,m f (,n f x))))
+(defmacro-lazy - (m n) `(,n pred ,m))
+(defmacro-lazy * (m n) `(lambda (f x) (,m (,n f) x)))
+(defmacro-lazy iszero (n) `(,n (lambda (x) nil) t))
+
+(defmacro-lazy <= (m n) `(iszero (- ,m ,n)))
+(defmacro-lazy < (m n) `(<= (succ ,m) ,n))
+(defmacro-lazy >= (m n) `(<= ,n ,m))
+(defmacro-lazy = (m n) `(and (<= ,m ,n) (<= ,n ,m)))
 (defun-lazy 0 (f x) x)
 (defun-lazy 1 (f x) (f x))
 (defun-lazy 2 (f x) (f (f x)))
@@ -234,26 +241,10 @@
     `(cons ,item nil)))
 
 (defun-lazy nth (n list)
-  (-> list (n cdr) car))
+  (-> list (n cdr*) car*))
 
 (defmacro-lazy nth (n list)
-  `(-> ,list (,n cdr) car))
-
-(defrec-lazy reverse-helper (list curlist)
-  (if (isnil list) curlist (reverse-helper (cdr list) (cons (car list) curlist))))
-
-(defmacro-lazy reverse (list)
-  `(reverse-helper ,list nil))
-
-(defrec-lazy take* (n list ret)
-  (cond
-    ((iszero n)
-      (reverse ret))
-    (t
-      (take* (pred n) (cdr list) (cons (car list) ret)))))
-
-(defmacro-lazy take (n list)
-  `(take ,n ,list nil))
+  `(-> ,list (,n cdr*) car*))
 
 (def-lazy "A" (succ 64))
 (defmacro def-alphabet-lazy ()
@@ -272,13 +263,13 @@
     `(progn ,@expr)))
 (def-alphabet-lazy)
 
-(def-lazy Y
+(def-lazy Y-comb
   (lambda (f)
     ((lambda (x) (f (x x)))
      (lambda (x) (f (x x))))))
 
 (defmacro-lazy letrec-lazy (name args body)
-  `(Y (lambda (,name) (lambda ,args ,body))))
+  `(Y-comb (lambda (,name) (lambda ,args ,body))))
 
 (defmacro defrec-lazy (name args body)
   `(def-lazy ,name (letrec-lazy ,name ,args ,body)))
@@ -287,6 +278,27 @@
   (if (not args)
     target
     `(-> (,(car args) ,target) ,@(cdr args))))
+
+
+(defun-lazy take (n l)
+  ((letrec-lazy take (n l ret)
+      (cond
+        ((iszero n)
+          (reverse ret))
+        (t
+          (take (pred n) (cdr l) (cons (car l) ret)))))
+   n l nil))
+
+;; (defmacro-lazy take (n list)
+;;   `(take* ,n ,list nil))
+
+(defrec-lazy length (l)
+  ((letrec-lazy length (l n)
+      (if (isnil l)
+        n
+        (length (cdr l) (succ n))))
+    l 0))
+
 
 
 (defun compile-to-blc (expr)
