@@ -181,24 +181,22 @@
           (t
             (read-string (cons (car stdin) curstr) (cdr stdin) cont)))))
 
-(defun-lazy get-atomindex-env (atomenv str)
+(defun-lazy get-atomindex-env (atomenv str cont)
   ((letrec-lazy get-atomindex-env-helper (cur-atomenv n)
     (cond ((isnil cur-atomenv)
-            (cons n (append-element atomenv str)))
+            (cont n (append-element atomenv str)))
           ((stringeq (car cur-atomenv) str)
-            (cons n atomenv))
+            (cont n atomenv))
           (t
-            (get-atomindex-env-helper (cdr cur-atomenv) (succ n))))
-            )
+            (get-atomindex-env-helper (cdr cur-atomenv) (succ n)))))
    atomenv 0))
 
 (defun-lazy read-atom (stdin atomenv cont)
   (read-string nil stdin
     (lambda (retstr stdin)
-      (let ((ret-atomlookup (get-atomindex-env atomenv retstr))
-            (ret-atom (atom* (car ret-atomlookup)))
-            (atomenv (cdr ret-atomlookup)))
-        (cont ret-atom atomenv stdin)))))
+      (get-atomindex-env atomenv retstr
+        (lambda (retindex atomenv)
+          (cont (atom* retindex) atomenv stdin))))))
 
 (defrec-lazy stringeq (s1 s2)
   (cond ((and (isnil s1) (isnil s2))
@@ -211,14 +209,14 @@
         (t
           nil)))
 
-(defrec-lazy read-skip-whitespace (stdin)
+(defrec-lazy read-skip-whitespace (stdin cont)
   (let ((c (car stdin)))
     (cond ((or (=-bit " " c) (=-bit "\\n" c)
     ;; (= stringtermchar c)
     )
-            (read-skip-whitespace (cdr stdin)))
+            (read-skip-whitespace (cdr stdin) cont))
           (t
-            stdin))))
+            (cont stdin)))))
 
 (defrec-lazy reverse-base2data (l curlist)
   (if (isnil l) curlist (reverse-base2data (cdr l) (cons-data (car l) curlist))))
@@ -227,35 +225,20 @@
   (lambda (x) (s1 (cons-data e x))))
 
 (defrec-lazy read-expr (stdin atomenv curexpr mode cont)
-  (if mode
-    ;; let ((read-list
-    ;;       (letrec-lazy read-list (stdin atomenv curexpr cont)
-    ;;         )))
-    (let ((stdin (read-skip-whitespace stdin))
-                  (c (car stdin)))
-              (cond ((=-bit ")" c)
-                      (cont (curexpr nil) atomenv (cdr stdin)))
-                      ;; (cons (reverse-base2data curexpr nil) (cons (cdr stdin) atomenv))
-                    (t
-                      (read-expr stdin atomenv nil nil
-                        (lambda (expr atomenv stdin)
-                          (read-expr stdin atomenv (catstream-element-data curexpr expr) t cont)
-                          ))
-                      ;; (let ((ret (read-expr stdin atomenv))
-                      ;;       (ret-expr (car ret))
-                      ;;       (stdin (car (cdr ret)))
-                      ;;       (atomenv (cdr (cdr ret)))
-                      ;;       )
-
-
-
-                      ;;   )
-                        )))
-    (let ((stdin (read-skip-whitespace stdin)) (c (car stdin)))
-            (cond ((=-bit "(" c)
-                    (read-expr (cdr stdin) atomenv (lambda (x) (x)) t cont))
-                  (t
-                    (read-atom stdin atomenv cont))))))
+  (read-skip-whitespace stdin
+    (lambda (stdin)
+      (let ((c (car stdin)))
+        (if mode
+          (cond ((=-bit ")" c)
+                  (cont (reverse-base2data curexpr nil) atomenv (cdr stdin)))
+                (t
+                  (read-expr stdin atomenv nil nil
+                    (lambda (expr atomenv stdin)
+                      (read-expr stdin atomenv (cons expr curexpr) t cont)))))
+          (cond ((=-bit "(" c)
+                  (read-expr (cdr stdin) atomenv nil t cont))
+                (t
+                  (read-atom stdin atomenv cont))))))))
 
 (def-lazy initial-atomenv
   (list
