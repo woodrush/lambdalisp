@@ -76,10 +76,10 @@
     l 0))
 
 (defmacro-lazy await-list (l body)
-  `(if (<= 0 (length ,l))
-    ,body
-    ,body)
-    ;; body
+  ;; `(if (<= 0 (length ,l))
+  ;;   ,body
+  ;;   ,body)
+    body
     )
 
 (defrec-lazy append-element (l item)
@@ -160,14 +160,8 @@
 (defun-lazy printexpr (atomenv expr cont)
   (printexpr-helper atomenv expr t cont))
 
-;; (defrec-lazy reverse (l curlist)
-;;   (if (isnil l) curlist (reverse (cdr l) (cons (car l) curlist))))
-
-(defrec-lazy reverse (l curlist)
-  (if (isnil l) curlist (reverse (cdr l) (cons (car l) curlist))))
-
-;; (defmacro-lazy reverse (l)
-;;   `(reverse-helper ,l nil))
+(defrec-lazy reverse (l curlist cont)
+  (if (isnil l) (cont curlist) (reverse (cdr l) (cons (car l) curlist) cont)))
 
 (defrec-lazy read-string (curstr stdin cont)
   (let ((c (car stdin)))
@@ -175,8 +169,9 @@
           ((or (=-bit "(" c) (=-bit ")" c) (=-bit " " c) (=-bit "\\n" c)
           ;; (= stringtermchar c)
           )
-            (cont (reverse curstr nil) stdin)
-            ;; (cons  stdin)
+            (reverse curstr nil
+              (lambda (reversed)
+                (cont reversed stdin)))
             )
           (t
             (read-string (cons (car stdin) curstr) (cdr stdin) cont)))))
@@ -185,10 +180,12 @@
   ((letrec-lazy get-atomindex-env-helper (cur-atomenv n)
     (cond ((isnil cur-atomenv)
             (cont n (append-element atomenv str)))
-          ((stringeq (car cur-atomenv) str)
-            (cont n atomenv))
           (t
-            (get-atomindex-env-helper (cdr cur-atomenv) (succ n)))))
+            (stringeq (car cur-atomenv) str
+              (lambda (p)
+                (if p
+                  (cont n atomenv)
+                  (get-atomindex-env-helper (cdr cur-atomenv) (succ n))))))))
    atomenv 0))
 
 (defun-lazy read-atom (stdin atomenv cont)
@@ -198,16 +195,16 @@
         (lambda (retindex atomenv)
           (cont (atom* retindex) atomenv stdin))))))
 
-(defrec-lazy stringeq (s1 s2)
+(defrec-lazy stringeq (s1 s2 cont)
   (cond ((and (isnil s1) (isnil s2))
-          t)
+          (cont t))
         ((or  (and (not (isnil s1)) (isnil s2))
               (and (isnil s1) (not (isnil s2))))
-          nil)
+          (cont nil))
         ((=-bit (car s1) (car s2))
-          (stringeq (cdr s1) (cdr s2)))
+          (stringeq (cdr s1) (cdr s2) cont))
         (t
-          nil)))
+          (cont nil))))
 
 (defrec-lazy read-skip-whitespace (stdin cont)
   (let ((c (car stdin)))
@@ -218,8 +215,8 @@
           (t
             (cont stdin)))))
 
-(defrec-lazy reverse-base2data (l curlist)
-  (if (isnil l) curlist (reverse-base2data (cdr l) (cons-data (car l) curlist))))
+(defrec-lazy reverse-base2data (l curlist cont)
+  (if (isnil l) (cont curlist) (reverse-base2data (cdr l) (cons-data (car l) curlist) cont)))
 
 (defun-lazy catstream-element-data (s1 e)
   (lambda (x) (s1 (cons-data e x))))
@@ -230,7 +227,9 @@
       (let ((c (car stdin)))
         (if mode
           (cond ((=-bit ")" c)
-                  (cont (reverse-base2data curexpr nil) atomenv (cdr stdin)))
+                  (reverse-base2data curexpr nil
+                    (lambda (reversed)
+                      (cont reversed atomenv (cdr stdin)))))
                 (t
                   (read-expr stdin atomenv nil nil
                     (lambda (expr atomenv stdin)
@@ -393,8 +392,10 @@
                       (let ((atomenv (-> evalret cdr car))
                             (outstr (printexpr atomenv expr nil)))
                         ;; Control flow
-                        (await-list outstr
-                          (append-list outstr (cont expr evalret)))))))
+                        ;; (await-list outstr
+                        ;;   (append-list outstr (cont expr evalret)))
+                        (append-list outstr (cont expr evalret))
+                          ))))
                 ;; read
                 (let-parse-evalret* evalret varenv-old atomenv stdin globalenv
                   (read-expr stdin atomenv nil nil
@@ -419,7 +420,7 @@
     (cont nil evalret)))
 
 (defrec-lazy repl (varenv atomenv stdin globalenv)
-  (cons "*" (cons " " (if (isnil (cdr stdin)) ;(= stringtermchar (car stdin))
+  (cons "*" (cons " " (if (isnil (cdr stdin))
     stringterm
     (read-expr stdin atomenv nil nil
       (lambda (expr atomenv stdin)
