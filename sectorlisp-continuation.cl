@@ -268,10 +268,9 @@
     (<- (cdr-ed) (cdr-data carclause))
     (<- (carbody) (car-data cdr-ed))
     (<- (expr evalret) (eval carcond evalret))
+    (<- (cdr-ed) (cdr-data clauselist))
     (if (isnil expr)
-      (cdr-data clauselist
-        (lambda (cdr-ed)
-          (eval-cond cdr-ed evalret cont)))
+      (eval-cond cdr-ed evalret cont)
       (eval carbody evalret cont))))
 
 (defrec-lazy varenv-lookup (varenv varval cont)
@@ -292,7 +291,8 @@
           (do-continuation
             (<- (car-ed) (car-data lexpr))
             (<- (expr evalret) (eval car-ed evalret))
-            (<- (appended) (append-list curexpr (cons expr nil) (lambda (x) x)))
+            (let* expr-list (cons expr nil))
+            (<- (appended) (append-list curexpr expr-list (lambda (x) x)))
             (<- (cdr-ed) (cdr-data lexpr))
             (eval-map-base cdr-ed appended evalret cont)))))
 
@@ -305,12 +305,10 @@
         (t
           (do-continuation
             (<- (cdr-ed) (cdr-data argnames))
-            (prepend-envzip cdr-ed (if (isnil evargs) nil (cdr evargs)) env
-              (car-data argnames
-                (lambda (car-ed)
-                  (cons (cons (valueof car-ed) (if (isnil evargs) nil (car evargs)))
-                    curenv)))
-              cont)))))
+            (<- (car-ed) (car-data argnames))
+            (let* next-evargs (if (isnil evargs) nil (cdr evargs)))
+            (let* next-curenv (cons (cons (valueof car-ed) (if (isnil evargs) nil (car evargs))) curenv))
+            (prepend-envzip cdr-ed next-evargs env next-curenv cont)))))
 
 (defun-lazy eval-lambda (lambdaexpr callargs evalret cont)
   (do-continuation
@@ -488,7 +486,9 @@
         (<- (new-evalret) (evalret* varenv atomenv stdin globalenv))
         (<- (expr evalret) (eval expr new-evalret))
         (let-parse-evalret* evalret varenv atomenv stdin globalenv)
-        (printexpr atomenv expr (cons "\\n" (repl varenv atomenv stdin globalenv))))))))
+        (let* repl-next (repl varenv atomenv stdin globalenv))
+        (let* text-next (cons "\\n" repl-next))
+        (printexpr atomenv expr text-next))))))
 
 (defrec-lazy list2inflist (l)
   (if (isnil l)
@@ -501,8 +501,8 @@
 
 ;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
 
-(format t (compile-to-ski-lazy main))
-;; (format t (compile-to-blc-lazy main))
+;; (format t (compile-to-ski-lazy main))
+(format t (compile-to-blc-lazy main))
 
 ;; ;; Print lambda term
 ;; (setf *print-right-margin* 800)
