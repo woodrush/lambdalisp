@@ -460,24 +460,16 @@
                                 (lambda (new-evalret)
                                   (cont expr new-evalret))))))
                         ;; def
-                        (car-data tail
-                          (lambda (varname)
-                            (cdr-data tail
-                              (lambda (cdr-ed)
-                                (car-data cdr-ed
-                                  (lambda (defbody)
-                                    (eval defbody evalret
-                                      (lambda (expr evalret)
-                                        (let-parse-evalret* evalret varenv atomenv stdin globalenv
-                                          (cons-data varname nil
-                                            (lambda (consed)
-                                              (prepend-envzip consed (cons expr nil) globalenv nil
-                                                (lambda (envzip)
-                                                  (evalret*
-                                                    varenv atomenv stdin
-                                                    envzip
-                                                    (lambda (new-evalret)
-                                                      (cont expr new-evalret))))))))))))))))))))
+                        (do-continuation
+                          (<- (varname) (car-data tail))
+                          (<- (cdr-ed) (cdr-data tail))
+                          (<- (defbody) (car-data cdr-ed))
+                          (<- (expr evalret) (eval defbody evalret))
+                          (let-parse-evalret* evalret varenv atomenv stdin globalenv)
+                          (<- (consed) (cons-data varname nil))
+                          (<- (envzip) (prepend-envzip consed (cons expr nil) globalenv nil))
+                          (<- (new-evalret) (evalret* varenv atomenv stdin envzip))
+                          (cont expr new-evalret))))))
                 ;; list: parse as lambda
                 (let ((lambdaexpr head)
                       (callargs tail))
@@ -488,16 +480,15 @@
     (cont nil evalret)))
 
 (defrec-lazy repl (varenv atomenv stdin globalenv)
-  (cons "*" (cons " " (if (isnil (cdr stdin))
-    stringterm
-    (read-expr stdin atomenv nil nil
-      (lambda (expr atomenv stdin)
-        (evalret* varenv atomenv stdin globalenv
-          (lambda (new-evalret)
-            (eval expr new-evalret
-              (lambda (expr evalret)
-                (let-parse-evalret* evalret varenv atomenv stdin globalenv
-                  (printexpr atomenv expr (cons "\\n" (repl varenv atomenv stdin globalenv))))))))))))))
+  (cons "*" (cons " "
+    (if (isnil (cdr stdin))
+      stringterm
+      (do-continuation
+        (<- (expr atomenv stdin) (read-expr stdin atomenv nil nil))
+        (<- (new-evalret) (evalret* varenv atomenv stdin globalenv))
+        (<- (expr evalret) (eval expr new-evalret))
+        (let-parse-evalret* evalret varenv atomenv stdin globalenv)
+        (printexpr atomenv expr (cons "\\n" (repl varenv atomenv stdin globalenv))))))))
 
 (defrec-lazy list2inflist (l)
   (if (isnil l)
