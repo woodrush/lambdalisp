@@ -63,24 +63,11 @@
 (def-lazy 11 (succ 10))
 
 
-;; (defrec-lazy map (f l)
-;;   (if (isnil l)
-;;     nil
-;;     (cons (f (car l)) (map f (cdr l)))))
-
-;; (defrec-lazy length (l)
-;;   ((letrec-lazy length (l n)
-;;       (if (isnil l)
-;;         n
-;;         (length (cdr l) (succ n))))
-;;     l 0))
-
-(defrec-lazy append-element (l item)
-  (if (isnil l) (cons item nil) (cons (car l) (append-element (cdr l) item))))
+;; (defrec-lazy append-element (l item)
+;;   (if (isnil l) (cons item nil) (cons (car l) (append-element (cdr l) item))))
 
 (defun-lazy append-item-to-stream (stream item)
   (lambda (x) (stream (cons item x))))
-
 
 (defrec-lazy append-list (l item curstream cont)
   (if (isnil l)
@@ -128,14 +115,6 @@
     `(cons-data ,arg nil)
     `(cons-data ,arg (list* ,@args))))
 
-(defrec-lazy append-element-data (l item)
-  (if (isnil l) (cons-data item nil) (cons-data (car-data l) (append-element-data (cdr-data l) item))))
-
-(defrec-lazy map-data-as-baselist (f data)
-  (cond ((isnil data) nil)
-        (t (cons (f (car-data data))
-                 (map-data-as-baselist f (cdr-data data))))))
-
 (defun-lazy printatom (atomenv expr cont)
   (append-list (car ((valueof expr) cdr* atomenv)) cont (lambda (x) x)
     (lambda (x) x)))
@@ -180,7 +159,9 @@
 (defun-lazy get-atomindex-env (atomenv str cont)
   ((letrec-lazy get-atomindex-env-helper (cur-atomenv n)
     (cond ((isnil cur-atomenv)
-            (cont n (append-element atomenv str)))
+            (append-list atomenv (cons str nil) (lambda (x) x)
+              (lambda (appended)
+                (cont n appended))))
           (t
             (stringeq (car cur-atomenv) str
               (lambda (p)
@@ -286,7 +267,9 @@
         (t
           (eval (car-data lexpr) evalret
             (lambda (expr evalret)
-              (eval-map-base (cdr-data lexpr) (append-element curexpr expr) evalret cont))))))
+              (append-list curexpr (cons expr nil) (lambda (x) x)
+                (lambda (appended)
+                  (eval-map-base (cdr-data lexpr) appended evalret cont))))))))
 
 (defrec-lazy prepend-envzip (argnames evargs env curenv cont)
   (cond ((isnil argnames)
