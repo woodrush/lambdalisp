@@ -137,7 +137,11 @@
   (if mode
     (typematch expr
       ;; atom
-      (printatom atomenv expr cont)
+      ;; (cons "A" cont)
+      (do-continuation
+        (<- (outstr) (append-list (valueof expr) cont (lambda (x) x)))
+        outstr)
+      ;; (printatom atomenv expr cont)
       ;; list
       (cons "(" (printexpr-helper atomenv expr nil (cons ")" cont)))
       ;; nil
@@ -151,7 +155,10 @@
             ;; atom
             (cdr-data expr
               (lambda (cdr-ed)
-                (cons " " (cons "." (cons " " (printatom atomenv cdr-ed cont))))))
+                (cons " " (cons "." (cons " "
+                (append-list (valueof cdr-ed) cont (lambda (x) x) (lambda (x) x))
+                ;; (printatom atomenv cdr-ed cont)
+                )))))
             ;; list
             (cdr-data expr
               (lambda (cdr-ed)
@@ -195,8 +202,8 @@
 (defun-lazy read-atom (stdin atomenv cont)
   (do-continuation
     (<- (retstr stdin) (read-string nil stdin))
-    (<- (retindex atomenv) (get-atomindex-env atomenv retstr))
-    (cont (atom* retindex) atomenv stdin)))
+    ;; (<- (retindex atomenv) (get-atomindex-env atomenv retstr))
+    (cont (atom* retstr) atomenv stdin)))
 
 (defrec-lazy stringeq (s1 s2 cont)
   (let ((isnil-s1 (isnil s1))
@@ -221,10 +228,7 @@
 
 (defrec-lazy read-skip-whitespace (stdin cont)
   (let ((c (car stdin)))
-    (cond ((=-bit " " c)
-            (let ((x (cdr stdin)))
-              (read-skip-whitespace x cont)))
-          ((=-bit "\\n" c)
+    (cond ((or (=-bit " " c) (=-bit "\\n" c))
             (let ((x (cdr stdin)))
               (read-skip-whitespace x cont)))
           (t
@@ -241,23 +245,24 @@
 (defrec-lazy read-expr (stdin atomenv curexpr mode cont)
   (read-skip-whitespace stdin
     (lambda (stdin)
-      (let ((c (car stdin)))
         (if mode
-          (cond ((=-bit ")" c)
-                  (do-continuation
-                    (<- (reversed) (reverse-base2data curexpr nil))
-                    (let* x (cdr stdin))
-                    (cont reversed atomenv x)))
-                (t
-                  (do-continuation
-                    (<- (expr atomenv stdin) (read-expr stdin atomenv nil nil))
-                    (let* x (cons expr curexpr))
-                    (read-expr stdin atomenv x t cont))))
-          (cond ((=-bit "(" c)
-                  (let ((x (cdr stdin)))
-                    (read-expr x atomenv nil t cont)))
-                (t
-                  (read-atom stdin atomenv cont))))))))
+          (let ((c (car stdin)))
+            (cond ((=-bit ")" c)
+                    (do-continuation
+                      (<- (reversed) (reverse-base2data curexpr nil))
+                      (let* x (cdr stdin))
+                      (cont reversed atomenv x)))
+                  (t
+                    (do-continuation
+                      (<- (expr atomenv stdin) (read-expr stdin atomenv nil nil))
+                      (let* x (cons expr curexpr))
+                      (read-expr stdin atomenv x t cont)))))
+          (let ((c (car stdin)))
+            (cond ((=-bit "(" c)
+                    (let ((x (cdr stdin)))
+                      (read-expr x atomenv nil t cont)))
+                  (t
+                    (read-atom stdin atomenv cont))))))))
 
 (def-lazy initial-atomenv
   (list
@@ -277,10 +282,14 @@
 
 (def-lazy initial-varenv
   (list
-    (cons maxforms (atom* maxforms))))
+    ;; (cons maxforms (atom* maxforms))
+    (cons (list "T") (atom* (list "T")))
+    ))
 
 (def-lazy t-data
-  (atom* maxforms))
+  ;; (atom* maxforms)
+  (atom* (list "T"))
+  )
 
 (defrec-lazy eval-cond (clauselist evalret cont)
   (do-continuation
@@ -300,7 +309,7 @@
         (ebody (cdr pair)))
     (cond ((isnil varenv)
             (cont nil))
-          ((= varval evarval)
+          ((stringeq varval evarval (lambda (x) x))
             (cont ebody))
           (t
             (let ((varenv-cdr (cdr varenv)))
@@ -394,92 +403,182 @@
       (typematch head
         ;; atom
         (cond
-          ((<= maxforms head-index)
+          ((stringeq (list "Q" "U" "O" "T" "E") head-index (lambda (x) x))
+            (cont car-tail evalret))
+          ((stringeq (list "C" "A" "R") head-index (lambda (x) x))
+            (eval car-tail evalret
+              (lambda (expr evalret)
+                (car-data expr
+                  (lambda (car-ed)
+                    (cont car-ed evalret)))))          
+            )
+          ((stringeq (list "C" "D" "R") head-index (lambda (x) x))
+            (eval car-tail evalret
+              (lambda (expr evalret)
+                (cdr-data expr
+                  (lambda (cdr-ed)
+                    (cont cdr-ed evalret)))))
+            )
+          ((stringeq (list "C" "O" "N" "S") head-index (lambda (x) x))
+            (eval car-tail evalret
+              (lambda (cons-x evalret)
+                (cdr-data tail
+                  (lambda (cdr-ed)
+                    (car-data cdr-ed
+                      (lambda (car-ed)
+                        (eval car-ed evalret
+                          (lambda (cons-y evalret)
+                            (cons-data cons-x cons-y
+                              (lambda (consed)
+                                (cont consed evalret)))))))))))
+            )
+          ((stringeq (list "A" "T" "O" "M") head-index (lambda (x) x))
+            (eval car-tail evalret
+              (lambda (expr evalret)
+                (truth-data (isatom expr)
+                  (lambda (truth-ret)
+                    (cont truth-ret evalret)))))
+            )
+          ((stringeq (list "E" "Q") head-index (lambda (x) x))
+            (do-continuation
+              (<- (car-ed) (car-data tail))
+              (<- (eq-x evalret) (eval car-ed evalret))
+              (<- (cdr-ed) (cdr-data tail))
+              (<- (car-ed) (car-data cdr-ed))
+              (<- (eq-y evalret) (eval car-ed evalret))
+              (cont
+                (cond ((and (isnil eq-x) (isnil eq-y))
+                        t-data)
+                      ((or (isnil eq-x) (isnil eq-y))
+                        nil)
+                      ((or (not (isatom eq-x)) (not (isatom eq-y)))
+                        nil)
+                      (t
+                        (truth-data (stringeq (valueof eq-x) (valueof eq-y) (lambda (x) x))
+                          (lambda (x) x))))
+                evalret))
+            )
+          ((stringeq (list "C" "O" "N" "D") head-index (lambda (x) x))
+            (eval-cond tail evalret cont)
+            )
+          ((stringeq (list "P" "R" "I" "N" "T") head-index (lambda (x) x))
+            (if (isnil tail)
+              (cons "\\n" (cont nil evalret))
+              (eval car-tail evalret
+                (lambda (expr evalret)
+                  (let ((atomenv (-> evalret cdr car))
+                        (next-text (cont expr evalret)))
+                    (printexpr atomenv expr next-text)))))
+            )
+          ((stringeq (list "R" "E" "A" "D") head-index (lambda (x) x))
+            (let-parse-evalret* evalret varenv atomenv stdin globalenv
+              (read-expr stdin atomenv nil nil
+                (lambda (expr atomenv stdin)
+                  (evalret* varenv atomenv stdin globalenv
+                    (lambda (new-evalret)
+                      (cont expr new-evalret))))))
+            )
+          ((stringeq (list "D" "E" "F") head-index (lambda (x) x))
+            (do-continuation
+              (<- (varname) (car-data tail))
+              (<- (cdr-ed) (cdr-data tail))
+              (<- (defbody) (car-data cdr-ed))
+              (<- (expr evalret) (eval defbody evalret))
+              (let-parse-evalret* evalret varenv atomenv stdin globalenv)
+              (<- (consed) (cons-data varname nil))
+              (let* x (cons expr nil))
+              (<- (envzip) (prepend-envzip consed x globalenv nil))
+              (<- (new-evalret) (evalret* varenv atomenv stdin envzip))
+              (cont expr new-evalret))
+            )
+          (t
             (eval head evalret
               (lambda (expr evalret)
                 (eval-lambda expr tail evalret cont))))
-          (t
-            (nth head-index
-              (list
-                ;; quote
-                (cont car-tail evalret)
-                ;; car
-                (eval car-tail evalret
-                  (lambda (expr evalret)
-                    (car-data expr
-                      (lambda (car-ed)
-                        (cont car-ed evalret)))))
-                ;; cdr
-                (eval car-tail evalret
-                  (lambda (expr evalret)
-                    (cdr-data expr
-                      (lambda (cdr-ed)
-                        (cont cdr-ed evalret)))))
-                ;; cons
-                (eval car-tail evalret
-                  (lambda (cons-x evalret)
-                    (cdr-data tail
-                      (lambda (cdr-ed)
-                        (car-data cdr-ed
-                          (lambda (car-ed)
-                            (eval car-ed evalret
-                              (lambda (cons-y evalret)
-                                (cons-data cons-x cons-y
-                                  (lambda (consed)
-                                    (cont consed evalret)))))))))))
-                ;; atom
-                (eval car-tail evalret
-                  (lambda (expr evalret)
-                    (truth-data (isatom expr)
-                      (lambda (truth-ret)
-                        (cont truth-ret evalret)))))
-                ;; eq
-                (do-continuation
-                  (<- (car-ed) (car-data tail))
-                  (<- (eq-x evalret) (eval car-ed evalret))
-                  (<- (cdr-ed) (cdr-data tail))
-                  (<- (car-ed) (car-data cdr-ed))
-                  (<- (eq-y evalret) (eval car-ed evalret))
-                  (cont
-                    (cond ((and (isnil eq-x) (isnil eq-y))
-                            t-data)
-                          ((or (isnil eq-x) (isnil eq-y))
-                            nil)
-                          ((or (not (isatom eq-x)) (not (isatom eq-y)))
-                            nil)
-                          (t
-                            (truth-data (= (valueof eq-x) (valueof eq-y))
-                              (lambda (x) x))))
-                    evalret))
-                ;; cond
-                (eval-cond tail evalret cont)
-                ;; print
-                (if (isnil tail)
-                  (cons "\\n" (cont nil evalret))
-                  (eval car-tail evalret
-                    (lambda (expr evalret)
-                      (let ((atomenv (-> evalret cdr car))
-                            (next-text (cont expr evalret)))
-                        (printexpr atomenv expr next-text)))))
-                ;; read
-                (let-parse-evalret* evalret varenv atomenv stdin globalenv
-                  (read-expr stdin atomenv nil nil
-                    (lambda (expr atomenv stdin)
-                      (evalret* varenv atomenv stdin globalenv
-                        (lambda (new-evalret)
-                          (cont expr new-evalret))))))
-                ;; def
-                (do-continuation
-                  (<- (varname) (car-data tail))
-                  (<- (cdr-ed) (cdr-data tail))
-                  (<- (defbody) (car-data cdr-ed))
-                  (<- (expr evalret) (eval defbody evalret))
-                  (let-parse-evalret* evalret varenv atomenv stdin globalenv)
-                  (<- (consed) (cons-data varname nil))
-                  (let* x (cons expr nil))
-                  (<- (envzip) (prepend-envzip consed x globalenv nil))
-                  (<- (new-evalret) (evalret* varenv atomenv stdin envzip))
-                  (cont expr new-evalret))))))
+          ;; (t
+          ;;   (nth head-index
+          ;;     (list
+          ;;       ;; ;; quote
+          ;;       ;; (cont car-tail evalret)
+          ;;       ;; ;; car
+          ;;       ;; (eval car-tail evalret
+          ;;       ;;   (lambda (expr evalret)
+          ;;       ;;     (car-data expr
+          ;;       ;;       (lambda (car-ed)
+          ;;       ;;         (cont car-ed evalret)))))
+          ;;       ;; ;; cdr
+          ;;       ;; (eval car-tail evalret
+          ;;       ;;   (lambda (expr evalret)
+          ;;       ;;     (cdr-data expr
+          ;;       ;;       (lambda (cdr-ed)
+          ;;       ;;         (cont cdr-ed evalret)))))
+          ;;       ;; ;; cons
+          ;;       ;; (eval car-tail evalret
+          ;;       ;;   (lambda (cons-x evalret)
+          ;;       ;;     (cdr-data tail
+          ;;       ;;       (lambda (cdr-ed)
+          ;;       ;;         (car-data cdr-ed
+          ;;       ;;           (lambda (car-ed)
+          ;;       ;;             (eval car-ed evalret
+          ;;       ;;               (lambda (cons-y evalret)
+          ;;       ;;                 (cons-data cons-x cons-y
+          ;;       ;;                   (lambda (consed)
+          ;;       ;;                     (cont consed evalret)))))))))))
+          ;;       ;; ;; atom
+          ;;       ;; (eval car-tail evalret
+          ;;       ;;   (lambda (expr evalret)
+          ;;       ;;     (truth-data (isatom expr)
+          ;;       ;;       (lambda (truth-ret)
+          ;;       ;;         (cont truth-ret evalret)))))
+          ;;       ;; ;; eq
+          ;;       ;; (do-continuation
+          ;;       ;;   (<- (car-ed) (car-data tail))
+          ;;       ;;   (<- (eq-x evalret) (eval car-ed evalret))
+          ;;       ;;   (<- (cdr-ed) (cdr-data tail))
+          ;;       ;;   (<- (car-ed) (car-data cdr-ed))
+          ;;       ;;   (<- (eq-y evalret) (eval car-ed evalret))
+          ;;       ;;   (cont
+          ;;       ;;     (cond ((and (isnil eq-x) (isnil eq-y))
+          ;;       ;;             t-data)
+          ;;       ;;           ((or (isnil eq-x) (isnil eq-y))
+          ;;       ;;             nil)
+          ;;       ;;           ((or (not (isatom eq-x)) (not (isatom eq-y)))
+          ;;       ;;             nil)
+          ;;       ;;           (t
+          ;;       ;;             (truth-data (stringeq (valueof eq-x) (valueof eq-y) (lambda (x) x))
+          ;;       ;;               (lambda (x) x))))
+          ;;       ;;     evalret))
+          ;;       ;; ;; cond
+          ;;       ;; (eval-cond tail evalret cont)
+          ;;       ;; ;; print
+          ;;       ;; (if (isnil tail)
+          ;;       ;;   (cons "\\n" (cont nil evalret))
+          ;;       ;;   (eval car-tail evalret
+          ;;       ;;     (lambda (expr evalret)
+          ;;       ;;       (let ((atomenv (-> evalret cdr car))
+          ;;       ;;             (next-text (cont expr evalret)))
+          ;;       ;;         (printexpr atomenv expr next-text)))))
+          ;;       ;; ;; read
+          ;;       ;; (let-parse-evalret* evalret varenv atomenv stdin globalenv
+          ;;       ;;   (read-expr stdin atomenv nil nil
+          ;;       ;;     (lambda (expr atomenv stdin)
+          ;;       ;;       (evalret* varenv atomenv stdin globalenv
+          ;;       ;;         (lambda (new-evalret)
+          ;;       ;;           (cont expr new-evalret))))))
+          ;;       ;; ;; def
+          ;;       ;; (do-continuation
+          ;;       ;;   (<- (varname) (car-data tail))
+          ;;       ;;   (<- (cdr-ed) (cdr-data tail))
+          ;;       ;;   (<- (defbody) (car-data cdr-ed))
+          ;;       ;;   (<- (expr evalret) (eval defbody evalret))
+          ;;       ;;   (let-parse-evalret* evalret varenv atomenv stdin globalenv)
+          ;;       ;;   (<- (consed) (cons-data varname nil))
+          ;;       ;;   (let* x (cons expr nil))
+          ;;       ;;   (<- (envzip) (prepend-envzip consed x globalenv nil))
+          ;;       ;;   (<- (new-evalret) (evalret* varenv atomenv stdin envzip))
+          ;;       ;;   (cont expr new-evalret))
+          ;;         )))
+                  )
         ;; list: parse as lambda
         (eval-lambda head tail evalret-top cont)
         ;; nil
