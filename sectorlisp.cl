@@ -46,14 +46,6 @@
 (def-lazy stringtermchar 256)
 (def-lazy stringterm nil)
 
-;; (def-lazy "(" (+ 32 8))
-;; (def-lazy ")" (succ "("))
-;; (def-lazy " " 32)
-;; (def-lazy "." (+ (+ (+ 32 8) 4) 2))
-;; (def-lazy ">" (+ (+ (+ (+ 32 16) 8) 4) 2))
-;; (def-lazy "*" (+ (+ 32 8) 2))
-;; (def-lazy "\\n" (+ 8 2))
-
 (def-lazy 3 (succ 2))
 (def-lazy 5 (succ 4))
 (def-lazy 6 (+ 4 2))
@@ -62,9 +54,6 @@
 (def-lazy 10 (succ 9))
 (def-lazy 11 (succ 10))
 
-
-;; (defrec-lazy append-element (l item)
-;;   (if (isnil l) (cons item nil) (cons (car l) (append-element (cdr l) item))))
 
 (defun-lazy append-item-to-stream (stream item)
   (lambda (x) (stream (cons item x))))
@@ -104,16 +93,16 @@
 (defmacro-lazy cdr-data (data)
   `(cdr (valueof ,data)))
 
-(defmacro-lazy cons-data (x y)
-  `(cons type-list (cons ,x ,y)))
+(defun-lazy cons-data (x y cont)
+  (cont (cons type-list (cons x y))))
 
 (defmacro-lazy atom* (value)
   `(cons type-atom ,value))
 
-(defmacro-lazy list* (arg &rest args)
-  (if (not args)
-    `(cons-data ,arg nil)
-    `(cons-data ,arg (list* ,@args))))
+;; (defmacro-lazy list* (arg &rest args)
+;;   (if (not args)
+;;     `(cons-data ,arg nil)
+;;     `(cons-data ,arg (list* ,@args))))
 
 (defun-lazy printatom (atomenv expr cont)
   (append-list (car ((valueof expr) cdr* atomenv)) cont (lambda (x) x)
@@ -190,15 +179,15 @@
 
 (defrec-lazy read-skip-whitespace (stdin cont)
   (let ((c (car stdin)))
-    (cond ((or (=-bit " " c) (=-bit "\\n" c)
-    ;; (= stringtermchar c)
-    )
+    (cond ((or (=-bit " " c) (=-bit "\\n" c))
             (read-skip-whitespace (cdr stdin) cont))
           (t
             (cont stdin)))))
 
 (defrec-lazy reverse-base2data (l curlist cont)
-  (if (isnil l) (cont curlist) (reverse-base2data (cdr l) (cons-data (car l) curlist) cont)))
+  (cons-data (car l) curlist
+    (lambda (consed)
+      (if (isnil l) (cont curlist) (reverse-base2data (cdr l) consed cont)))))
 
 (defrec-lazy read-expr (stdin atomenv curexpr mode cont)
   (read-skip-whitespace stdin
@@ -371,7 +360,9 @@
                   (lambda (cons-x evalret)
                     (eval (-> tail cdr-data car-data) evalret
                       (lambda (cons-y evalret)
-                        (cont (cons-data cons-x cons-y) evalret)))))
+                        (cons-data cons-x cons-y
+                          (lambda (consed)
+                            (cont consed evalret)))))))
                 ;; atom
                 (eval (car-data tail) evalret
                   (lambda (expr evalret)
@@ -413,13 +404,15 @@
                   (eval defbody evalret
                     (lambda (expr evalret)
                       (let-parse-evalret* evalret varenv atomenv stdin globalenv
-                        (prepend-envzip (cons-data varname nil) (cons expr nil) globalenv nil
-                          (lambda (envzip)
-                            (evalret*
-                              varenv atomenv stdin
-                              envzip
-                              (lambda (new-evalret)
-                                (cont expr new-evalret)))))))))))))
+                        (cons-data varname nil
+                          (lambda (consed)
+                            (prepend-envzip consed (cons expr nil) globalenv nil
+                              (lambda (envzip)
+                                (evalret*
+                                  varenv atomenv stdin
+                                  envzip
+                                  (lambda (new-evalret)
+                                    (cont expr new-evalret)))))))))))))))
         ;; list: parse as lambda
         (let ((lambdaexpr head)
               (callargs tail))
