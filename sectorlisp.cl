@@ -63,17 +63,17 @@
 (def-lazy 11 (succ 10))
 
 
-(defrec-lazy map (f l)
-  (if (isnil l)
-    nil
-    (cons (f (car l)) (map f (cdr l)))))
+;; (defrec-lazy map (f l)
+;;   (if (isnil l)
+;;     nil
+;;     (cons (f (car l)) (map f (cdr l)))))
 
-(defrec-lazy length (l)
-  ((letrec-lazy length (l n)
-      (if (isnil l)
-        n
-        (length (cdr l) (succ n))))
-    l 0))
+;; (defrec-lazy length (l)
+;;   ((letrec-lazy length (l n)
+;;       (if (isnil l)
+;;         n
+;;         (length (cdr l) (succ n))))
+;;     l 0))
 
 (defrec-lazy append-element (l item)
   (if (isnil l) (cons item nil) (cons (car l) (append-element (cdr l) item))))
@@ -211,9 +211,6 @@
 (defrec-lazy reverse-base2data (l curlist cont)
   (if (isnil l) (cont curlist) (reverse-base2data (cdr l) (cons-data (car l) curlist) cont)))
 
-(defun-lazy catstream-element-data (s1 e)
-  (lambda (x) (s1 (cons-data e x))))
-
 (defrec-lazy read-expr (stdin atomenv curexpr mode cont)
   (read-skip-whitespace stdin
     (lambda (stdin)
@@ -321,11 +318,22 @@
 (defun-lazy evalret* (varenv atomenv stdin globalenv cont)
   (cont (list varenv atomenv stdin globalenv)))
 
+;; (defmacro-lazy let-parse-evalret* (evalret varenv atomenv stdin globalenv body)
+;;   `(let ((,varenv      (-> ,evalret car))
+;;          (,atomenv     (-> ,evalret cdr car))
+;;          (,stdin       (-> ,evalret cdr cdr car))
+;;          (,globalenv   (-> ,evalret cdr cdr cdr car)))
+;;       ,body))
+
 (defmacro-lazy let-parse-evalret* (evalret varenv atomenv stdin globalenv body)
-  `(let ((,varenv      (-> ,evalret car))
-         (,atomenv     (-> ,evalret cdr car))
-         (,stdin       (-> ,evalret cdr cdr car))
-         (,globalenv   (-> ,evalret cdr cdr cdr car)))
+  `(let ((evtmp ,evalret)
+         (,varenv      (car evtmp))
+         (evtmp (cdr evtmp))
+         (,atomenv     (car evtmp))
+         (evtmp (cdr evtmp))
+         (,stdin       (car evtmp))
+         (evtmp (cdr evtmp))
+         (,globalenv   (car evtmp)))
       ,body))
 
 (defrec-lazy eval (expr evalret cont)
