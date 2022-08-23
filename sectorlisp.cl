@@ -78,8 +78,8 @@
     ;; nil
     t))
 
-(defun-lazy truth-data (expr)
-  (if expr t-data nil))
+(defun-lazy truth-data (expr cont)
+  (cont (if expr t-data nil)))
 
 (defun-lazy type-atom (t0 t1) t0)
 (defun-lazy type-list (t0 t1) t1)
@@ -143,15 +143,12 @@
 (defrec-lazy read-string (curstr stdin cont)
   (let ((c (car stdin)))
     (cond
-          ((or (=-bit "(" c) (=-bit ")" c) (=-bit " " c) (=-bit "\\n" c)
-          ;; (= stringtermchar c)
-          )
-            (reverse curstr nil
-              (lambda (reversed)
-                (cont reversed stdin)))
-            )
-          (t
-            (read-string (cons (car stdin) curstr) (cdr stdin) cont)))))
+      ((or (=-bit "(" c) (=-bit ")" c) (=-bit " " c) (=-bit "\\n" c))
+        (reverse curstr nil
+          (lambda (reversed)
+            (cont reversed stdin))))
+      (t
+        (read-string (cons (car stdin) curstr) (cdr stdin) cont)))))
 
 (defun-lazy get-atomindex-env (atomenv str cont)
   ((letrec-lazy get-atomindex-env-helper (cur-atomenv n)
@@ -416,7 +413,9 @@
                           (lambda (car-ed)
                             (eval car-ed evalret
                               (lambda (expr evalret)
-                                (cont (truth-data (isatom expr)) evalret)))))
+                                (truth-data (isatom expr)
+                                  (lambda (truth-ret)
+                                    (cont truth-ret evalret)))))))
                         ;; eq
                         (car-data tail
                           (lambda (car-ed)
@@ -436,7 +435,8 @@
                                                     ((or (not (isatom eq-x)) (not (isatom eq-y)))
                                                       nil)
                                                     (t
-                                                      (truth-data (= (valueof eq-x) (valueof eq-y)))))
+                                                      (truth-data (= (valueof eq-x) (valueof eq-y))
+                                                        (lambda (x) x))))
                                               evalret)))))))))))
                         ;; cond
                         (eval-cond tail evalret cont)
