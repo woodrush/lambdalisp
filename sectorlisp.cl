@@ -283,12 +283,16 @@
             (lambda (expr evalret)
               (eval-map-base (cdr-data lexpr) (append-element curexpr expr) evalret cont))))))
 
-(defrec-lazy prepend-envzip (argnames evargs env)
+(defrec-lazy prepend-envzip (argnames evargs env curenv cont)
   (cond ((isnil argnames)
-          env)
+          (reverse curenv nil
+            (lambda (reversed)
+              (cont (append-list reversed env)))))
         (t
-          (cons (cons (valueof (car-data argnames)) (if (isnil evargs) nil (car evargs)))
-                (prepend-envzip (cdr-data argnames) (if (isnil evargs) nil (cdr evargs)) env)))))
+          (prepend-envzip (cdr-data argnames) (if (isnil evargs) nil (cdr evargs)) env
+            (cons (cons (valueof (car-data argnames)) (if (isnil evargs) nil (car evargs)))
+                curenv)
+            cont))))
 
 (defun-lazy eval-lambda (lambdaexpr callargs evalret cont)
   (let ((argnames (-> lambdaexpr cdr-data car-data))
@@ -297,17 +301,19 @@
     (eval-map-base callargs nil evalret
       (lambda (argvalues evalret)
         (let-parse-evalret* evalret varenv atomenv stdin globalenv
-          (evalret* (prepend-envzip argnames argvalues varenv) atomenv stdin globalenv
-            (lambda (new-evalret)
-              (eval
-                lambdabody
-                new-evalret
-                (lambda (expr evalret)
-                  (let-parse-evalret* evalret varenv atomenv stdin globalenv
-                    ;; Evaluate the rest of the argument in the original environment
-                    (evalret* varenv-orig atomenv stdin globalenv
-                      (lambda (new-evalret)
-                        (cont expr new-evalret)))))))))))))
+          (prepend-envzip argnames argvalues varenv nil
+            (lambda (envzip)
+              (evalret* envzip atomenv stdin globalenv
+                (lambda (new-evalret)
+                  (eval
+                    lambdabody
+                    new-evalret
+                    (lambda (expr evalret)
+                      (let-parse-evalret* evalret varenv atomenv stdin globalenv
+                        ;; Evaluate the rest of the argument in the original environment
+                        (evalret* varenv-orig atomenv stdin globalenv
+                          (lambda (new-evalret)
+                            (cont expr new-evalret)))))))))))))))
 
 ;; (defmacro-lazy evalret* (varenv atomenv stdin globalenv)
 ;;   `(list ,varenv ,atomenv ,stdin ,globalenv))
@@ -404,11 +410,13 @@
                   (eval defbody evalret
                     (lambda (expr evalret)
                       (let-parse-evalret* evalret varenv atomenv stdin globalenv
-                        (evalret*
-                          varenv atomenv stdin
-                          (prepend-envzip (cons-data varname nil) (cons expr nil) globalenv)
-                          (lambda (new-evalret)
-                            (cont expr new-evalret)))))))))))
+                        (prepend-envzip (cons-data varname nil) (cons expr nil) globalenv nil
+                          (lambda (envzip)
+                            (evalret*
+                              varenv atomenv stdin
+                              envzip
+                              (lambda (new-evalret)
+                                (cont expr new-evalret)))))))))))))
         ;; list: parse as lambda
         (let ((lambdaexpr head)
               (callargs tail))
