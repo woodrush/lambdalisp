@@ -78,8 +78,15 @@
 (defrec-lazy append-element (l item)
   (if (isnil l) (cons item nil) (cons (car l) (append-element (cdr l) item))))
 
-(defrec-lazy append-list (l item)
-  (if (isnil l) item (cons (car l) (append-list (cdr l) item))))
+(defun-lazy append-item-to-stream (stream item)
+  (lambda (x) (stream (cons item x))))
+
+
+(defrec-lazy append-list (l item curstream cont)
+  (if (isnil l)
+    (cont (curstream item))
+    (append-list (cdr l) item (append-item-to-stream curstream (car l)) cont)))
+
 
 (defmacro-lazy typematch (expr atomcase listcase nilcase)
   `(if (isnil ,expr)
@@ -130,7 +137,8 @@
                  (map-data-as-baselist f (cdr-data data))))))
 
 (defun-lazy printatom (atomenv expr cont)
-  (append-list (car ((valueof expr) cdr* atomenv)) cont))
+  (append-list (car ((valueof expr) cdr* atomenv)) cont (lambda (x) x)
+    (lambda (x) x)))
 
 (defrec-lazy printexpr-helper (atomenv expr mode cont)
   (if mode
@@ -284,7 +292,9 @@
   (cond ((isnil argnames)
           (reverse curenv nil
             (lambda (reversed)
-              (cont (append-list reversed env)))))
+              (append-list reversed env (lambda (x) x)
+                (lambda (appended)
+                  (cont appended))))))
         (t
           (prepend-envzip (cdr-data argnames) (if (isnil evargs) nil (cdr evargs)) env
             (cons (cons (valueof (car-data argnames)) (if (isnil evargs) nil (car evargs)))
@@ -292,8 +302,9 @@
             cont))))
 
 (defun-lazy eval-lambda (lambdaexpr callargs evalret cont)
-  (let ((argnames (-> lambdaexpr cdr-data car-data))
-        (lambdabody (-> lambdaexpr cdr-data cdr-data car-data))
+  (let ((lambda-cdr (cdr-data lambdaexpr))
+        (argnames (-> lambda-cdr car-data))
+        (lambdabody (-> lambda-cdr cdr-data car-data))
         (varenv-orig (car evalret)))
     (eval-map-base callargs nil evalret
       (lambda (argvalues evalret)
@@ -318,13 +329,6 @@
 (defun-lazy evalret* (varenv atomenv stdin globalenv cont)
   (cont (list varenv atomenv stdin globalenv)))
 
-;; (defmacro-lazy let-parse-evalret* (evalret varenv atomenv stdin globalenv body)
-;;   `(let ((,varenv      (-> ,evalret car))
-;;          (,atomenv     (-> ,evalret cdr car))
-;;          (,stdin       (-> ,evalret cdr cdr car))
-;;          (,globalenv   (-> ,evalret cdr cdr cdr car)))
-;;       ,body))
-
 (defmacro-lazy let-parse-evalret* (evalret varenv atomenv stdin globalenv body)
   `(let ((evtmp ,evalret)
          (,varenv      (car evtmp))
@@ -340,13 +344,21 @@
   (typematch expr
     ;; atom
     (let-parse-evalret* evalret varenv atomenv stdin globalenv
-      (varenv-lookup
-        (if (isnil globalenv)
-          varenv
-          (append-list varenv globalenv))
-        (valueof expr)
-        (lambda (ret)
-          (cont ret evalret))))
+      (cond
+        ((isnil globalenv)
+          (varenv-lookup
+            varenv
+            (valueof expr)
+            (lambda (ret)
+              (cont ret evalret))))
+        (t
+          (append-list varenv globalenv (lambda (x) x)
+            (lambda (appended)
+              (varenv-lookup
+                appended
+                (valueof expr)
+                (lambda (ret)
+                  (cont ret evalret))))))))
     ;; list
     (let ((head (car-data expr))
           (tail (cdr-data expr))
