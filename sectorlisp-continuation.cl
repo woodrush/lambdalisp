@@ -26,7 +26,6 @@
 (def-lazy "X" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons t (cons t nil)))))))))
 (def-lazy "Y" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons t (cons nil nil)))))))))
 (def-lazy "Z" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons nil (cons t nil)))))))))
-
 (def-lazy "(" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t nil)))))))))
 (def-lazy ")" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil nil)))))))))
 (def-lazy "*" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
@@ -81,16 +80,7 @@
         (t
           (cmp-bit (cdr n) (cdr m)))))
 
-(def-lazy stringtermchar 256)
 (def-lazy stringterm nil)
-
-(def-lazy 3 (succ 2))
-(def-lazy 5 (succ 4))
-(def-lazy 6 (+ 4 2))
-(def-lazy 7 (succ 6))
-(def-lazy 9 (succ 8))
-(def-lazy 10 (succ 9))
-(def-lazy 11 (succ 10))
 
 
 (defun-lazy append-item-to-stream (stream item)
@@ -256,18 +246,11 @@
                   (t
                     (read-atom stdin cont))))))))
 
-(def-lazy maxforms 10)
-
 (def-lazy initial-varenv
   (list
-    ;; (cons maxforms (atom* maxforms))
-    (cons (list "N" "I" "L") nil)
-    ))
+    (cons (list "N" "I" "L") nil)))
 
-(def-lazy t-data
-  ;; (atom* maxforms)
-  (atom* (list "T"))
-  )
+(def-lazy t-data (atom* (list "T")))
 
 (defrec-lazy eval-cond (clauselist evalret cont)
   (do-continuation
