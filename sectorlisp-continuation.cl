@@ -296,37 +296,38 @@
             (<- (cdr-ed) (cdr-data lexpr))
             (eval-map-base cdr-ed appended evalret cont)))))
 
-;; (defrec-lazy prepend-envzip (argnames evargs env curenv cont)
-;;   (cond ((isnil argnames)
-;;           (do-continuation
-;;             (<- (reversed) (reverse curenv nil))
-;;             (<- (appended) (append-list reversed env (lambda (x) x)))
-;;             (cont appended)))
-;;         (t
-;;           (do-continuation
-;;             (<- (cdr-ed) (cdr-data argnames))
-;;             (<- (car-ed) (car-data argnames))
-;;             (let* next-evargs (if (isnil evargs) nil (cdr evargs)))
-;;             (let* inner-cons (cons (valueof car-ed) next-evargs))
-;;             (let* next-curenv (cons inner-cons curenv))
-;;             (prepend-envzip cdr-ed next-evargs env next-curenv cont)))))
-
 (defrec-lazy prepend-envzip (argnames evargs env curenv cont)
   (cond ((isnil argnames)
-          (reverse curenv nil
-            (lambda (reversed)
-              (append-list reversed env (lambda (x) x)
-                (lambda (appended)
-                  (cont appended))))))
+          (do-continuation
+            (<- (reversed) (reverse curenv nil))
+            (<- (appended) (append-list reversed env (lambda (x) x)))
+            (cont appended)))
         (t
-          (cdr-data argnames
-            (lambda (cdr-ed)
-              (prepend-envzip cdr-ed (if (isnil evargs) nil (cdr evargs)) env
-                (car-data argnames
-                  (lambda (car-ed)
-                    (cons (cons (valueof car-ed) (if (isnil evargs) nil (car evargs)))
-                      curenv)))
-                cont))))))
+          (do-continuation
+            (<- (cdr-ed) (cdr-data argnames))
+            (<- (car-ed) (car-data argnames))
+            (let* next-evargs (if (isnil evargs) nil (cdr evargs)))
+            (let* car-evargs (if (isnil evargs) nil (car evargs)))
+            (let* inner-cons (cons (valueof car-ed) car-evargs))
+            (let* next-curenv (cons inner-cons curenv))
+            (prepend-envzip cdr-ed next-evargs env next-curenv cont)))))
+
+;; (defrec-lazy prepend-envzip (argnames evargs env curenv cont)
+;;   (cond ((isnil argnames)
+;;           (reverse curenv nil
+;;             (lambda (reversed)
+;;               (append-list reversed env (lambda (x) x)
+;;                 (lambda (appended)
+;;                   (cont appended))))))
+;;         (t
+;;           (cdr-data argnames
+;;             (lambda (cdr-ed)
+;;               (prepend-envzip cdr-ed (if (isnil evargs) nil (cdr evargs)) env
+;;                 (car-data argnames
+;;                   (lambda (car-ed)
+;;                     (cons (cons (valueof car-ed) (if (isnil evargs) nil (car evargs)))
+;;                       curenv)))
+;;                 cont))))))
 
 (defun-lazy eval-lambda (lambdaexpr callargs evalret cont)
   (do-continuation
