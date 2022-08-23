@@ -158,7 +158,7 @@
       ;; list
       (cons "(" (printexpr-helper atomenv expr nil (cons ")" cont)))
       ;; nil
-      (cons "(" (cons ")" cont))
+      (cons "N" (cons "I" (cons "L" cont)))
       ;; (cons "N" (cons "I" (cons "L" cont)))
       )
     (do-continuation
@@ -301,7 +301,7 @@
 (def-lazy initial-varenv
   (list
     ;; (cons maxforms (atom* maxforms))
-    (cons (list "T") (atom* (list "T")))
+    (cons (list "N" "I" "L") nil)
     ))
 
 (def-lazy t-data
@@ -528,44 +528,13 @@
                   cdr-case
                   default-case)
                 ;; c2 > "D"
-                (if (stringeq* c-tail (list "O" "N" "S"))
-                  cons-case
-                  (if (stringeq* c-tail (list "O" "N" "D"))
-                    cond-case
-                    default-case))
-                ;; (if (isnil c-tail2)
-                ;;   default-case
-                ;;   (let ((c-top (car c-tail2))
-                ;;         (c-tail (cdr c-tail2)))
-                ;;     (if (=-bit "O" c-top)
-                ;;       (if (isnil c-tail)
-                ;;         default-case
-                ;;         (let ((c-top (car c-tail))
-                ;;               (c-tail (cdr c-tail)))
-                ;;           (if (=-bit "N" c-top)
-                ;;             (if (isnil c-tail)
-                ;;               default-case
-                ;;               cons-case
-                ;;               ;; (let ((c-top (car c-tail))
-                ;;               ;;       (c-tail (cdr c-tail))
-                ;;               ;;       (cmp-ret (cmp-bit c-top "D")))
-                ;;               ;;   (cmp-ret
-                ;;               ;;     ;; c < "D"
-                ;;               ;;     default-case
-                ;;               ;;     ;; c == "D"
-                ;;               ;;     (if (isnil c-tail)
-                ;;               ;;       cond-case
-                ;;               ;;       default-case)
-                ;;               ;;     ;; c > "D"
-                ;;               ;;     (if (stringeq* c-tail (list "S"))
-                ;;               ;;       cons-case
-                ;;               ;;       default-case)
-                ;;               ;;     ))
-                ;;                   )
-                ;;             default-case)))
-                ;;       default-case)))
-                )
-              ))
+                (if (=-bit c-top "O")
+                  (if (stringeq* c-tail2 (list "N" "S"))
+                    cons-case
+                    (if (stringeq* c-tail2 (list "N" "D"))
+                      cond-case
+                      default-case))
+                  default-case))))
           ;; c1 > "C"
           (cmp-p
             ;; c1 < "P"
