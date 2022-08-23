@@ -142,28 +142,21 @@
 ;;     `(cons-data ,arg nil)
 ;;     `(cons-data ,arg (list* ,@args))))
 
-(defun-lazy printatom (atomenv expr cont)
-  (append-list (car ((valueof expr) cdr* atomenv)) cont (lambda (x) x)
-    (lambda (x) x)))
-
-(defrec-lazy printexpr-helper (atomenv expr mode cont)
+(defrec-lazy printexpr-helper (expr mode cont)
   (if mode
     (typematch expr
       ;; atom
-      ;; (cons "A" cont)
       (do-continuation
         (<- (outstr) (append-list (valueof expr) cont (lambda (x) x)))
         outstr)
-      ;; (printatom atomenv expr cont)
       ;; list
-      (cons "(" (printexpr-helper atomenv expr nil (cons ")" cont)))
+      (cons "(" (printexpr-helper expr nil (cons ")" cont)))
       ;; nil
       (cons "N" (cons "I" (cons "L" cont)))
-      ;; (cons "N" (cons "I" (cons "L" cont)))
       )
     (do-continuation
       (<- (car-ed) (car-data expr))
-      (printexpr-helper atomenv car-ed t
+      (printexpr-helper car-ed t
         (do-continuation
           (<- (cdr-ed) (cdr-data expr))
           (typematch cdr-ed
@@ -172,17 +165,16 @@
               (lambda (cdr-ed)
                 (cons " " (cons "." (cons " "
                 (append-list (valueof cdr-ed) cont (lambda (x) x) (lambda (x) x))
-                ;; (printatom atomenv cdr-ed cont)
                 )))))
             ;; list
             (cdr-data expr
               (lambda (cdr-ed)
-                (cons " " (printexpr-helper atomenv cdr-ed nil cont))))
+                (cons " " (printexpr-helper cdr-ed nil cont))))
             ;; nil
             cont))))))
 
-(defun-lazy printexpr (atomenv expr cont)
-  (printexpr-helper atomenv expr t cont))
+(defun-lazy printexpr (expr cont)
+  (printexpr-helper expr t cont))
 
 (defrec-lazy reverse (l curlist cont)
   (if (isnil l) (cont curlist) (reverse (cdr l) (cons (car l) curlist) cont)))
@@ -197,28 +189,10 @@
       (t
         (read-string (cons (car stdin) curstr) (cdr stdin) cont)))))
 
-(defun-lazy get-atomindex-env (atomenv str cont)
-  ((letrec-lazy get-atomindex-env-helper (cur-atomenv n)
-    (cond ((isnil cur-atomenv)
-            (append-list atomenv (cons str nil) (lambda (x) x)
-              (lambda (appended)
-                (cont n appended))))
-          (t
-            (do-continuation
-              (let* car-cur-atomenv (car cur-atomenv))
-              (let* cdr-cur-atomenv (cdr cur-atomenv))
-              (let* succ-n (succ n))
-              (<- (p) (stringeq car-cur-atomenv str))
-              (if p
-                (cont n atomenv)
-                (get-atomindex-env-helper cdr-cur-atomenv succ-n))))))
-   atomenv 0))
-
-(defun-lazy read-atom (stdin atomenv cont)
+(defun-lazy read-atom (stdin cont)
   (do-continuation
     (<- (retstr stdin) (read-string nil stdin))
-    ;; (<- (retindex atomenv) (get-atomindex-env atomenv retstr))
-    (cont (atom* retstr) atomenv stdin)))
+    (cont (atom* retstr) stdin)))
 
 (defrec-lazy stringeq (s1 s2 cont)
   (let ((isnil-s1 (isnil s1))
@@ -260,7 +234,7 @@
         (let ((x (cdr l)))
           (reverse-base2data x consed cont))))))
 
-(defrec-lazy read-expr (stdin atomenv curexpr mode cont)
+(defrec-lazy read-expr (stdin curexpr mode cont)
   (read-skip-whitespace stdin
     (lambda (stdin)
         (if mode
@@ -269,32 +243,18 @@
                     (do-continuation
                       (<- (reversed) (reverse-base2data curexpr nil))
                       (let* x (cdr stdin))
-                      (cont reversed atomenv x)))
+                      (cont reversed x)))
                   (t
                     (do-continuation
-                      (<- (expr atomenv stdin) (read-expr stdin atomenv nil nil))
+                      (<- (expr stdin) (read-expr stdin nil nil))
                       (let* x (cons expr curexpr))
-                      (read-expr stdin atomenv x t cont)))))
+                      (read-expr stdin x t cont)))))
           (let ((c (car stdin)))
             (cond ((=-bit "(" c)
                     (let ((x (cdr stdin)))
-                      (read-expr x atomenv nil t cont)))
+                      (read-expr x nil t cont)))
                   (t
-                    (read-atom stdin atomenv cont))))))))
-
-(def-lazy initial-atomenv
-  (list
-    (list "Q" "U" "O" "T" "E")
-    (list "C" "A" "R")
-    (list "C" "D" "R")
-    (list "C" "O" "N" "S")
-    (list "A" "T" "O" "M")
-    (list "E" "Q")
-    (list "C" "O" "N" "D")
-    (list "P" "R" "I" "N" "T")
-    (list "R" "E" "A" "D")
-    (list "D" "E" "F")
-    (list "T")))
+                    (read-atom stdin cont))))))))
 
 (def-lazy maxforms 10)
 
@@ -369,23 +329,21 @@
     (<- (lambdabody) (car-data cdr-ed))
     (let* varenv-orig (car evalret))
     (<- (argvalues evalret) (eval-map-base callargs nil evalret))
-    (let-parse-evalret* evalret varenv atomenv stdin globalenv)
+    (let-parse-evalret* evalret varenv stdin globalenv)
     (<- (envzip) (prepend-envzip argnames argvalues varenv nil))
-    (<- (new-evalret) (evalret* envzip atomenv stdin globalenv))
+    (<- (new-evalret) (evalret* envzip stdin globalenv))
     (<- (expr evalret) (eval lambdabody new-evalret))
-    (let-parse-evalret* evalret varenv atomenv stdin globalenv)
+    (let-parse-evalret* evalret varenv stdin globalenv)
     ;; Evaluate the rest of the arguments in the original environment
-    (<- (new-evalret) (evalret* varenv-orig atomenv stdin globalenv))
+    (<- (new-evalret) (evalret* varenv-orig stdin globalenv))
     (cont expr new-evalret)))
 
-(defun-lazy evalret* (varenv atomenv stdin globalenv cont)
-  (cont (list varenv atomenv stdin globalenv)))
+(defun-lazy evalret* (varenv stdin globalenv cont)
+  (cont (list varenv stdin globalenv)))
 
-(defmacro-lazy let-parse-evalret* (evalret varenv atomenv stdin globalenv body)
+(defmacro-lazy let-parse-evalret* (evalret varenv stdin globalenv body)
   `(let ((evtmp ,evalret)
          (,varenv      (car evtmp))
-         (evtmp (cdr evtmp))
-         (,atomenv     (car evtmp))
          (evtmp (cdr evtmp))
          (,stdin       (car evtmp))
          (evtmp (cdr evtmp))
@@ -395,7 +353,7 @@
 (defrec-lazy eval (expr evalret cont)
   (typematch expr
     ;; atom
-    (let-parse-evalret* evalret varenv atomenv stdin globalenv
+    (let-parse-evalret* evalret varenv stdin globalenv
       (cond
         ((isnil globalenv)
           (varenv-lookup
@@ -475,14 +433,13 @@
           (cons "\\n" (cont nil evalret))
           (eval car-tail evalret
             (lambda (expr evalret)
-              (let ((atomenv (-> evalret cdr car))
-                    (next-text (cont expr evalret)))
-                (printexpr atomenv expr next-text))))))
+              (let ((next-text (cont expr evalret)))
+                (printexpr expr next-text))))))
       (let* read-case
-        (let-parse-evalret* evalret varenv atomenv stdin globalenv
-          (read-expr stdin atomenv nil nil
-            (lambda (expr atomenv stdin)
-              (evalret* varenv atomenv stdin globalenv
+        (let-parse-evalret* evalret varenv stdin globalenv
+          (read-expr stdin nil nil
+            (lambda (expr stdin)
+              (evalret* varenv stdin globalenv
                 (lambda (new-evalret)
                   (cont expr new-evalret)))))))
       (let* def-case
@@ -491,11 +448,11 @@
           (<- (cdr-ed) (cdr-data tail))
           (<- (defbody) (car-data cdr-ed))
           (<- (expr evalret) (eval defbody evalret))
-          (let-parse-evalret* evalret varenv atomenv stdin globalenv)
+          (let-parse-evalret* evalret varenv stdin globalenv)
           (<- (consed) (cons-data varname nil))
           (let* x (cons expr nil))
           (<- (envzip) (prepend-envzip consed x globalenv nil))
-          (<- (new-evalret) (evalret* varenv atomenv stdin envzip))
+          (<- (new-evalret) (evalret* varenv stdin envzip))
           (cont expr new-evalret)))
       (let* default-case
         (eval head evalret
@@ -562,18 +519,18 @@
     ;; nil
     (cont nil evalret)))
 
-(defrec-lazy repl (varenv atomenv stdin globalenv)
+(defrec-lazy repl (varenv stdin globalenv)
   (cons "*" (cons " "
     (if (isnil (cdr stdin))
       stringterm
       (do-continuation
-        (<- (expr atomenv stdin) (read-expr stdin atomenv nil nil))
-        (<- (new-evalret) (evalret* varenv atomenv stdin globalenv))
+        (<- (expr stdin) (read-expr stdin nil nil))
+        (<- (new-evalret) (evalret* varenv stdin globalenv))
         (<- (expr evalret) (eval expr new-evalret))
-        (let-parse-evalret* evalret varenv atomenv stdin globalenv)
-        (let* repl-next (repl varenv atomenv stdin globalenv))
+        (let-parse-evalret* evalret varenv stdin globalenv)
+        (let* repl-next (repl varenv stdin globalenv))
         (let* text-next (cons "\\n" repl-next))
-        (printexpr atomenv expr text-next))))))
+        (printexpr expr text-next))))))
 
 (defrec-lazy list2inflist (l)
   (if (isnil l)
@@ -581,7 +538,7 @@
     (cons (car l) (list2inflist (cdr l)))))
 
 (defun-lazy main (stdin)
-  (repl initial-varenv initial-atomenv stdin nil))
+  (repl initial-varenv stdin nil))
 
 
 ;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
