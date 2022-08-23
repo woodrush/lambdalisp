@@ -320,20 +320,14 @@
     (<- (lambdabody) (car-data cdr-ed))
     (let* varenv-orig (car evalret))
     (<- (argvalues evalret) (eval-map-base callargs nil evalret))
-    (let-parse-evalret* evalret varenv atomenv stdin globalenv
-      (prepend-envzip argnames argvalues varenv nil
-        (lambda (envzip)
-          (evalret* envzip atomenv stdin globalenv
-            (lambda (new-evalret)
-              (eval
-                lambdabody
-                new-evalret
-                (lambda (expr evalret)
-                  (let-parse-evalret* evalret varenv atomenv stdin globalenv
-                    ;; Evaluate the rest of the argument in the original environment
-                    (evalret* varenv-orig atomenv stdin globalenv
-                      (lambda (new-evalret)
-                        (cont expr new-evalret)))))))))))))
+    (let-parse-evalret* evalret varenv atomenv stdin globalenv)
+    (<- (envzip) (prepend-envzip argnames argvalues varenv nil))
+    (<- (new-evalret) (evalret* envzip atomenv stdin globalenv))
+    (<- (expr evalret) (eval lambdabody new-evalret))
+    (let-parse-evalret* evalret varenv atomenv stdin globalenv)
+    ;; Evaluate the rest of the argument in the original environment
+    (<- (new-evalret) (evalret* varenv-orig atomenv stdin globalenv))
+    (cont expr new-evalret)))
 
 ;; (defmacro-lazy evalret* (varenv atomenv stdin globalenv)
 ;;   `(list ,varenv ,atomenv ,stdin ,globalenv))
@@ -430,27 +424,23 @@
                                   (lambda (truth-ret)
                                     (cont truth-ret evalret)))))))
                         ;; eq
-                        (car-data tail
-                          (lambda (car-ed)
-                            (eval car-ed evalret
-                              (lambda (eq-x evalret)
-                                (cdr-data tail
-                                  (lambda (cdr-ed)
-                                    (car-data cdr-ed
-                                      (lambda (car-ed)
-                                        (eval car-ed evalret
-                                          (lambda (eq-y evalret)
-                                            (cont
-                                              (cond ((and (isnil eq-x) (isnil eq-y))
-                                                      t-data)
-                                                    ((or (isnil eq-x) (isnil eq-y))
-                                                      nil)
-                                                    ((or (not (isatom eq-x)) (not (isatom eq-y)))
-                                                      nil)
-                                                    (t
-                                                      (truth-data (= (valueof eq-x) (valueof eq-y))
-                                                        (lambda (x) x))))
-                                              evalret)))))))))))
+                        (do-continuation
+                          (<- (car-ed) (car-data tail))
+                          (<- (eq-x evalret) (eval car-ed evalret))
+                          (<- (cdr-ed) (cdr-data tail))
+                          (<- (car-ed) (car-data cdr-ed))
+                          (<- (eq-y evalret) (eval car-ed evalret))
+                          (cont
+                            (cond ((and (isnil eq-x) (isnil eq-y))
+                                    t-data)
+                                  ((or (isnil eq-x) (isnil eq-y))
+                                    nil)
+                                  ((or (not (isatom eq-x)) (not (isatom eq-y)))
+                                    nil)
+                                  (t
+                                    (truth-data (= (valueof eq-x) (valueof eq-y))
+                                      (lambda (x) x))))
+                            evalret))
                         ;; cond
                         (eval-cond tail evalret cont)
                         ;; print
