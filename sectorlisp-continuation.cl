@@ -145,20 +145,19 @@
     (do-continuation
       (<- (car-ed) (car-data expr))
       (printexpr-helper atomenv car-ed t
-          (cdr-data expr
-            (lambda (cdr-ed)
-              (typematch cdr-ed
-                ;; atom
-                (cdr-data expr
-                  (lambda (cdr-ed)
-                    (cons " " (cons "." (cons " " (printatom atomenv cdr-ed cont))))))
-                ;; list
-                (cdr-data expr
-                  (lambda (cdr-ed)
-                    (cons " " (printexpr-helper atomenv cdr-ed nil cont))))
-                ;; nil
-                cont)))))
-    ))
+        (do-continuation
+          (<- (cdr-ed) (cdr-data expr))
+          (typematch cdr-ed
+            ;; atom
+            (cdr-data expr
+              (lambda (cdr-ed)
+                (cons " " (cons "." (cons " " (printatom atomenv cdr-ed cont))))))
+            ;; list
+            (cdr-data expr
+              (lambda (cdr-ed)
+                (cons " " (printexpr-helper atomenv cdr-ed nil cont))))
+            ;; nil
+            cont))))))
 
 (defun-lazy printexpr (atomenv expr cont)
   (printexpr-helper atomenv expr t cont))
@@ -263,21 +262,17 @@
   (atom* maxforms))
 
 (defrec-lazy eval-cond (clauselist evalret cont)
-  (car-data clauselist
-    (lambda (carclause)
-      (car-data carclause
-        (lambda (carcond)
-          (cdr-data carclause
-            (lambda (cdr-ed)
-              (car-data cdr-ed
-                (lambda (carbody)
-                  (eval carcond evalret
-                    (lambda (expr evalret)
-                      (if (isnil expr)
-                        (cdr-data clauselist
-                          (lambda (cdr-ed)
-                            (eval-cond cdr-ed evalret cont)))
-                        (eval carbody evalret cont)))))))))))))
+  (do-continuation
+    (<- (carclause) (car-data clauselist))
+    (<- (carcond) (car-data carclause))
+    (<- (cdr-ed) (cdr-data carclause))
+    (<- (carbody) (car-data cdr-ed))
+    (<- (expr evalret) (eval carcond evalret))
+    (if (isnil expr)
+      (cdr-data clauselist
+        (lambda (cdr-ed)
+          (eval-cond cdr-ed evalret cont)))
+      (eval carbody evalret cont))))
 
 (defrec-lazy varenv-lookup (varenv varval cont)
   (let ((pair (car varenv))
