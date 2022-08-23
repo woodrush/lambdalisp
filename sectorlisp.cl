@@ -272,16 +272,16 @@
           (eval-cond (cdr-data clauselist) evalret cont)
           (eval carbody evalret cont))))))
 
-(defrec-lazy varenv-lookup (varenv varval)
+(defrec-lazy varenv-lookup (varenv varval cont)
   (let ((pair (car varenv))
         (evarval (car pair))
         (ebody (cdr pair)))
     (cond ((isnil varenv)
-            nil)
+            (cont nil))
           ((= varval evarval)
-            ebody)
+            (cont ebody))
           (t
-            (varenv-lookup (cdr varenv) varval)))))
+            (varenv-lookup (cdr varenv) varval cont)))))
 
 (defrec-lazy eval-map-base (lexpr curexpr evalret cont)
   (cond ((isnil lexpr)
@@ -327,12 +327,13 @@
   (typematch expr
     ;; atom
     (let-parse-evalret* evalret varenv atomenv stdin globalenv
-      (cont (varenv-lookup
-              (if (isnil globalenv)
-                varenv
-                (append-list varenv globalenv))
-              (valueof expr))
-            evalret))
+      (varenv-lookup
+        (if (isnil globalenv)
+          varenv
+          (append-list varenv globalenv))
+        (valueof expr)
+        (lambda (ret)
+          (cont ret evalret))))
     ;; list
     (let ((head (car-data expr))
           (tail (cdr-data expr))
@@ -396,13 +397,9 @@
                           (append-list outstr (cont expr evalret)))))))
                 ;; read
                 (let-parse-evalret* evalret varenv-old atomenv stdin globalenv
-                    ;; TODO
-                  (let ((ret-parse (read-expr stdin atomenv nil nil))
-                        (expr (-> ret-parse car))
-                        (stdin (-> ret-parse cdr car))
-                        (atomenv (-> ret-parse cdr cdr))
-                        (varenv (car evalret)))
-                      (cont expr (evalret* varenv atomenv stdin globalenv))))
+                  (read-expr stdin atomenv nil nil
+                    (lambda (expr atomenv stdin)
+                      (cont expr (evalret* varenv atomenv stdin globalenv)))))
                 ;; def
                 (let ((varname (-> tail car-data))
                       (defbody (-> tail cdr-data car-data)))
@@ -426,21 +423,12 @@
     stringterm
     (read-expr stdin atomenv nil nil
       (lambda (expr atomenv stdin)
-        ;; (printexpr atomenv expr (cons "\\n" (repl varenv atomenv stdin globalenv)))
         (eval expr (evalret* varenv atomenv stdin globalenv)
-        (lambda (expr evalret)
-          (let-parse-evalret* evalret varenv atomenv stdin globalenv
-            (let ((outstr (printexpr atomenv expr nil)))
-              (await-list outstr
-                (append-list outstr (cons "\\n" (repl varenv atomenv stdin globalenv))))))))
-                ))
-    ;; (let ((ret-parse (read-expr stdin atomenv))
-    ;;       (stdin (car (cdr ret-parse)))
-    ;;       (atomenv (cdr (cdr ret-parse)))
-    ;;       (expr (car ret-parse)))
-
-    ;;             )
-                ))))
+          (lambda (expr evalret)
+            (let-parse-evalret* evalret varenv atomenv stdin globalenv
+              (let ((outstr (printexpr atomenv expr nil)))
+                (await-list outstr
+                  (append-list outstr (cons "\\n" (repl varenv atomenv stdin globalenv))))))))))))))
 
 (defrec-lazy list2inflist (l)
   (if (isnil l)
