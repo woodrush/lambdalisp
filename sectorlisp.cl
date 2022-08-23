@@ -223,18 +223,24 @@
 (defrec-lazy reverse-base2data (l curlist)
   (if (isnil l) curlist (reverse-base2data (cdr l) (cons-data (car l) curlist))))
 
-(defrec-lazy read-expr (stdin atomenv cont)
-  (let ((read-list
-          (letrec-lazy read-list (stdin atomenv curexpr cont)
-            (let ((stdin (read-skip-whitespace stdin))
+(defun-lazy catstream-element-data (s1 e)
+  (lambda (x) (s1 (cons-data e x))))
+
+(defrec-lazy read-expr (stdin atomenv curexpr mode cont)
+  (if mode
+    ;; let ((read-list
+    ;;       (letrec-lazy read-list (stdin atomenv curexpr cont)
+    ;;         )))
+    (let ((stdin (read-skip-whitespace stdin))
                   (c (car stdin)))
               (cond ((=-bit ")" c)
-                      (cont (reverse-base2data curexpr nil) atomenv (cdr stdin)))
+                      (cont (curexpr nil) atomenv (cdr stdin)))
                       ;; (cons (reverse-base2data curexpr nil) (cons (cdr stdin) atomenv))
                     (t
-                      (read-expr stdin atomenv
+                      (read-expr stdin atomenv nil nil
                         (lambda (expr atomenv stdin)
-                          (read-list stdin atomenv (cons expr curexpr) cont)))
+                          (read-expr stdin atomenv (catstream-element-data curexpr expr) t cont)
+                          ))
                       ;; (let ((ret (read-expr stdin atomenv))
                       ;;       (ret-expr (car ret))
                       ;;       (stdin (car (cdr ret)))
@@ -244,10 +250,10 @@
 
 
                       ;;   )
-                        ))))))
+                        )))
     (let ((stdin (read-skip-whitespace stdin)) (c (car stdin)))
             (cond ((=-bit "(" c)
-                    (read-list (cdr stdin) atomenv nil cont))
+                    (read-expr (cdr stdin) atomenv (lambda (x) (x)) t cont))
                   (t
                     (read-atom stdin atomenv cont))))))
 
@@ -407,7 +413,8 @@
                           (append-list outstr (cont expr evalret)))))))
                 ;; read
                 (let-parse-evalret* evalret varenv-old atomenv stdin globalenv
-                  (let ((ret-parse (read-expr stdin atomenv))
+                    ;; TODO
+                  (let ((ret-parse (read-expr stdin atomenv nil nil))
                         (expr (-> ret-parse car))
                         (stdin (-> ret-parse cdr car))
                         (atomenv (-> ret-parse cdr cdr))
@@ -434,9 +441,9 @@
 (defrec-lazy repl (varenv atomenv stdin globalenv)
   (cons "*" (cons " " (if (isnil (cdr stdin)) ;(= stringtermchar (car stdin))
     stringterm
-    (read-expr stdin atomenv
+    (read-expr stdin atomenv nil nil
       (lambda (expr atomenv stdin)
-        ;; (printexpr atomenv expr nil)
+        ;; (printexpr atomenv expr (cons "\\n" (repl varenv atomenv stdin globalenv)))
         (eval expr (evalret* varenv atomenv stdin globalenv)
         (lambda (expr evalret)
           (let-parse-evalret* evalret varenv atomenv stdin globalenv
