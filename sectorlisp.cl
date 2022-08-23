@@ -177,8 +177,8 @@
 (defrec-lazy stringeq (s1 s2 cont)
   (cond ((and (isnil s1) (isnil s2))
           (cont t))
-        ((or  (and (not (isnil s1)) (isnil s2))
-              (and (isnil s1) (not (isnil s2))))
+        ((or (and (not (isnil s1)) (isnil s2))
+             (and (isnil s1) (not (isnil s2))))
           (cont nil))
         ((=-bit (car s1) (car s2))
           (stringeq (cdr s1) (cdr s2) cont))
@@ -195,7 +195,9 @@
 (defrec-lazy reverse-base2data (l curlist cont)
   (cons-data (car l) curlist
     (lambda (consed)
-      (if (isnil l) (cont curlist) (reverse-base2data (cdr l) consed cont)))))
+      (if (isnil l)
+        (cont curlist)
+        (reverse-base2data (cdr l) consed cont)))))
 
 (defrec-lazy read-expr (stdin atomenv curexpr mode cont)
   (read-skip-whitespace stdin
@@ -242,19 +244,17 @@
     (lambda (carclause)
       (car-data carclause
         (lambda (carcond)
-          (let ((carbody
-                  (cdr-data carclause
-                    (lambda (cdr-ed)
-                      (car-data cdr-ed
-                        (lambda (car-ed)
-                          car-ed))))))
-            (eval carcond evalret
-              (lambda (expr evalret)
-                (if (isnil expr)
-                  (cdr-data clauselist
-                    (lambda (cdr-ed)
-                      (eval-cond cdr-ed evalret cont)))
-                  (eval carbody evalret cont))))))))))
+          (cdr-data carclause
+            (lambda (cdr-ed)
+              (car-data cdr-ed
+                (lambda (carbody)
+                  (eval carcond evalret
+                    (lambda (expr evalret)
+                      (if (isnil expr)
+                        (cdr-data clauselist
+                          (lambda (cdr-ed)
+                            (eval-cond cdr-ed evalret cont)))
+                        (eval carbody evalret cont)))))))))))))
 
 (defrec-lazy varenv-lookup (varenv varval cont)
   (let ((pair (car varenv))
