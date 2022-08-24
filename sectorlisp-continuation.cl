@@ -180,7 +180,7 @@
     (<- (carbody) (car-data cdr-ed))
     (<- (expr evalstate) (eval carcond evalstate))
     (<- (cdr-ed) (cdr-data clauselist))
-    (if (isnil expr)
+    (if (or (isnil expr) (stringeq (valueof expr) "NIL"))
       (eval-cond cdr-ed evalstate cont)
       (eval carbody evalstate cont))))
 
@@ -326,7 +326,8 @@
               (<- (car-ed) (car-data cdr-ed))
               (<- (eq-y evalstate) (eval car-ed evalstate))
               (cont
-                (cond ((and (isnil eq-x) (isnil eq-y))
+                (cond ((and (or (isnil eq-x) (stringeq (valueof eq-x) "NIL"))
+                            (or (isnil eq-y) (stringeq (valueof eq-y) "NIL")))
                         t-data)
                       ((or (isnil eq-x) (isnil eq-y))
                         nil)
