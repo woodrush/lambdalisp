@@ -7,7 +7,7 @@
     (<- (x) (car-data car-c))
     (<- (expr) (Eval x a))
     (cond
-      ((isnil expr)
+      ((isnil-data expr)
         (do
           (<- (x) (cdr-data c))
           (Evcon x a cont)))
@@ -19,7 +19,7 @@
 
 (defrec-lazy Evlis (m a cont)
   (cond
-    ((isnil m)
+    ((isnil-data m)
       (cont m))
     (t
       (do
@@ -44,7 +44,7 @@
 
 (defrec-lazy Pairlis (x y a cont)
   (cond
-    ((isnil x)
+    ((isnil-data x)
       (cont a))
     (t
       (do
@@ -58,7 +58,7 @@
 
 (defrec-lazy Eval (e a cont)
   (cond
-    ((isnil e)
+    ((isnil-data e)
       (cont e))
     ((isatom e)
       (Assoc e a cont))
@@ -83,27 +83,25 @@
   (cond
     ((isatom f)
       (do
+        (<- (arg2) (cdr-data x))
+        (<- (arg2) (car-data arg2))        
         (<- (car-x) (car-data x))
         (let* fv (valueof f))
         (cond
           ((stringeq fv kEq)
             (do
-              (<- (q) (cdr-data x))
-              (<- (q) (car-data q))
-              (if-then-return (not (and (isatom car-x) (isatom q)))
-                (cont nil))
-              (let* p-val (if (isnil car-x) kNil (valueof car-x)))
-              (let* q-val (if (isnil q) kNil (valueof q)))
-              (let* ret (if (stringeq p-val q-val) t-atom nil))
+              (if-then-return (not (and (isatom car-x) (isatom arg2)))
+                (cont (atom* nil)))
+              (let* p-val (valueof car-x))
+              (let* q-val (valueof arg2))
+              (let* ret (if (stringeq p-val q-val) t-atom (atom* nil)))
               (cont ret)))
           ((stringeq fv kCons)
             (do
-              (<- (q) (cdr-data x))
-              (<- (q) (car-data q))
-              (cons-data car-x q cont)))
+              (cons-data car-x arg2 cont)))
           ((stringeq fv kAtom)
             (do
-              (let* ret (if (isatom car-x) t-atom nil))
+              (let* ret (if (isatom car-x) t-atom (atom* nil)))
               (cont ret)))
           ((stringeq fv kCar)
             (do
@@ -146,19 +144,16 @@
 (defun-lazy atom* (value)
   (cons type-atom value))
 
-(defmacro-lazy typematch (expr atomcase listcase nilcase)
-  `(if (isnil ,expr)
-      ,nilcase
-      ((typeof ,expr) ,atomcase ,listcase)))
+(defmacro-lazy typematch (expr atomcase listcase)
+  `((typeof ,expr)
+    ,atomcase
+    ,listcase))
 
-(defun-lazy isatom (expr)
-  (typematch expr
-    ;; atom
-    t
-    ;; list
-    nil
-    ;; nil
-    t))
+(defmacro-lazy isatom (expr)
+  `(typeof ,expr))
+
+(defmacro-lazy isnil-data (expr)
+  `(isnil (valueof ,expr)))
 
 (def-lazy kQuote (list "Q" "U" "O" "T" "E"))
 (def-lazy kCar (list "C" "A" "R"))
@@ -199,11 +194,11 @@
 (defrec-lazy printexpr (expr cont)
   (typematch expr
     ;; atom
-    (printatom expr cont)
+    (if (isnil-data expr)
+      (cons "N" (cons "I" (cons "L" cont)))
+      (printatom expr cont))
     ;; list
-    (cons "(" (printlist expr cont))
-    ;; nil
-    (cons "N" (cons "I" (cons "L" cont)))))
+    (cons "(" (printlist expr cont))))
 
 (defrec-lazy printlist (expr cont)
   (do
@@ -212,11 +207,11 @@
     (printexpr car-ed
       (typematch cdr-ed
         ;; atom
-        (cons " " (cons "." (cons " " (printatom cdr-ed (cons ")" cont)))))
+        (if (isnil-data cdr-ed)
+          (cons ")" cont)
+          (cons " " (cons "." (cons " " (printatom cdr-ed (cons ")" cont))))))
         ;; list
-        (cons " " (printlist cdr-ed cont))
-        ;; nil
-        (cons ")" cont)))))
+        (cons " " (printlist cdr-ed cont))))))
 
 
 ;;================================================================
@@ -237,7 +232,7 @@
         (do
           (<- (reversed) (reverse curstr nil))
           (if-then-return (stringeq reversed kNil)
-            (cont nil stdin))
+            (cont (atom* nil) stdin))
           (cont (atom* reversed) stdin)))
       (t
         (do
@@ -268,7 +263,7 @@
     (cond
       ((=-bit ")" (car stdin))
         (do
-          (<- (reversed) (reverse-base2data curexpr nil))
+          (<- (reversed) (reverse-base2data curexpr (atom* nil)))
           (cont reversed (cdr stdin))))
       (t
         (do
