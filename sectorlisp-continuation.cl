@@ -270,6 +270,8 @@
     ;; atom
     (let-parse-evalstate evalstate varenv stdin globalenv
       (do
+        (if-then-return (stringeq (valueof expr) "NIL")
+          (cont nil evalstate))
         (let* envlist (if (isnil globalenv) varenv (append-list varenv globalenv (lambda (x) x))))
         (<- (ret) (varenv-lookup envlist (valueof expr)))
         (cont ret evalstate)))
@@ -403,10 +405,6 @@
 ;;================================================================
 (def-lazy stringterm nil)
 
-(def-lazy initial-varenv
-  (list
-    (cons "NIL" nil)))
-
 (defrec-lazy repl (varenv stdin globalenv)
   (cons "*" (cons " "
     (do
@@ -420,7 +418,7 @@
 
 
 (defun-lazy main (stdin)
-  (repl initial-varenv stdin nil))
+  (repl nil stdin nil))
 
 
 ;;================================================================
