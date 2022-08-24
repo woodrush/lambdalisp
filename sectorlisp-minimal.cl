@@ -42,8 +42,7 @@
           (Assoc x cdaar-y cont))))))
 
 (defrec-lazy Pairlis (x y a cont)
-  (do
-    (cond
+  (cond
     ((isnil-data x)
       (cont a))
     (t
@@ -54,7 +53,7 @@
         (<- (f) (cdr-data x))
         (<- (g) (cdr-data y))
         (<- (h) (Pairlis f g a))
-        (cons-data r h cont))))))
+        (cons-data r h cont)))))
 
 (defrec-lazy Eval (e a cont)
   (do
@@ -160,31 +159,6 @@
 (defun-lazy isnil-data (expr)
   (isnil (valueof expr)))
 
-(defrec-lazy add-carry (n m carry invert)
-  (cond
-    ((isnil n)
-      nil)
-    (t
-      (let ((next (lambda (x y) (cons x (add-carry (cdr n) (cdr m) y invert))))
-            (diff (next (not carry) carry)))
-        (if (xor invert (car m))
-          (if (car n)
-            (next carry t)
-            diff)
-          (if (car n)
-            diff
-            (next carry nil)))))))
-
-(def-lazy kQuote (list "Q" "U" "O" "T" "E"))
-(def-lazy kCar (list "C" "A" "R"))
-(def-lazy kCdr (list "C" "D" "R"))
-(def-lazy kCons (list "C" "O" "N" "S"))
-(def-lazy kAtom (list "A" "T" "O" "M"))
-(def-lazy kEq (list "E" "Q"))
-(def-lazy kCond (list "C" "O" "N" "D"))
-(def-lazy kNil (list "N" "I" "L"))
-(def-lazy kT (list "T"))
-
 (def-lazy t-atom (atom* kT))
 ;; (def-lazy nil-atom (atom* nil))
 
@@ -201,25 +175,25 @@
 (defrec-lazy reverse (l curlist cont)
   (if (isnil l) (cont curlist) (reverse (cdr l) (cons (car l) curlist) cont)))
 
-(defun-lazy append-list (l item cont)
+(defun-lazy append-list (l item)
   (do
     (<- (reversed) (reverse l nil))
     (<- (reversed) (reverse reversed item))
-    (cont reversed)))
+    reversed))
 
 (defun-lazy printatom (expr cont)
-  (do
-    (<- (outstr) (append-list (valueof expr) cont))
-    outstr))
+  (append-list (valueof expr) cont))
 
 (defrec-lazy printexpr (expr cont)
-  (typematch expr
-    ;; atom
-    (if (isnil-data expr)
-      (cons "N" (cons "I" (cons "L" cont)))
-      (printatom expr cont))
-    ;; list
-    (cons "(" (printlist expr cont))))
+  (let ((isnil-data isnil-data)
+        (printatom printatom))
+    (typematch expr
+      ;; atom
+      (if (isnil-data expr)
+        (cons "N" (cons "I" (cons "L" cont)))
+        (printatom expr cont))
+      ;; list
+      (cons "(" (printlist expr cont)))))
 
 (defrec-lazy printlist (expr cont)
   (do
