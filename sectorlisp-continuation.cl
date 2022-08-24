@@ -83,7 +83,7 @@
     (mode
       (typematch expr
         ;; atom
-        (do-continuation
+        (do
           (<- (outstr) (append-list (valueof expr) cont (lambda (x) x)))
           outstr)
         ;; list
@@ -91,10 +91,10 @@
         ;; nil
         (cons "N" (cons "I" (cons "L" cont)))))
     (t
-      (do-continuation
+      (do
         (<- (car-ed) (car-data expr))
         (printexpr-helper car-ed t
-          (do-continuation
+          (do
             (<- (cdr-ed) (cdr-data expr))
             (typematch cdr-ed
               ;; atom
@@ -131,30 +131,20 @@
         (read-string (cons (car stdin) curstr) (cdr stdin) cont)))))
 
 (defun-lazy read-atom (stdin cont)
-  (do-continuation
+  (do
     (let* read-string read-string)
     (<- (retstr stdin) (read-string nil stdin))
     (let* retatom (atom* retstr))
     (cont retatom stdin)))
 
-
-(defmacro-lazy if-then-return (condition then else)
-  `(if ,condition ,then ,else))
-
 (defrec-lazy stringeq (s1 s2)
-  (do-continuation
+  (do
     (let* isnil-s1 (isnil s1))
     (let* isnil-s2 (isnil s2))
     (if-then-return (and isnil-s1 isnil-s2) t)
-    (let* not-isnil-s1 (not isnil-s1))
-    (let* and-1 (and not-isnil-s1 isnil-s2))
-    (if-then-return and-1 nil)
-    (let* not-isnil-s2 (not isnil-s2))
-    (let* and-2 (and isnil-s1 not-isnil-s2))
-    (if-then-return and-2 nil)
-    (let* car-s1 (car s1))
-    (let* car-s2 (car s2))
-    (if-then-return (=-bit car-s1 car-s2)
+    (if-then-return (and (not isnil-s1) isnil-s2) nil)
+    (if-then-return (and isnil-s1 (not isnil-s2)) nil)
+    (if-then-return (=-bit (car s1) (car s2))
       (let ((cdr-s1 (cdr s1))
             (cdr-s2 (cdr s2)))
         (stringeq cdr-s1 cdr-s2)))
@@ -180,18 +170,18 @@
           (reverse-base2data x consed cont))))))
 
 (defrec-lazy read-expr (stdin curexpr mode cont)
-  (do-continuation
+  (do
     (<- (stdin) (read-skip-whitespace stdin))
     (let* c (car stdin))
     (let* cdr-stdin (cdr stdin))
     (if mode      
       (cond ((=-bit ")" c)
-              (do-continuation
+              (do
                 (let* reverse-base2data reverse-base2data)
                 (<- (reversed) (reverse-base2data curexpr nil))
                 (cont reversed cdr-stdin)))
             (t
-              (do-continuation
+              (do
                 (<- (expr stdin) (read-expr stdin nil nil))
                 (let* x (cons expr curexpr))
                 (read-expr stdin x t cont))))
@@ -206,7 +196,7 @@
 ;; Evaluation helpers
 ;;================================================================
 (defrec-lazy eval-cond (clauselist evalret cont)
-  (do-continuation
+  (do
     (<- (carclause) (car-data clauselist))
     (<- (carcond) (car-data carclause))
     (<- (cdr-ed) (cdr-data carclause))
@@ -226,14 +216,13 @@
           ((stringeq varval evarval)
             (cont ebody))
           (t
-            (let ((varenv-cdr (cdr varenv)))
-              (varenv-lookup varenv-cdr varval cont))))))
+            (varenv-lookup (cdr varenv) varval cont)))))
 
 (defrec-lazy eval-map-base (lexpr curexpr evalret cont)
   (cond ((isnil lexpr)
           (cont curexpr evalret))
         (t
-          (do-continuation
+          (do
             (<- (car-ed) (car-data lexpr))
             (<- (expr evalret) (eval car-ed evalret))
             (let* expr-list (cons expr nil))
@@ -243,12 +232,12 @@
 
 (defrec-lazy prepend-envzip (argnames evargs env curenv cont)
   (cond ((isnil argnames)
-          (do-continuation
+          (do
             (<- (reversed) (reverse curenv nil))
             (<- (appended) (append-list reversed env (lambda (x) x)))
             (cont appended)))
         (t
-          (do-continuation
+          (do
             (<- (cdr-ed) (cdr-data argnames))
             (<- (car-ed) (car-data argnames))
             (let* next-evargs (if (isnil evargs) nil (cdr evargs)))
@@ -258,7 +247,7 @@
             (prepend-envzip cdr-ed next-evargs env next-curenv cont)))))
 
 (defun-lazy eval-lambda (lambdaexpr callargs evalret cont)
-  (do-continuation
+  (do
     (<- (lambda-cdr) (cdr-data lambdaexpr))
     (<- (argnames) (car-data lambda-cdr))
     (<- (cdr-ed) (cdr-data lambda-cdr))
@@ -310,7 +299,7 @@
                 (lambda (ret)
                   (cont ret evalret))))))))
     ;; list
-    (do-continuation
+    (do
       (let* evalret-top evalret)
       (<- (head) (car-data expr))
       (let* head-index (valueof head))
@@ -347,7 +336,7 @@
           (lambda (expr evalret)
             (cont (truth-data (isatom expr)) evalret))))
       (let* eq-case
-        (do-continuation
+        (do
           (<- (car-ed) (car-data tail))
           (<- (eq-x evalret) (eval car-ed evalret))
           (<- (cdr-ed) (cdr-data tail))
@@ -380,7 +369,7 @@
                 (lambda (new-evalret)
                   (cont expr new-evalret)))))))
       (let* def-case
-        (do-continuation
+        (do
           (<- (varname) (car-data tail))
           (<- (cdr-ed) (cdr-data tail))
           (<- (defbody) (car-data cdr-ed))
@@ -446,9 +435,7 @@
               quote-case
               (if (stringeq* head-index (list "R" "E" "A" "D"))
                 read-case
-                default-case))
-            )
-          )
+                default-case))))
         ;; list: parse as lambda
         (eval-lambda head tail evalret-top cont)
         ;; nil
@@ -470,7 +457,7 @@
   (cons "*" (cons " "
     (if (isnil (cdr stdin))
       stringterm
-      (do-continuation
+      (do
         (<- (expr stdin) (read-expr stdin nil nil))
         (<- (new-evalret) (evalret* varenv stdin globalenv))
         (<- (expr evalret) (eval expr new-evalret))
@@ -521,30 +508,29 @@
 (def-lazy ">" (cons t (cons t (cons nil (cons nil (cons nil (cons nil (cons nil (cons t nil)))))))))
 (def-lazy "\\n" (cons t (cons t (cons t (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
 
-(defmacro-lazy do-continuation* (top &rest proc)
+(defmacro-lazy if-then-return (condition then else)
+  `(if ,condition ,then ,else))
+
+(defmacro-lazy let* (name value body)
+  `(let ((,name ,value)) ,body))
+
+(defmacro-lazy do* (top &rest proc)
   (cond ((not proc)
           top)
         ((eq '<- (car (car proc)))
           (let* ((topproc (car proc))
                  (arglist (car (cdr topproc)))
                  (body (car (cdr (cdr topproc)))))
-            `(do-continuation*
+            `(do*
                 ,(append body `((lambda ,arglist ,top)))
                 ,@(cdr proc))))
-        ((eq 'let* (car (car proc)))
-          (let* ((topproc (car proc))
-                 (varname (car (cdr topproc)))
-                 (body (car (cdr (cdr topproc)))))
-            `(do-continuation*
-                ,(append `(let ((,varname ,body))) `(,top))
-                ,@(cdr proc))))
         (t
-          `(do-continuation*
+          `(do*
               ,(append (car proc) `(,top))
               ,@(cdr proc)))))
 
-(defmacro-lazy do-continuation (&rest proc)
-  `(do-continuation* ,@(reverse proc)))
+(defmacro-lazy do (&rest proc)
+  `(do* ,@(reverse proc)))
 
 
 
