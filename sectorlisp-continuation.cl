@@ -403,7 +403,7 @@
 ;;================================================================
 (def-lazy stringterm nil)
 
-(def-lazy initial-globalenv
+(def-lazy initial-varenv
   (list
     (cons "NIL" nil)))
 
@@ -420,7 +420,7 @@
 
 
 (defun-lazy main (stdin)
-  (repl nil stdin initial-globalenv))
+  (repl initial-varenv stdin nil))
 
 
 ;;================================================================
