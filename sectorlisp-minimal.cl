@@ -128,8 +128,7 @@
         (<- (p) (car-data p))
         (<- (q) (car-data cdr-f))
         (<- (q) (Pairlis q x a))
-        (Eval p q cont)
-        ))))
+        (Eval p q cont)))))
 
 
 ;;================================================================
@@ -162,15 +161,6 @@
   (typematch expr
     ;; atom
     t
-    ;; list
-    nil
-    ;; nil
-    t))
-
-(defun-lazy isnil-data (expr)
-  (typematch expr
-    ;; atom
-    nil
     ;; list
     nil
     ;; nil
@@ -316,17 +306,15 @@
 ;;================================================================
 ;; User interface
 ;;================================================================
-(def-lazy stringterm nil)
-
-(defrec-lazy repl (stdin)
+(defrec-lazy main (stdin)
   (do
+    (let* car-data car-data)
+    (let* cdr-data cdr-data)
+    (let* cons-data cons-data)
+    (let* stringeq stringeq)
     (<- (expr stdin) (read-expr stdin))
     (<- (expr) (Eval expr nil))
-    (printexpr expr (cons "\\n" (repl stdin)))))
-
-
-(defun-lazy main (stdin)
-  (repl stdin))
+    (printexpr expr (cons "\\n" (main stdin)))))
 
 
 ;;================================================================
