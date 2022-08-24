@@ -243,8 +243,8 @@
         (do
           (read-atom* (cons (car stdin) curstr) (cdr stdin) cont))))))
 
-(defun-lazy read-atom (stdin cont)
-  (read-atom* nil stdin cont))
+(defmacro-lazy read-atom (stdin cont)
+  `(read-atom* nil ,stdin ,cont))
 
 (defrec-lazy stringeq (s1 s2)
   (do
@@ -256,16 +256,6 @@
       (stringeq (cdr s1) (cdr s2)))
     nil))
 
-(defmacro-lazy stringeq* (s1 s2)
-  `(stringeq ,s1 ,s2))
-
-(defrec-lazy read-skip-whitespace (stdin cont)
-  (let ((c (car stdin)))
-    (cond ((or (=-bit " " c) (=-bit "\\n" c))
-            (read-skip-whitespace (cdr stdin) cont))
-          (t
-            (cont stdin)))))
-
 (defrec-lazy reverse-base2data (l curlist cont)
   (if (isnil l)
     (cont curlist)
@@ -275,24 +265,26 @@
 
 (defrec-lazy read-list (stdin curexpr cont)
   (do
-    (cond ((=-bit ")" (car stdin))
-          (do
-            (<- (reversed) (reverse-base2data curexpr nil))
-            (cont reversed (cdr stdin))))
-        (t
-          (do
-            (<- (expr stdin) (read-expr stdin))
-            (read-list stdin (cons expr curexpr) cont))))))
+    (cond
+      ((=-bit ")" (car stdin))
+        (do
+          (<- (reversed) (reverse-base2data curexpr nil))
+          (cont reversed (cdr stdin))))
+      (t
+        (do
+          (<- (expr stdin) (read-expr stdin))
+          (read-list stdin (cons expr curexpr) cont))))))
 
 (defrec-lazy read-expr (stdin cont)
   (do
-    (<- (stdin) (read-skip-whitespace stdin))
-    (if-then-return (isnil stdin)
-      nil)
-    (cond ((=-bit "(" (car stdin))
-            (read-list (cdr stdin) nil cont))
-          (t
-            (read-atom stdin cont)))))
+    (let* c (car stdin))
+    (cond
+      ((or (=-bit " " c) (=-bit "\\n" c))
+        (read-expr (cdr stdin) cont))
+      ((=-bit "(" c)
+        (read-list (cdr stdin) nil cont))
+      (t
+        (read-atom stdin cont)))))
 
 
 ;;================================================================
@@ -300,11 +292,12 @@
 ;;================================================================
 (defrec-lazy main (stdin)
   (do
-    (let* car-data car-data)
-    (let* cdr-data cdr-data)
+    (let* t-atom t-atom)
+    (let* kNil kNil)
     (let* cons-data cons-data)
     (let* stringeq stringeq)
-    (let* t-atom t-atom)
+    (let* cdr-data cdr-data)
+    (let* car-data car-data)
     (<- (expr stdin) (read-expr stdin))
     (<- (expr) (Eval expr nil))
     (printexpr expr (cons "\\n" (main stdin)))))
