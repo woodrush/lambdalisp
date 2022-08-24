@@ -395,7 +395,7 @@
 
 (defrec-lazy repl (varenv stdin globalenv)
   (cons "*" (cons " "
-    (if (isnil (cdr stdin))
+    (if (isnil stdin)
       stringterm
       (do
         (<- (expr stdin) (read-expr stdin))
