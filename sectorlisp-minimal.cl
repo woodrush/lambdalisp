@@ -299,8 +299,31 @@
   (alphabet-env
     (do
       (let* alphabet-prefix alphabet-prefix)
+      (let* "A" (alphabet-prefix "A-tail"))
+      (let* "C" (alphabet-prefix "C-tail"))
+      (let* "D" (alphabet-prefix "D-tail"))
+      (let* "E" (alphabet-prefix "E-tail"))
+      (let* "I" (alphabet-prefix "I-tail"))
+      (let* "L" (alphabet-prefix "L-tail"))
+      (let* "M" (alphabet-prefix "M-tail"))
+      (let* "N" (alphabet-prefix "N-tail"))
+      (let* "O" (alphabet-prefix "O-tail"))
+      (let* "Q" (alphabet-prefix "Q-tail"))
+      (let* "R" (alphabet-prefix "R-tail"))
+      (let* "S" (alphabet-prefix "S-tail"))
+      (let* "T" (alphabet-prefix "T-tail"))
+      (let* "U" (alphabet-prefix "U-tail"))
+      (let* kQuote (list "Q" "U" "O" "T" "E"))
+      (let* kCar   (list "C" "A" "R"))
+      (let* kCdr   (list "C" "D" "R"))
+      (let* kAtom  (list "A" "T" "O" "M"))
+      (let* kEq    (list "E" "Q"))
+      (let* prefix-CON (lambda (x) (cons "C" (cons "O" (cons "N" x)))))
+      (let* kCons  (prefix-CON (list "S")))
+      (let* kCond  (prefix-CON (list "D")))
+      (let* kNil   (list "N" "I" "L"))
+      (let* kT     (list "T"))
       (let* t-atom t-atom)
-      (let* kNil kNil)
       (let* cons-data cons-data)
       (let* stringeq stringeq)
       (let* cdr-data cdr-data)
@@ -308,6 +331,26 @@
       (<- (expr stdin) (read-expr stdin))
       (<- (expr) (Eval expr nil))
       (printexpr expr (cons "\\n" (main stdin))))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ;;================================================================
