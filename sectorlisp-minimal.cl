@@ -28,18 +28,16 @@
         (<- (x) (Eval x a))
         (<- (y) (cdr-data m))
         (<- (y) (Evlis y a))
-        (cons-data x y cont)
-        ))))
+        (cons-data x y cont)))))
 
 (defrec-lazy Assoc (x y cont)
   (do
-    (<- (a) (car-data y))
-    (<- (a) (car-data y))
+    (<- (car-y) (car-data y))
+    (<- (a) (car-data car-y))
     (cond
-      ((stringeq x a)
+      ((stringeq (valueof x) (valueof a))
         (do
-          (<- (a) (car-data y))
-          (cdr-data a cont)))
+          (cdr-data car-y cont)))
       (t
         (do
           (<- (a) (cdr-data y))
@@ -48,7 +46,7 @@
 (defrec-lazy Pairlis (x y a cont)
   (cond
     ((isnil x)
-      a)
+      (cont a))
     (t
       (do
         (<- (p) (car-data x))
@@ -130,7 +128,8 @@
         (<- (p) (car-data p))
         (<- (q) (car-data cdr-f))
         (<- (q) (Pairlis q x a))
-        (Eval p q cont)))))
+        (Eval p q cont)
+        ))))
 
 
 ;;================================================================
