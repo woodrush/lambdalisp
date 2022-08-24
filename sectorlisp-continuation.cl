@@ -166,27 +166,25 @@
     (let* x (cdr l))
     (reverse-base2data x consed cont)))
 
-(defrec-lazy read-expr (stdin curexpr mode cont)
+(defrec-lazy read-list (stdin curexpr cont)
+  (cond ((=-bit ")" (car stdin))
+          (do
+            (let* reverse-base2data reverse-base2data)
+            (<- (reversed) (reverse-base2data curexpr nil))
+            (cont reversed (cdr stdin))))
+        (t
+          (do
+            (<- (expr stdin) (read-expr stdin))
+            (let* x (cons expr curexpr))
+            (read-list stdin x cont)))))
+(defrec-lazy read-expr (stdin cont)
   (do
     (<- (stdin) (read-skip-whitespace stdin))
-    (let* c (car stdin))
-    (let* cdr-stdin (cdr stdin))
-    (if mode      
-      (cond ((=-bit ")" c)
-              (do
-                (let* reverse-base2data reverse-base2data)
-                (<- (reversed) (reverse-base2data curexpr nil))
-                (cont reversed cdr-stdin)))
-            (t
-              (do
-                (<- (expr stdin) (read-expr stdin nil nil))
-                (let* x (cons expr curexpr))
-                (read-expr stdin x t cont))))
-      (cond ((=-bit "(" c)
-              (read-expr cdr-stdin nil t cont))
-            (t
-              (let ((read-atom read-atom))
-                (read-atom stdin cont)))))))
+    (cond ((=-bit "(" (car stdin))
+            (read-list (cdr stdin) nil cont))
+          (t
+            (let ((read-atom read-atom))
+              (read-atom stdin cont))))))
 
 
 ;;================================================================
@@ -374,7 +372,7 @@
 
           (if-then-return (stringeq* head-index "READ")
             (let-parse-evalstate evalstate varenv stdin globalenv
-              (read-expr stdin nil nil
+              (read-expr stdin
                 (lambda (expr stdin)
                   (new-evalstate varenv stdin globalenv
                     (lambda (evalstate-new)
@@ -431,7 +429,7 @@
     (if (isnil (cdr stdin))
       stringterm
       (do
-        (<- (expr stdin) (read-expr stdin nil nil))
+        (<- (expr stdin) (read-expr stdin))
         (<- (evalstate-new) (new-evalstate varenv stdin globalenv))
         (<- (expr evalstate) (eval expr evalstate-new))
         (let-parse-evalstate evalstate varenv stdin globalenv)
