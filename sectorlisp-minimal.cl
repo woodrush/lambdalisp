@@ -3,8 +3,8 @@
 
 (defrec-lazy Evcon (c a cont)
   (do
-    (<- (x) (car-data c))
-    (<- (x) (car-data x))
+    (<- (car-c) (car-data c))
+    (<- (x) (car-data car-c))
     (<- (expr) (Eval x a))
     (cond
       ((isnil expr)
@@ -13,8 +13,7 @@
           (Evcon x a cont)))
       (t
         (do
-          (<- (x) (car-data c))
-          (<- (x) (cdr-data x))
+          (<- (x) (cdr-data car-c))
           (<- (x) (car-data x))
           (Eval x a cont))))))
 
@@ -33,15 +32,15 @@
 (defrec-lazy Assoc (x y cont)
   (do
     (<- (car-y) (car-data y))
-    (<- (a) (car-data car-y))
+    (<- (caar-y) (car-data car-y))
     (cond
-      ((stringeq (valueof x) (valueof a))
+      ((stringeq (valueof x) (valueof caar-y))
         (do
           (cdr-data car-y cont)))
       (t
         (do
-          (<- (a) (cdr-data y))
-          (Assoc x a cont))))))
+          (<- (cdaar-y) (cdr-data y))
+          (Assoc x cdaar-y cont))))))
 
 (defrec-lazy Pairlis (x y a cont)
   (cond
@@ -65,58 +64,53 @@
       (Assoc e a cont))
     (t
       (do
-        (<- (x) (car-data e))
+        (<- (car-e) (car-data e))
+        (<- (cdr-e) (cdr-data e))
+        (let* val-e (valueof car-e))
         (cond
-          ((stringeq (valueof x) kQuote)
+          ((stringeq val-e kQuote)
             (do
-              (<- (x) (cdr-data e))
-              (car-data x cont)))
-          ((stringeq (valueof x) kCond)
+              (car-data cdr-e cont)))
+          ((stringeq val-e kCond)
             (do
-              (<- (x) (cdr-data e))
-              (Evcon x a cont)))
+              (Evcon cdr-e a cont)))
           (t
             (do
-              (<- (x) (car-data e))
-              (<- (y) (cdr-data e))
-              (<- (y) (Evlis y a))
-              (Apply x y a cont))))))))
+              (<- (y) (Evlis cdr-e a))
+              (Apply car-e y a cont))))))))
 
 (defrec-lazy Apply (f x a cont)
   (cond
     ((isatom f)
-      (let ((fv (valueof f)))
+      (do
+        (<- (car-x) (car-data x))
+        (let* fv (valueof f))
         (cond
           ((stringeq fv kEq)
             (do
-              (<- (p) (car-data x))
               (<- (q) (cdr-data x))
               (<- (q) (car-data q))
-              (if-then-return (not (and (isatom p) (isatom q)))
+              (if-then-return (not (and (isatom car-x) (isatom q)))
                 (cont nil))
-              (let* p-val (if (isnil p) kNil (valueof p)))
+              (let* p-val (if (isnil car-x) kNil (valueof car-x)))
               (let* q-val (if (isnil q) kNil (valueof q)))
               (let* ret (if (stringeq p-val q-val) t-atom nil))
               (cont ret)))
           ((stringeq fv kCons)
             (do
-              (<- (p) (car-data x))
               (<- (q) (cdr-data x))
               (<- (q) (car-data q))
-              (cons-data p q cont)))
+              (cons-data car-x q cont)))
           ((stringeq fv kAtom)
             (do
-              (<- (p) (car-data x))
-              (let* ret (if (isatom p) t-atom nil))
+              (let* ret (if (isatom car-x) t-atom nil))
               (cont ret)))
           ((stringeq fv kCar)
             (do
-              (<- (p) (car-data x))
-              (car-data p cont)))
+              (car-data car-x cont)))
           ((stringeq fv kCdr)
             (do
-              (<- (p) (car-data x))
-              (cdr-data p cont)))
+              (cdr-data car-x cont)))
           (t
             (do
               (<- (p) (Assoc f a))
@@ -246,7 +240,8 @@
             (cont nil stdin))
           (cont (atom* reversed) stdin)))
       (t
-        (read-atom* (cons (car stdin) curstr) (cdr stdin) cont)))))
+        (do
+          (read-atom* (cons (car stdin) curstr) (cdr stdin) cont))))))
 
 (defun-lazy read-atom (stdin cont)
   (read-atom* nil stdin cont))
@@ -256,12 +251,9 @@
     (let* isnil-s1 (isnil s1))
     (let* isnil-s2 (isnil s2))
     (if-then-return (and isnil-s1 isnil-s2) t)
-    (if-then-return (and (not isnil-s1) isnil-s2) nil)
-    (if-then-return (and isnil-s1 (not isnil-s2)) nil)
+    (if-then-return (or isnil-s1 isnil-s2) nil)
     (if-then-return (=-bit (car s1) (car s2))
-      (let ((cdr-s1 (cdr s1))
-            (cdr-s2 (cdr s2)))
-        (stringeq cdr-s1 cdr-s2)))
+      (stringeq (cdr s1) (cdr s2)))
     nil))
 
 (defmacro-lazy stringeq* (s1 s2)
@@ -312,6 +304,7 @@
     (let* cdr-data cdr-data)
     (let* cons-data cons-data)
     (let* stringeq stringeq)
+    (let* t-atom t-atom)
     (<- (expr stdin) (read-expr stdin))
     (<- (expr) (Eval expr nil))
     (printexpr expr (cons "\\n" (main stdin)))))
@@ -320,6 +313,17 @@
 ;;================================================================
 ;; Constants
 ;;================================================================
+(def-lazy kQuote (list "Q" "U" "O" "T" "E"))
+(def-lazy kCar   (list "C" "A" "R"))
+(def-lazy kCdr   (list "C" "D" "R"))
+(def-lazy kCons  (list "C" "O" "N" "S"))
+(def-lazy kAtom  (list "A" "T" "O" "M"))
+(def-lazy kEq    (list "E" "Q"))
+(def-lazy kCond  (list "C" "O" "N" "D"))
+(def-lazy kNil   (list "N" "I" "L"))
+(def-lazy kT     (list "T"))
+
+
 (def-lazy "A" (cons t (cons nil (cons t (cons t (cons t (cons t (cons t (cons nil nil)))))))))
 (def-lazy "B" (cons t (cons nil (cons t (cons t (cons t (cons t (cons nil (cons t nil)))))))))
 (def-lazy "C" (cons t (cons nil (cons t (cons t (cons t (cons t (cons nil (cons nil nil)))))))))
@@ -348,12 +352,14 @@
 (def-lazy "Z" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons nil (cons t nil)))))))))
 (def-lazy "(" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t nil)))))))))
 (def-lazy ")" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil nil)))))))))
-(def-lazy "*" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
-(def-lazy "?" (cons t (cons t (cons nil (cons nil (cons nil (cons nil (cons nil (cons nil nil)))))))))
 (def-lazy " " (cons t (cons t (cons nil (cons t (cons t (cons t (cons t (cons t nil)))))))))
 (def-lazy "." (cons t (cons t (cons nil (cons t (cons nil (cons nil (cons nil (cons t nil)))))))))
+(def-lazy "\\n"
+              (cons t (cons t (cons t (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
+
+(def-lazy "*" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
+(def-lazy "?" (cons t (cons t (cons nil (cons nil (cons nil (cons nil (cons nil (cons nil nil)))))))))
 (def-lazy ">" (cons t (cons t (cons nil (cons nil (cons nil (cons nil (cons nil (cons t nil)))))))))
-(def-lazy "\\n" (cons t (cons t (cons t (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
 
 (defmacro-lazy if-then-return (condition then else)
   `(if ,condition ,then ,else))
