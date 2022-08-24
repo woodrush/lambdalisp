@@ -35,8 +35,7 @@
     (<- (caar-y) (car-data car-y))
     (cond
       ((stringeq (valueof x) (valueof caar-y))
-        (do
-          (cdr-data car-y cont)))
+        (cdr-data car-y cont))
       (t
         (do
           (<- (cdaar-y) (cdr-data y))
@@ -69,11 +68,9 @@
         (let* val-e (valueof car-e))
         (cond
           ((stringeq val-e kQuote)
-            (do
-              (car-data cdr-e cont)))
+            (car-data cdr-e cont))
           ((stringeq val-e kCond)
-            (do
-              (Evcon cdr-e a cont)))
+            (Evcon cdr-e a cont))
           (t
             (do
               (<- (y) (Evlis cdr-e a))
@@ -97,18 +94,15 @@
               (let* ret (if (stringeq p-val q-val) t-atom (atom* nil)))
               (cont ret)))
           ((stringeq fv kCons)
-            (do
-              (cons-data car-x arg2 cont)))
+            (cons-data car-x arg2 cont))
           ((stringeq fv kAtom)
             (do
               (let* ret (if (isatom car-x) t-atom (atom* nil)))
               (cont ret)))
           ((stringeq fv kCar)
-            (do
-              (car-data car-x cont)))
+            (car-data car-x cont))
           ((stringeq fv kCdr)
-            (do
-              (cdr-data car-x cont)))
+            (cdr-data car-x cont))
           (t
             (do
               (<- (p) (Assoc f a))
@@ -155,6 +149,21 @@
 (defmacro-lazy isnil-data (expr)
   `(isnil (valueof ,expr)))
 
+(defrec-lazy add-carry (n m carry invert)
+  (cond
+    ((isnil n)
+      nil)
+    (t
+      (let ((next (lambda (x y) (cons x (add-carry (cdr n) (cdr m) y invert))))
+            (diff (next (not carry) carry)))
+        (if (xor invert (car m))
+          (if (car n)
+            (next carry t)
+            diff)
+          (if (car n)
+            diff
+            (next carry nil)))))))
+
 (def-lazy kQuote (list "Q" "U" "O" "T" "E"))
 (def-lazy kCar (list "C" "A" "R"))
 (def-lazy kCdr (list "C" "D" "R"))
@@ -166,6 +175,7 @@
 (def-lazy kT (list "T"))
 
 (def-lazy t-atom (atom* kT))
+;; (def-lazy nil-atom (atom* nil))
 
 ;; (def-lazy "PRINT" (list "P" "R" "I" "N" "T"))
 ;; (def-lazy "READ" (list "R" "E" "A" "D"))
@@ -286,16 +296,20 @@
 ;; User interface
 ;;================================================================
 (defrec-lazy main (stdin)
-  (do
-    (let* t-atom t-atom)
-    (let* kNil kNil)
-    (let* cons-data cons-data)
-    (let* stringeq stringeq)
-    (let* cdr-data cdr-data)
-    (let* car-data car-data)
-    (<- (expr stdin) (read-expr stdin))
-    (<- (expr) (Eval expr nil))
-    (printexpr expr (cons "\\n" (main stdin)))))
+  (alphabet-env
+    (cons "A" nil)    
+    ;; (do
+    ;;   (let* t-atom t-atom)
+    ;;   (let* kNil kNil)
+    ;;   (let* cons-data cons-data)
+    ;;   (let* stringeq stringeq)
+    ;;   (let* cdr-data cdr-data)
+    ;;   (let* car-data car-data)
+    ;;   (<- (expr stdin) (read-expr stdin))
+    ;;   (<- (expr) (Eval expr nil))
+    ;;   (printexpr expr (cons "\\n" (main stdin))))
+      )
+      )
 
 
 ;;================================================================
@@ -311,28 +325,75 @@
 (def-lazy kNil   (list "N" "I" "L"))
 (def-lazy kT     (list "T"))
 
+(def-lazy "U" ((succ 2) (lambda (x) (cons t (cons nil x))) nil))
+(defrec-lazy inc-bit (n cont)
+  (cond
+    ((isnil n)
+      (cont nil t))
+    (t
+      (do
+        (let* n-cdr (n nil))
+        (let* a n-cdr)
+        (<- (n-cdr-inc carry) (inc-bit a))
+        (let* n-car (car n))
+        (let* b (xor n-car carry))
+        (let* c (and n-car carry))
+        (let* ret (cons b n-cdr-inc))
+        (cont ret c)
+        ))))
 
-(def-lazy "A" (cons t (cons nil (cons t (cons t (cons t (cons t (cons t (cons nil nil)))))))))
-(def-lazy "B" (cons t (cons nil (cons t (cons t (cons t (cons t (cons nil (cons t nil)))))))))
-(def-lazy "C" (cons t (cons nil (cons t (cons t (cons t (cons t (cons nil (cons nil nil)))))))))
-(def-lazy "D" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons t (cons t nil)))))))))
-(def-lazy "E" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons t (cons nil nil)))))))))
-(def-lazy "F" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons nil (cons t nil)))))))))
-(def-lazy "G" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons nil (cons nil nil)))))))))
-(def-lazy "H" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons t (cons t nil)))))))))
-(def-lazy "I" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons t (cons nil nil)))))))))
-(def-lazy "J" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
-(def-lazy "K" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons nil (cons nil nil)))))))))
-(def-lazy "L" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons t (cons t nil)))))))))
-(def-lazy "M" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons t (cons nil nil)))))))))
-(def-lazy "N" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons nil (cons t nil)))))))))
-(def-lazy "O" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons nil (cons nil nil)))))))))
-(def-lazy "P" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t (cons t nil)))))))))
-(def-lazy "Q" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t (cons nil nil)))))))))
-(def-lazy "R" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil (cons t nil)))))))))
-(def-lazy "S" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil (cons nil nil)))))))))
-(def-lazy "T" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t (cons t nil)))))))))
-(def-lazy "U" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t (cons nil nil)))))))))
+(defun-lazy inc-bit-prefix (n cont)
+  (do
+    (<- (n-inc carry) (inc-bit n))
+    (cont (cons t (cons nil n-inc)) n-inc)
+    ))
+
+(defmacro-lazy alphabet-env (body)
+  `(do
+    (<- ("T" m) (inc-bit-prefix "U"))
+    (<- ("S" m) (inc-bit-prefix m))
+    (<- ("R" m) (inc-bit-prefix m))
+    (<- ("Q" m) (inc-bit-prefix m))
+    (<- ("P" m) (inc-bit-prefix m))
+    (<- ("O" m) (inc-bit-prefix m))
+    (<- ("N" m) (inc-bit-prefix m))
+    (<- ("M" m) (inc-bit-prefix m))
+    (<- ("L" m) (inc-bit-prefix m))
+    (<- ("K" m) (inc-bit-prefix m))
+    (<- ("J" m) (inc-bit-prefix m))
+    (<- ("I" m) (inc-bit-prefix m))
+    (<- ("H" m) (inc-bit-prefix m))
+    (<- ("G" m) (inc-bit-prefix m))
+    (<- ("F" m) (inc-bit-prefix m))
+    (<- ("E" m) (inc-bit-prefix m))
+    (<- ("D" m) (inc-bit-prefix m))
+    (<- ("C" m) (inc-bit-prefix m))
+    (<- ("B" m) (inc-bit-prefix m))
+    (<- ("A" m) (inc-bit-prefix m))
+    (let* "U" (cons t (cons nil "U")))
+    ,body))
+
+;; (def-lazy "A" (cons t (cons nil (cons t (cons t (cons t (cons t (cons t (cons nil nil)))))))))
+;; (def-lazy "B" (cons t (cons nil (cons t (cons t (cons t (cons t (cons nil (cons t nil)))))))))
+;; (def-lazy "C" (cons t (cons nil (cons t (cons t (cons t (cons t (cons nil (cons nil nil)))))))))
+;; (def-lazy "D" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons t (cons t nil)))))))))
+;; (def-lazy "E" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons t (cons nil nil)))))))))
+;; (def-lazy "F" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons nil (cons t nil)))))))))
+;; (def-lazy "G" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons nil (cons nil nil)))))))))
+;; (def-lazy "H" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons t (cons t nil)))))))))
+;; (def-lazy "I" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons t (cons nil nil)))))))))
+;; (def-lazy "J" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
+;; (def-lazy "K" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons nil (cons nil nil)))))))))
+;; (def-lazy "L" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons t (cons t nil)))))))))
+;; (def-lazy "M" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons t (cons nil nil)))))))))
+;; (def-lazy "N" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons nil (cons t nil)))))))))
+;; (def-lazy "O" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons nil (cons nil nil)))))))))
+;; (def-lazy "P" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t (cons t nil)))))))))
+;; (def-lazy "Q" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t (cons nil nil)))))))))
+;; (def-lazy "R" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil (cons t nil)))))))))
+;; (def-lazy "S" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil (cons nil nil)))))))))
+;; (def-lazy "T" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t (cons t nil)))))))))
+;; (def-lazy "U" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t (cons nil nil)))))))))
 (def-lazy "V" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons nil (cons t nil)))))))))
 (def-lazy "W" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons nil (cons nil nil)))))))))
 (def-lazy "X" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons t (cons t nil)))))))))
