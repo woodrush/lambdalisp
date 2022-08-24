@@ -1,64 +1,45 @@
 (load "./lazy.cl")
 
-(def-lazy "A" (cons t (cons nil (cons t (cons t (cons t (cons t (cons t (cons nil nil)))))))))
-(def-lazy "B" (cons t (cons nil (cons t (cons t (cons t (cons t (cons nil (cons t nil)))))))))
-(def-lazy "C" (cons t (cons nil (cons t (cons t (cons t (cons t (cons nil (cons nil nil)))))))))
-(def-lazy "D" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons t (cons t nil)))))))))
-(def-lazy "E" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons t (cons nil nil)))))))))
-(def-lazy "F" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons nil (cons t nil)))))))))
-(def-lazy "G" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons nil (cons nil nil)))))))))
-(def-lazy "H" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons t (cons t nil)))))))))
-(def-lazy "I" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons t (cons nil nil)))))))))
-(def-lazy "J" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
-(def-lazy "K" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons nil (cons nil nil)))))))))
-(def-lazy "L" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons t (cons t nil)))))))))
-(def-lazy "M" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons t (cons nil nil)))))))))
-(def-lazy "N" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons nil (cons t nil)))))))))
-(def-lazy "O" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons nil (cons nil nil)))))))))
-(def-lazy "P" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t (cons t nil)))))))))
-(def-lazy "Q" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t (cons nil nil)))))))))
-(def-lazy "R" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil (cons t nil)))))))))
-(def-lazy "S" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil (cons nil nil)))))))))
-(def-lazy "T" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t (cons t nil)))))))))
-(def-lazy "U" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t (cons nil nil)))))))))
-(def-lazy "V" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons nil (cons t nil)))))))))
-(def-lazy "W" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons nil (cons nil nil)))))))))
-(def-lazy "X" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons t (cons t nil)))))))))
-(def-lazy "Y" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons t (cons nil nil)))))))))
-(def-lazy "Z" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons nil (cons t nil)))))))))
-(def-lazy "(" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t nil)))))))))
-(def-lazy ")" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil nil)))))))))
-(def-lazy "*" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
-(def-lazy " " (cons t (cons t (cons nil (cons t (cons t (cons t (cons t (cons t nil)))))))))
-(def-lazy "." (cons t (cons t (cons nil (cons t (cons nil (cons nil (cons nil (cons t nil)))))))))
-(def-lazy ">" (cons t (cons t (cons nil (cons nil (cons nil (cons nil (cons nil (cons t nil)))))))))
-(def-lazy "\\n" (cons t (cons t (cons t (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
 
-(defmacro-lazy do-continuation* (top &rest proc)
-  (cond ((not proc)
-          top)
-        ((eq '<- (car (car proc)))
-          (let* ((topproc (car proc))
-                 (arglist (car (cdr topproc)))
-                 (body (car (cdr (cdr topproc)))))
-            `(do-continuation*
-                ,(append body `((lambda ,arglist ,top)))
-                ,@(cdr proc))))
-        ((eq 'let* (car (car proc)))
-          (let* ((topproc (car proc))
-                 (varname (car (cdr topproc)))
-                 (body (car (cdr (cdr topproc)))))
-            `(do-continuation*
-                ,(append `(let ((,varname ,body))) `(,top))
-                ,@(cdr proc))))
-        (t
-          `(do-continuation*
-              ,(append (car proc) `(,top))
-              ,@(cdr proc)))))
+;;================================================================
+;; Data structure
+;;================================================================
+(defun-lazy type-atom (t0 t1) t0)
+(defun-lazy type-list (t0 t1) t1)
 
-(defmacro-lazy do-continuation (&rest proc)
-  `(do-continuation* ,@(reverse proc)))
+(defmacro-lazy typeof  (x) `(car ,x))
+(defmacro-lazy valueof (x) `(cdr ,x))
 
+(defun-lazy car-data (data cont)
+  (cont (car (valueof data))))
+
+(defun-lazy cdr-data (data cont)
+  (cont (cdr (valueof data))))
+
+(defun-lazy cons-data (x y cont)
+  (cont (cons type-list (cons x y))))
+
+(defun-lazy atom* (value)
+  (cons type-atom value))
+
+(defmacro-lazy typematch (expr atomcase listcase nilcase)
+  `(if (isnil ,expr)
+      ,nilcase
+      ((typeof ,expr) ,atomcase ,listcase)))
+
+(defun-lazy isatom (expr)
+  (typematch expr
+    ;; atom
+    t
+    ;; list
+    nil
+    ;; nil
+    t))
+
+
+;;================================================================
+;; Arithmetic and logic
+;;================================================================
 (defrec-lazy =-bit (n m)
   (cond ((isnil n)
           t)
@@ -80,9 +61,15 @@
         (t
           (cmp-bit (cdr n) (cdr m)))))
 
-(def-lazy stringterm nil)
+(defun-lazy truth-data (expr)
+  (if expr t-data nil))
+
+(def-lazy t-data (atom* (list "T")))
 
 
+;;================================================================
+;; Printing
+;;================================================================
 (defun-lazy append-item-to-stream (stream item)
   (lambda (x) (stream (cons item x))))
 
@@ -91,77 +78,37 @@
     (cont (curstream item))
     (append-list (cdr l) item (append-item-to-stream curstream (car l)) cont)))
 
-
-(defmacro-lazy typematch (expr atomcase listcase nilcase)
-  `(if (isnil ,expr)
-      ,nilcase
-      ((typeof ,expr) ,atomcase ,listcase)))
-
-(defun-lazy isatom (expr)
-  (typematch expr
-    ;; atom
-    t
-    ;; list
-    nil
-    ;; nil
-    t))
-
-(defun-lazy truth-data (expr cont)
-  (cont (if expr t-data nil)))
-
-(defun-lazy type-atom (t0 t1) t0)
-(defun-lazy type-list (t0 t1) t1)
-
-(def-lazy typeof car*)
-(def-lazy valueof cdr*)
-
-(defun-lazy car-data (data cont)
-  (cont (car (valueof data))))
-
-(defun-lazy cdr-data (data cont)
-  (cont (cdr (valueof data))))
-
-(defun-lazy cons-data (x y cont)
-  (cont (cons type-list (cons x y))))
-
-(defun-lazy atom* (value)
-  (cons type-atom value))
-
-;; (defmacro-lazy list* (arg &rest args)
-;;   (if (not args)
-;;     `(cons-data ,arg nil)
-;;     `(cons-data ,arg (list* ,@args))))
-
 (defrec-lazy printexpr-helper (expr mode cont)
-  (if mode
-    (typematch expr
-      ;; atom
-      (do-continuation
-        (<- (outstr) (append-list (valueof expr) cont (lambda (x) x)))
-        outstr)
-      ;; list
-      (cons "(" (printexpr-helper expr nil (cons ")" cont)))
-      ;; nil
-      (cons "N" (cons "I" (cons "L" cont)))
-      )
-    (do-continuation
-      (<- (car-ed) (car-data expr))
-      (printexpr-helper car-ed t
+  (cond
+    (mode
+      (typematch expr
+        ;; atom
         (do-continuation
-          (<- (cdr-ed) (cdr-data expr))
-          (typematch cdr-ed
-            ;; atom
-            (cdr-data expr
-              (lambda (cdr-ed)
-                (cons " " (cons "." (cons " "
-                (append-list (valueof cdr-ed) cont (lambda (x) x) (lambda (x) x))
-                )))))
-            ;; list
-            (cdr-data expr
-              (lambda (cdr-ed)
-                (cons " " (printexpr-helper cdr-ed nil cont))))
-            ;; nil
-            cont))))))
+          (<- (outstr) (append-list (valueof expr) cont (lambda (x) x)))
+          outstr)
+        ;; list
+        (cons "(" (printexpr-helper expr nil (cons ")" cont)))
+        ;; nil
+        (cons "N" (cons "I" (cons "L" cont)))))
+    (t
+      (do-continuation
+        (<- (car-ed) (car-data expr))
+        (printexpr-helper car-ed t
+          (do-continuation
+            (<- (cdr-ed) (cdr-data expr))
+            (typematch cdr-ed
+              ;; atom
+              (cdr-data expr
+                (lambda (cdr-ed)
+                  (cons " " (cons "." (cons " "
+                  (append-list (valueof cdr-ed) cont (lambda (x) x) (lambda (x) x))
+                  )))))
+              ;; list
+              (cdr-data expr
+                (lambda (cdr-ed)
+                  (cons " " (printexpr-helper cdr-ed nil cont))))
+              ;; nil
+              cont)))))))
 
 (defun-lazy printexpr (expr cont)
   (printexpr-helper expr t cont))
@@ -169,6 +116,10 @@
 (defrec-lazy reverse (l curlist cont)
   (if (isnil l) (cont curlist) (reverse (cdr l) (cons (car l) curlist) cont)))
 
+
+;;================================================================
+;; Reader
+;;================================================================
 (defrec-lazy read-string (curstr stdin cont)
   (let ((c (car stdin)))
     (cond
@@ -181,32 +132,36 @@
 
 (defun-lazy read-atom (stdin cont)
   (do-continuation
+    (let* read-string read-string)
     (<- (retstr stdin) (read-string nil stdin))
-    (cont (atom* retstr) stdin)))
+    (let* retatom (atom* retstr))
+    (cont retatom stdin)))
 
-(defrec-lazy stringeq (s1 s2 cont)
-  (let ((isnil-s1 (isnil s1))
-        (isnil-s2 (isnil s2)))
-    (if (and isnil-s1 isnil-s2)
-      (cont t)
-      (let ((not-isnil-s1 (not isnil-s1))
-            (and-1 (and not-isnil-s1 isnil-s2)))
-        (if and-1
-          (cont nil)
-          (let ((not-isnil-s2 (not isnil-s2))
-                (and-2 (and isnil-s1 not-isnil-s2)))
-            (if and-2
-              (cont nil)
-              (let ((car-s1 (car s1))
-                    (car-s2 (car s2)))
-                (if (=-bit car-s1 car-s2)
-                  (let ((cdr-s1 (cdr s1))
-                        (cdr-s2 (cdr s2)))
-                    (stringeq cdr-s1 cdr-s2 cont))
-                  (cont nil))))))))))
 
-(defun-lazy stringeq* (s1 s2)
-  (stringeq s1 s2 (lambda (x) x)))
+(defmacro-lazy if-then-return (condition then else)
+  `(if ,condition ,then ,else))
+
+(defrec-lazy stringeq (s1 s2)
+  (do-continuation
+    (let* isnil-s1 (isnil s1))
+    (let* isnil-s2 (isnil s2))
+    (if-then-return (and isnil-s1 isnil-s2) t)
+    (let* not-isnil-s1 (not isnil-s1))
+    (let* and-1 (and not-isnil-s1 isnil-s2))
+    (if-then-return and-1 nil)
+    (let* not-isnil-s2 (not isnil-s2))
+    (let* and-2 (and isnil-s1 not-isnil-s2))
+    (if-then-return and-2 nil)
+    (let* car-s1 (car s1))
+    (let* car-s2 (car s2))
+    (if-then-return (=-bit car-s1 car-s2)
+      (let ((cdr-s1 (cdr s1))
+            (cdr-s2 (cdr s2)))
+        (stringeq cdr-s1 cdr-s2)))
+    nil))
+
+(defmacro-lazy stringeq* (s1 s2)
+  `(stringeq ,s1 ,s2))
 
 (defrec-lazy read-skip-whitespace (stdin cont)
   (let ((c (car stdin)))
@@ -225,33 +180,31 @@
           (reverse-base2data x consed cont))))))
 
 (defrec-lazy read-expr (stdin curexpr mode cont)
-  (read-skip-whitespace stdin
-    (lambda (stdin)
-        (if mode
-          (let ((c (car stdin)))
-            (cond ((=-bit ")" c)
-                    (do-continuation
-                      (<- (reversed) (reverse-base2data curexpr nil))
-                      (let* x (cdr stdin))
-                      (cont reversed x)))
-                  (t
-                    (do-continuation
-                      (<- (expr stdin) (read-expr stdin nil nil))
-                      (let* x (cons expr curexpr))
-                      (read-expr stdin x t cont)))))
-          (let ((c (car stdin)))
-            (cond ((=-bit "(" c)
-                    (let ((x (cdr stdin)))
-                      (read-expr x nil t cont)))
-                  (t
-                    (read-atom stdin cont))))))))
+  (do-continuation
+    (<- (stdin) (read-skip-whitespace stdin))
+    (let* c (car stdin))
+    (let* cdr-stdin (cdr stdin))
+    (if mode      
+      (cond ((=-bit ")" c)
+              (do-continuation
+                (let* reverse-base2data reverse-base2data)
+                (<- (reversed) (reverse-base2data curexpr nil))
+                (cont reversed cdr-stdin)))
+            (t
+              (do-continuation
+                (<- (expr stdin) (read-expr stdin nil nil))
+                (let* x (cons expr curexpr))
+                (read-expr stdin x t cont))))
+      (cond ((=-bit "(" c)
+              (read-expr cdr-stdin nil t cont))
+            (t
+              (let ((read-atom read-atom))
+                (read-atom stdin cont)))))))
 
-(def-lazy initial-varenv
-  (list
-    (cons (list "N" "I" "L") nil)))
 
-(def-lazy t-data (atom* (list "T")))
-
+;;================================================================
+;; Evaluation helpers
+;;================================================================
 (defrec-lazy eval-cond (clauselist evalret cont)
   (do-continuation
     (<- (carclause) (car-data clauselist))
@@ -270,7 +223,7 @@
         (ebody (cdr pair)))
     (cond ((isnil varenv)
             (cont nil))
-          ((stringeq varval evarval (lambda (x) x))
+          ((stringeq varval evarval)
             (cont ebody))
           (t
             (let ((varenv-cdr (cdr varenv)))
@@ -333,6 +286,10 @@
          (,globalenv   (car evtmp)))
       ,body))
 
+
+;;================================================================
+;; Evaluation
+;;================================================================
 (defrec-lazy eval (expr evalret cont)
   (typematch expr
     ;; atom
@@ -388,9 +345,7 @@
       (let* atom-case
         (eval car-tail evalret
           (lambda (expr evalret)
-            (truth-data (isatom expr)
-              (lambda (truth-ret)
-                (cont truth-ret evalret))))))
+            (cont (truth-data (isatom expr)) evalret))))
       (let* eq-case
         (do-continuation
           (<- (car-ed) (car-data tail))
@@ -406,8 +361,7 @@
                   ((or (not (isatom eq-x)) (not (isatom eq-y)))
                     nil)
                   (t
-                    (truth-data (stringeq (valueof eq-x) (valueof eq-y) (lambda (x) x))
-                      (lambda (x) x))))
+                    (truth-data (stringeq (valueof eq-x) (valueof eq-y)))))
             evalret)))
       (let* cond-case
         (eval-cond tail evalret cont))
@@ -502,6 +456,16 @@
     ;; nil
     (cont nil evalret)))
 
+
+;;================================================================
+;; User interface
+;;================================================================
+(def-lazy stringterm nil)
+
+(def-lazy initial-varenv
+  (list
+    (cons (list "N" "I" "L") nil)))
+
 (defrec-lazy repl (varenv stdin globalenv)
   (cons "*" (cons " "
     (if (isnil (cdr stdin))
@@ -515,15 +479,78 @@
         (let* text-next (cons "\\n" repl-next))
         (printexpr expr text-next))))))
 
-(defrec-lazy list2inflist (l)
-  (if (isnil l)
-    stringterm
-    (cons (car l) (list2inflist (cdr l)))))
 
 (defun-lazy main (stdin)
   (repl initial-varenv stdin nil))
 
 
+;;================================================================
+;; Constants
+;;================================================================
+(def-lazy "A" (cons t (cons nil (cons t (cons t (cons t (cons t (cons t (cons nil nil)))))))))
+(def-lazy "B" (cons t (cons nil (cons t (cons t (cons t (cons t (cons nil (cons t nil)))))))))
+(def-lazy "C" (cons t (cons nil (cons t (cons t (cons t (cons t (cons nil (cons nil nil)))))))))
+(def-lazy "D" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons t (cons t nil)))))))))
+(def-lazy "E" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons t (cons nil nil)))))))))
+(def-lazy "F" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons nil (cons t nil)))))))))
+(def-lazy "G" (cons t (cons nil (cons t (cons t (cons t (cons nil (cons nil (cons nil nil)))))))))
+(def-lazy "H" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons t (cons t nil)))))))))
+(def-lazy "I" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons t (cons nil nil)))))))))
+(def-lazy "J" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
+(def-lazy "K" (cons t (cons nil (cons t (cons t (cons nil (cons t (cons nil (cons nil nil)))))))))
+(def-lazy "L" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons t (cons t nil)))))))))
+(def-lazy "M" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons t (cons nil nil)))))))))
+(def-lazy "N" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons nil (cons t nil)))))))))
+(def-lazy "O" (cons t (cons nil (cons t (cons t (cons nil (cons nil (cons nil (cons nil nil)))))))))
+(def-lazy "P" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t (cons t nil)))))))))
+(def-lazy "Q" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t (cons nil nil)))))))))
+(def-lazy "R" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil (cons t nil)))))))))
+(def-lazy "S" (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil (cons nil nil)))))))))
+(def-lazy "T" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t (cons t nil)))))))))
+(def-lazy "U" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t (cons nil nil)))))))))
+(def-lazy "V" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons nil (cons t nil)))))))))
+(def-lazy "W" (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons nil (cons nil nil)))))))))
+(def-lazy "X" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons t (cons t nil)))))))))
+(def-lazy "Y" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons t (cons nil nil)))))))))
+(def-lazy "Z" (cons t (cons nil (cons t (cons nil (cons nil (cons t (cons nil (cons t nil)))))))))
+(def-lazy "(" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t nil)))))))))
+(def-lazy ")" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil nil)))))))))
+(def-lazy "*" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
+(def-lazy " " (cons t (cons t (cons nil (cons t (cons t (cons t (cons t (cons t nil)))))))))
+(def-lazy "." (cons t (cons t (cons nil (cons t (cons nil (cons nil (cons nil (cons t nil)))))))))
+(def-lazy ">" (cons t (cons t (cons nil (cons nil (cons nil (cons nil (cons nil (cons t nil)))))))))
+(def-lazy "\\n" (cons t (cons t (cons t (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
+
+(defmacro-lazy do-continuation* (top &rest proc)
+  (cond ((not proc)
+          top)
+        ((eq '<- (car (car proc)))
+          (let* ((topproc (car proc))
+                 (arglist (car (cdr topproc)))
+                 (body (car (cdr (cdr topproc)))))
+            `(do-continuation*
+                ,(append body `((lambda ,arglist ,top)))
+                ,@(cdr proc))))
+        ((eq 'let* (car (car proc)))
+          (let* ((topproc (car proc))
+                 (varname (car (cdr topproc)))
+                 (body (car (cdr (cdr topproc)))))
+            `(do-continuation*
+                ,(append `(let ((,varname ,body))) `(,top))
+                ,@(cdr proc))))
+        (t
+          `(do-continuation*
+              ,(append (car proc) `(,top))
+              ,@(cdr proc)))))
+
+(defmacro-lazy do-continuation (&rest proc)
+  `(do-continuation* ,@(reverse proc)))
+
+
+
+;;================================================================
+;; Compilation
+;;================================================================
 ;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
 
 ;; (format t (compile-to-ski-lazy main))
@@ -532,3 +559,4 @@
 ;; ;; Print lambda term
 ;; (setf *print-right-margin* 800)
 ;; (format t (write-to-string (curry (macroexpand-lazy main))))
+
