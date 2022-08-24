@@ -97,9 +97,14 @@
             (do
               (<- (p) (car-data x))
               (<- (q) (cdr-data x))
-              (<- (q) (car-data x))
-              (let* ret (and (isatom p) (and (isatom q) (stringeq (valueof p) (valueof q)))))
-              (cont ret)))
+              (<- (q) (car-data q))
+              (if-then-return (not (and (isatom p) (isatom q)))
+                (cont nil))
+              (let* p-val (if (isnil p) kNil (valueof p)))
+              (let* q-val (if (isnil q) kNil (valueof q)))
+              (let* ret (if (stringeq p-val q-val) t-atom nil))
+              (cont ret)
+              ))
           ((stringeq fv kCons)
             (do
               (<- (p) (car-data x))
