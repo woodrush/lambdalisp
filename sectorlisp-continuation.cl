@@ -99,11 +99,10 @@
             (<- (cdr-ed) (cdr-data expr))
             (typematch cdr-ed
               ;; atom
-              (cdr-data expr
-                (lambda (cdr-ed)
-                  (cons " " (cons "." (cons " "
-                  (append-list (valueof cdr-ed) cont (lambda (x) x))
-                  )))))
+              (do
+                (<- (cdr-ed) (cdr-data expr))
+                (cons " " (cons "." (cons " "
+                  (append-list (valueof cdr-ed) cont (lambda (x) x))))))
               ;; list
               (cdr-data expr
                 (lambda (cdr-ed)
@@ -160,12 +159,12 @@
             (cont stdin)))))
 
 (defrec-lazy reverse-base2data (l curlist cont)
-  (cons-data (car l) curlist
-    (lambda (consed)
-      (if (isnil l)
-        (cont curlist)
-        (let ((x (cdr l)))
-          (reverse-base2data x consed cont))))))
+  (do
+    (<- (consed) (cons-data (car l) curlist))
+    (if-then-return (isnil l)
+      (cont curlist))
+    (let* x (cdr l))
+    (reverse-base2data x consed cont)))
 
 (defrec-lazy read-expr (stdin curexpr mode cont)
   (do
@@ -222,7 +221,8 @@
         (evarval (car pair))
         (ebody (cdr pair)))
     (cond ((isnil varenv)
-            (cont nil))
+            (let-parse-evalstate evalstate varenv stdin globalenv
+              (cons "?" (append-list varval (cons "\\n" (repl varenv stdin globalenv)) (lambda (x) x)))))
           ((stringeq varval evarval)
             (cont ebody))
           (t
@@ -277,25 +277,27 @@
 ;;================================================================
 ;; Evaluation
 ;;================================================================
+(def-lazy "QUOTE" (list "Q" "U" "O" "T" "E"))
+(def-lazy "CAR" (list "C" "A" "R"))
+(def-lazy "CDR" (list "C" "D" "R"))
+(def-lazy "CONS" (list "C" "O" "N" "S"))
+(def-lazy "ATOM" (list "A" "T" "O" "M"))
+(def-lazy "EQ" (list "E" "Q"))
+(def-lazy "COND" (list "C" "O" "N" "D"))
+(def-lazy "PRINT" (list "P" "R" "I" "N" "T"))
+(def-lazy "READ" (list "R" "E" "A" "D"))
+(def-lazy "DEF" (list "D" "E" "F"))
+(def-lazy "DEFINE" (list "D" "E" "F" "I" "N" "E"))
+(def-lazy "NIL" (list "N" "I" "L"))
+
 (defrec-lazy eval (expr evalstate cont)
   (typematch expr
     ;; atom
     (let-parse-evalstate evalstate varenv stdin globalenv
-      (cond
-        ((isnil globalenv)
-          (varenv-lookup
-            varenv
-            (valueof expr)
-            (lambda (ret)
-              (cont ret evalstate))))
-        (t
-          (append-list varenv globalenv
-            (lambda (appended)
-              (varenv-lookup
-                appended
-                (valueof expr)
-                (lambda (ret)
-                  (cont ret evalstate))))))))
+      (do
+        (let* envlist (if (isnil globalenv) varenv (append-list varenv globalenv (lambda (x) x))))
+        (<- (ret) (varenv-lookup envlist (valueof expr)))
+        (cont ret evalstate)))
     ;; list
     (do
       (let* evalstate-top evalstate)
@@ -303,137 +305,110 @@
       (let* head-index (valueof head))
       (<- (tail) (cdr-data expr))
       (<- (car-tail) (car-data tail))
-      (let* quote-case
-        (cont car-tail evalstate))
-      (let* car-case
-        (eval car-tail evalstate
-          (lambda (expr evalstate)
-            (car-data expr
-              (lambda (car-ed)
-                (cont car-ed evalstate))))))
-      (let* cdr-case
-        (eval car-tail evalstate
-          (lambda (expr evalstate)
-            (cdr-data expr
-              (lambda (cdr-ed)
-                (cont cdr-ed evalstate))))))
-      (let* cons-case
-        (eval car-tail evalstate
-          (lambda (cons-x evalstate)
-            (cdr-data tail
-              (lambda (cdr-ed)
-                (car-data cdr-ed
-                  (lambda (car-ed)
-                    (eval car-ed evalstate
-                      (lambda (cons-y evalstate)
-                        (cons-data cons-x cons-y
-                          (lambda (consed)
-                            (cont consed evalstate))))))))))))
-      (let* atom-case
-        (eval car-tail evalstate
-          (lambda (expr evalstate)
-            (cont (truth-data (isatom expr)) evalstate))))
-      (let* eq-case
-        (do
-          (<- (car-ed) (car-data tail))
-          (<- (eq-x evalstate) (eval car-ed evalstate))
-          (<- (cdr-ed) (cdr-data tail))
-          (<- (car-ed) (car-data cdr-ed))
-          (<- (eq-y evalstate) (eval car-ed evalstate))
-          (cont
-            (cond ((and (isnil eq-x) (isnil eq-y))
-                    t-data)
-                  ((or (isnil eq-x) (isnil eq-y))
-                    nil)
-                  ((or (not (isatom eq-x)) (not (isatom eq-y)))
-                    nil)
-                  (t
-                    (truth-data (stringeq (valueof eq-x) (valueof eq-y)))))
-            evalstate)))
-      (let* cond-case
-        (eval-cond tail evalstate cont))
-      (let* print-case
-        (if (isnil tail)
-          (cons "\\n" (cont nil evalstate))
-          (eval car-tail evalstate
-            (lambda (expr evalstate)
-              (let ((next-text (cont expr evalstate)))
-                (printexpr expr next-text))))))
-      (let* read-case
-        (let-parse-evalstate evalstate varenv stdin globalenv
-          (read-expr stdin nil nil
-            (lambda (expr stdin)
-              (new-evalstate varenv stdin globalenv
-                (lambda (evalstate-new)
-                  (cont expr evalstate-new)))))))
-      (let* def-case
-        (do
-          (<- (varname) (car-data tail))
-          (<- (cdr-ed) (cdr-data tail))
-          (<- (defbody) (car-data cdr-ed))
-          (<- (expr evalstate) (eval defbody evalstate))
-          (let-parse-evalstate evalstate varenv stdin globalenv)
-          (<- (consed) (cons-data varname nil))
-          (let* x (cons expr nil))
-          (<- (envzip) (prepend-envzip consed x globalenv nil))
-          (<- (evalstate-new) (new-evalstate varenv stdin envzip))
-          (cont expr evalstate-new)))
-      (let* default-case
-        (eval head evalstate
-          (lambda (expr evalstate)
-            (eval-lambda expr tail evalstate cont))))
-      (let* c-top (car head-index))
-      (let* c-tail (cdr head-index))
-      (let* cmp-result (cmp-bit c-top "C"))
-      (let* cmp-p (cmp-bit c-top "P"))
       (typematch head
         ;; atom
-        (cmp-result
-          ;; c1 < "C"
-          (if (stringeq* head-index (list "A" "T" "O" "M"))
-              atom-case
-              default-case)
-          ;; c1 == "C"
-          (if (isnil c-tail)
-            default-case
-            (let ((c-top (car c-tail))
-                  (c-tail2 (cdr c-tail))
-                  (cmp-result (cmp-bit c-top "D")))
-              (cmp-result
-                ;; c2 < "D"
-                (if (stringeq* c-tail (list "A" "R"))
-                  car-case
-                  default-case)
-                ;; c2 == "D"
-                (if (stringeq* c-tail2 (list "R"))
-                  cdr-case
-                  default-case)
-                ;; c2 > "D"
-                (if (=-bit c-top "O")
-                  (if (stringeq* c-tail2 (list "N" "S"))
-                    cons-case
-                    (if (stringeq* c-tail2 (list "N" "D"))
-                      cond-case
-                      default-case))
-                  default-case))))
-          ;; c1 > "C"
-          (cmp-p
-            ;; c1 < "P"
-            (if (stringeq* head-index (list "E" "Q"))
-              eq-case
-              (if (stringeq* head-index (list "D" "E" "F"))
-                def-case
-                default-case))
-            ;; c1 == "P"
-            (if (stringeq* c-tail (list "R" "I" "N" "T"))
-              print-case
-              default-case)
-            ;; c1 > "P"
-            (if (stringeq* head-index (list "Q" "U" "O" "T" "E"))
-              quote-case
-              (if (stringeq* head-index (list "R" "E" "A" "D"))
-                read-case
-                default-case))))
+        (do
+          (if-then-return (stringeq* head-index "QUOTE")
+            (cont car-tail evalstate))
+
+          (if-then-return (stringeq* head-index "CAR")
+            (eval car-tail evalstate
+              (lambda (expr evalstate)
+                (car-data expr
+                  (lambda (car-ed)
+                    (cont car-ed evalstate))))))
+
+          (if-then-return (stringeq* head-index "CDR")
+            (eval car-tail evalstate
+              (lambda (expr evalstate)
+                (cdr-data expr
+                  (lambda (cdr-ed)
+                    (cont cdr-ed evalstate))))))
+
+          (if-then-return (stringeq* head-index "CONS")
+            (eval car-tail evalstate
+              (lambda (cons-x evalstate)
+                (cdr-data tail
+                  (lambda (cdr-ed)
+                    (car-data cdr-ed
+                      (lambda (car-ed)
+                        (eval car-ed evalstate
+                          (lambda (cons-y evalstate)
+                            (cons-data cons-x cons-y
+                              (lambda (consed)
+                                (cont consed evalstate))))))))))))
+
+          (if-then-return (stringeq* head-index "ATOM")
+            (eval car-tail evalstate
+              (lambda (expr evalstate)
+                (cont (truth-data (isatom expr)) evalstate))))
+
+          (if-then-return (stringeq* head-index "EQ")
+            (do
+              (<- (car-ed) (car-data tail))
+              (<- (eq-x evalstate) (eval car-ed evalstate))
+              (<- (cdr-ed) (cdr-data tail))
+              (<- (car-ed) (car-data cdr-ed))
+              (<- (eq-y evalstate) (eval car-ed evalstate))
+              (cont
+                (cond ((and (isnil eq-x) (isnil eq-y))
+                        t-data)
+                      ((or (isnil eq-x) (isnil eq-y))
+                        nil)
+                      ((or (not (isatom eq-x)) (not (isatom eq-y)))
+                        nil)
+                      (t
+                        (truth-data (stringeq (valueof eq-x) (valueof eq-y)))))
+                evalstate)))
+
+          (if-then-return (stringeq* head-index "COND")
+            (eval-cond tail evalstate cont))
+
+          (if-then-return (stringeq* head-index "PRINT")
+            (if (isnil tail)
+              (cons "\\n" (cont nil evalstate))
+              (eval car-tail evalstate
+                (lambda (expr evalstate)
+                  (let ((next-text (cont expr evalstate)))
+                    (printexpr expr next-text))))))
+
+          (if-then-return (stringeq* head-index "READ")
+            (let-parse-evalstate evalstate varenv stdin globalenv
+              (read-expr stdin nil nil
+                (lambda (expr stdin)
+                  (new-evalstate varenv stdin globalenv
+                    (lambda (evalstate-new)
+                      (cont expr evalstate-new)))))))
+
+          (if-then-return (stringeq* head-index "DEF")
+            (do
+              (<- (varname) (car-data tail))
+              (<- (cdr-ed) (cdr-data tail))
+              (<- (defbody) (car-data cdr-ed))
+              (<- (expr evalstate) (eval defbody evalstate))
+              (let-parse-evalstate evalstate varenv stdin globalenv)
+              (<- (consed) (cons-data varname nil))
+              (let* x (cons expr nil))
+              (<- (envzip) (prepend-envzip consed x globalenv nil))
+              (<- (evalstate-new) (new-evalstate varenv stdin envzip))
+              (cont expr evalstate-new)))
+
+          (if-then-return (stringeq* head-index "DEFINE")
+            (do
+              (<- (varname) (car-data tail))
+              (<- (cdr-ed) (cdr-data tail))
+              (<- (defbody) (car-data cdr-ed))
+              (<- (consed) (cons-data varname nil))
+              (let* x (cons defbody nil))
+              (<- (envzip) (prepend-envzip consed x globalenv nil))
+              (<- (evalstate-new) (new-evalstate varenv stdin envzip))
+              (cont defbody evalstate-new)))
+          ;; Default case
+          (do
+            (<- (expr evalstate) (eval head evalstate))
+            (if-then-return (isnil expr)
+              (cont nil evalstate))
+            (eval-lambda expr tail evalstate cont)))
         ;; list: parse as lambda
         (eval-lambda head tail evalstate-top cont)
         ;; nil
@@ -449,7 +424,7 @@
 
 (def-lazy initial-varenv
   (list
-    (cons (list "N" "I" "L") nil)))
+    (cons "NIL" nil)))
 
 (defrec-lazy repl (varenv stdin globalenv)
   (cons "*" (cons " "
@@ -501,6 +476,7 @@
 (def-lazy "(" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons t (cons t nil)))))))))
 (def-lazy ")" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons t (cons nil nil)))))))))
 (def-lazy "*" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
+(def-lazy "?" (cons t (cons t (cons nil (cons nil (cons nil (cons nil (cons nil (cons nil nil)))))))))
 (def-lazy " " (cons t (cons t (cons nil (cons t (cons t (cons t (cons t (cons t nil)))))))))
 (def-lazy "." (cons t (cons t (cons nil (cons t (cons nil (cons nil (cons nil (cons t nil)))))))))
 (def-lazy ">" (cons t (cons t (cons nil (cons nil (cons nil (cons nil (cons nil (cons t nil)))))))))
