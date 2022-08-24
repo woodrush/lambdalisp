@@ -21,14 +21,15 @@
 (defrec-lazy Evlis (m a cont)
   (cond
     ((isnil m)
-      m)
+      (cont m))
     (t
       (do
         (<- (x) (car-data m))
         (<- (x) (Eval x a))
         (<- (y) (cdr-data m))
         (<- (y) (Evlis y a))
-        (cons-data x y cont)))))
+        (cons-data x y cont)
+        ))))
 
 (defrec-lazy Assoc (x y cont)
   (do
@@ -162,6 +163,15 @@
   (typematch expr
     ;; atom
     t
+    ;; list
+    nil
+    ;; nil
+    t))
+
+(defun-lazy isnil-data (expr)
+  (typematch expr
+    ;; atom
+    nil
     ;; list
     nil
     ;; nil
