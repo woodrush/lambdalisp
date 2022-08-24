@@ -117,8 +117,8 @@
               (car-data p cont)))
           ((stringeq fv kCdr)
             (do
-              (<- (p) (cdr-data x))
-              (car-data p cont)))
+              (<- (p) (car-data x))
+              (cdr-data p cont)))
           (t
             (do
               (<- (p) (Assoc f a))
