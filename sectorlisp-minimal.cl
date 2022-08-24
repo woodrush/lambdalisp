@@ -42,7 +42,8 @@
           (Assoc x cdaar-y cont))))))
 
 (defrec-lazy Pairlis (x y a cont)
-  (cond
+  (do
+    (cond
     ((isnil-data x)
       (cont a))
     (t
@@ -53,10 +54,16 @@
         (<- (f) (cdr-data x))
         (<- (g) (cdr-data y))
         (<- (h) (Pairlis f g a))
-        (cons-data r h cont)))))
+        (cons-data r h cont))))))
 
 (defrec-lazy Eval (e a cont)
-  (cond
+  (do
+    (let* stringeq stringeq)
+    (let* cons-data cons-data)
+    (let* cdr-data cdr-data)
+    (let* car-data car-data)
+    (let* isnil-data isnil-data)
+    (cond
     ((isnil-data e)
       (cont e))
     ((isatom e)
@@ -74,47 +81,51 @@
           (t
             (do
               (<- (y) (Evlis cdr-e a))
-              (Apply car-e y a cont))))))))
+              (Apply car-e y a cont)))))))))
 
 (defrec-lazy Apply (f x a cont)
-  (cond
-    ((isatom f)
-      (do
-        (<- (arg2) (cdr-data x))
-        (<- (arg2) (car-data arg2))        
-        (<- (car-x) (car-data x))
-        (let* fv (valueof f))
-        (cond
-          ((stringeq fv kEq)
-            (do
-              (if-then-return (not (and (isatom car-x) (isatom arg2)))
-                (cont (atom* nil)))
-              (let* p-val (valueof car-x))
-              (let* q-val (valueof arg2))
-              (let* ret (if (stringeq p-val q-val) t-atom (atom* nil)))
-              (cont ret)))
-          ((stringeq fv kCons)
-            (cons-data car-x arg2 cont))
-          ((stringeq fv kAtom)
-            (do
-              (let* ret (if (isatom car-x) t-atom (atom* nil)))
-              (cont ret)))
-          ((stringeq fv kCar)
-            (car-data car-x cont))
-          ((stringeq fv kCdr)
-            (cdr-data car-x cont))
-          (t
-            (do
-              (<- (p) (Assoc f a))
-              (Apply p x a cont))))))
-    (t
-      (do
-        (<- (cdr-f) (cdr-data f))
-        (<- (p) (cdr-data cdr-f))
-        (<- (p) (car-data p))
-        (<- (q) (car-data cdr-f))
-        (<- (q) (Pairlis q x a))
-        (Eval p q cont)))))
+  (do
+    (let* stringeq stringeq)
+    (let* cdr-data cdr-data)
+    (let* car-data car-data)
+    (cond
+      ((isatom f)
+        (do
+          (<- (arg2) (cdr-data x))
+          (<- (arg2) (car-data arg2))        
+          (<- (car-x) (car-data x))
+          (let* fv (valueof f))
+          (cond
+            ((stringeq fv kEq)
+              (do
+                (if-then-return (not (and (isatom car-x) (isatom arg2)))
+                  (cont (atom* nil)))
+                (let* p-val (valueof car-x))
+                (let* q-val (valueof arg2))
+                (let* ret (if (stringeq p-val q-val) t-atom (atom* nil)))
+                (cont ret)))
+            ((stringeq fv kCons)
+              (cons-data car-x arg2 cont))
+            ((stringeq fv kAtom)
+              (do
+                (let* ret (if (isatom car-x) t-atom (atom* nil)))
+                (cont ret)))
+            ((stringeq fv kCar)
+              (car-data car-x cont))
+            ((stringeq fv kCdr)
+              (cdr-data car-x cont))
+            (t
+              (do
+                (<- (p) (Assoc f a))
+                (Apply p x a cont))))))
+      (t
+        (do
+          (<- (cdr-f) (cdr-data f))
+          (<- (p) (cdr-data cdr-f))
+          (<- (p) (car-data p))
+          (<- (q) (car-data cdr-f))
+          (<- (q) (Pairlis q x a))
+          (Eval p q cont))))))
 
 
 ;;================================================================
@@ -146,8 +157,8 @@
 (defmacro-lazy isatom (expr)
   `(typeof ,expr))
 
-(defmacro-lazy isnil-data (expr)
-  `(isnil (valueof ,expr)))
+(defun-lazy isnil-data (expr)
+  (isnil (valueof expr)))
 
 (defrec-lazy add-carry (n m carry invert)
   (cond
@@ -282,6 +293,7 @@
 
 (defrec-lazy read-expr (stdin cont)
   (do
+    (let* =-bit =-bit)
     (let* c (car stdin))
     (cond
       ((or (=-bit " " c) (=-bit "\\n" c))
