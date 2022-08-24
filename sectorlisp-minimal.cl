@@ -60,9 +60,9 @@
   (do
     (let* stringeq stringeq)
     (let* cons-data cons-data)
+    (let* isnil-data isnil-data)
     (let* cdr-data cdr-data)
     (let* car-data car-data)
-    (let* isnil-data isnil-data)
     (cond
     ((isnil-data e)
       (cont e))
@@ -266,8 +266,8 @@
   (do
     (let* isnil-s1 (isnil s1))
     (let* isnil-s2 (isnil s2))
-    (if-then-return (and isnil-s1 isnil-s2) t)
-    (if-then-return (or isnil-s1 isnil-s2) nil)
+    (if-then-return isnil-s1 isnil-s2)
+    (if-then-return isnil-s2 isnil-s1)
     (if-then-return (=-bit (car s1) (car s2))
       (stringeq (cdr s1) (cdr s2)))
     nil))
