@@ -323,6 +323,7 @@
       (let* stringeq stringeq)
       (let* cdr-data cdr-data)
       (let* car-data car-data)
+      (let* reverse reverse)
       (<- (expr stdin) (read-expr stdin))
       (<- (expr) (Eval expr nil))
       (printexpr expr (cons "\\n" (main stdin))))))
