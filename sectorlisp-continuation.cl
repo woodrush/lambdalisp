@@ -70,7 +70,7 @@
     (printexpr car-ed
       (typematch cdr-ed
         ;; atom
-        (cons " " (cons "." (cons " " (printatom expr cont))))
+        (cons " " (cons "." (cons " " (printatom cdr-ed (cons ")" cont)))))
         ;; list
         (cons " " (printlist cdr-ed cont))
         ;; nil
@@ -91,7 +91,11 @@
 (defrec-lazy read-atom* (curstr stdin cont)
   (let ((c (car stdin)))
     (cond
-      ((or (=-bit "(" c) (=-bit ")" c) (=-bit " " c) (=-bit "\\n" c))
+      ((or (=-bit " " c) (=-bit "\\n" c))
+        (do
+          (<- (reversed) (reverse curstr nil))
+          (cont (atom* reversed) (cdr stdin))))
+      ((or (=-bit "(" c) (=-bit ")" c))
         (do
           (<- (reversed) (reverse curstr nil))
           (cont (atom* reversed) stdin)))
@@ -144,6 +148,8 @@
 
 (defrec-lazy read-expr (stdin cont)
   (do
+    (if-then-return (isnil stdin)
+      nil)
     (<- (stdin) (read-skip-whitespace stdin))
     (if-then-return (isnil stdin)
       nil)
