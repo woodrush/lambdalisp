@@ -61,7 +61,7 @@
 (defrec-lazy Eval (e a cont)
   (cond
     ((isnil e)
-      e)
+      (cont e))
     ((isatom e)
       (Assoc e a cont))
     (t
@@ -71,7 +71,7 @@
           ((stringeq (valueof x) kQuote)
             (do
               (<- (x) (cdr-data e))
-              (Evcon x a cont)))
+              (car-data x cont)))
           ((stringeq (valueof x) kCond)
             (do
               (<- (x) (cdr-data e))
@@ -81,7 +81,8 @@
               (<- (x) (car-data e))
               (<- (p) (cdr-data e))
               (<- (p) (Evlis p a))
-              (Apply x p a cont))))))))
+              (Apply x p a cont)))))
+              )))
 
 (defrec-lazy Apply (f x a cont)
   (cond
