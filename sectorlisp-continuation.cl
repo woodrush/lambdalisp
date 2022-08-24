@@ -145,6 +145,8 @@
 (defrec-lazy read-expr (stdin cont)
   (do
     (<- (stdin) (read-skip-whitespace stdin))
+    (if-then-return (isnil stdin)
+      nil)
     (cond ((=-bit "(" (car stdin))
             (read-list (cdr stdin) nil cont))
           (t
@@ -395,16 +397,16 @@
 
 (defrec-lazy repl (varenv stdin globalenv)
   (cons "*" (cons " "
-    (if (isnil stdin)
-      stringterm
-      (do
-        (<- (expr stdin) (read-expr stdin))
-        (<- (evalstate-new) (new-evalstate varenv stdin globalenv))
-        (<- (expr evalstate) (eval expr evalstate-new))
-        (let-parse-evalstate evalstate varenv stdin globalenv)
-        (let* repl-next (repl varenv stdin globalenv))
-        (let* text-next (cons "\\n" repl-next))
-        (printexpr expr text-next))))))
+    (do
+      (<- (expr stdin) (read-expr stdin))
+      (if-then-return (isnil expr)
+        stringterm)
+      (<- (evalstate-new) (new-evalstate varenv stdin globalenv))
+      (<- (expr evalstate) (eval expr evalstate-new))
+      (let-parse-evalstate evalstate varenv stdin globalenv)
+      (let* repl-next (repl varenv stdin globalenv))
+      (let* text-next (cons "\\n" repl-next))
+      (printexpr expr text-next)))))
 
 
 (defun-lazy main (stdin)
