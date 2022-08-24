@@ -82,11 +82,7 @@
               (<- (x) (car-data e))
               (<- (y) (cdr-data e))
               (<- (y) (Evlis y a))
-              (Apply x y a cont)
-              )
-              )
-              ))
-              )))
+              (Apply x y a cont))))))))
 
 (defrec-lazy Apply (f x a cont)
   (cond
@@ -103,8 +99,7 @@
               (let* p-val (if (isnil p) kNil (valueof p)))
               (let* q-val (if (isnil q) kNil (valueof q)))
               (let* ret (if (stringeq p-val q-val) t-atom nil))
-              (cont ret)
-              ))
+              (cont ret)))
           ((stringeq fv kCons)
             (do
               (<- (p) (car-data x))
@@ -255,13 +250,11 @@
 (defrec-lazy read-atom* (curstr stdin cont)
   (let ((c (car stdin)))
     (cond
-      ((or (=-bit " " c) (=-bit "\\n" c))
+      ((or (=-bit "(" c) (=-bit ")" c) (=-bit " " c) (=-bit "\\n" c))
         (do
           (<- (reversed) (reverse curstr nil))
-          (cont (atom* reversed) (cdr stdin))))
-      ((or (=-bit "(" c) (=-bit ")" c))
-        (do
-          (<- (reversed) (reverse curstr nil))
+          (if-then-return (stringeq reversed kNil)
+            (cont nil stdin))
           (cont (atom* reversed) stdin)))
       (t
         (read-atom* (cons (car stdin) curstr) (cdr stdin) cont)))))
@@ -326,22 +319,15 @@
 ;;================================================================
 (def-lazy stringterm nil)
 
-(defrec-lazy repl (x)
-  (cons "*" (cons " "
-    (do
-      (<- (expr stdin) (read-expr stdin))
-      (<- (expr) (Eval expr nil))
-      (printexpr expr nil)
-
-      ;; (let-parse-evalstate evalstate varenv stdin globalenv)
-      ;; (let* repl-next (repl varenv stdin globalenv))
-      ;; (let* text-next (cons "\\n" repl-next))
-      ;; (printexpr expr text-next)
-      ))))
+(defrec-lazy repl (stdin)
+  (do
+    (<- (expr stdin) (read-expr stdin))
+    (<- (expr) (Eval expr nil))
+    (printexpr expr (cons "\\n" (repl stdin)))))
 
 
 (defun-lazy main (stdin)
-  (repl nil))
+  (repl stdin))
 
 
 ;;================================================================
