@@ -298,10 +298,10 @@
 (defrec-lazy main (stdin)
   (alphabet-env
     (do
-      (let* p-t-nil p-t-nil)
       (let* p-t-t p-t-t)
-      (let* p-nil-t p-nil-t)
       (let* p-nil-nil p-nil-nil)
+      (let* p-nil-t p-nil-t)
+      (let* p-t-nil p-t-nil)
       (let* alphabet-prefix-nil alphabet-prefix-nil)
       (let* alphabet-prefix-t alphabet-prefix-t)
       (let* "I" (alphabet-prefix-t "I-tail"))
