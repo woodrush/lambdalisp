@@ -38,36 +38,6 @@
 
 
 ;;================================================================
-;; Arithmetic and logic
-;;================================================================
-(defrec-lazy =-bit (n m)
-  (cond ((isnil n)
-          t)
-        ((xnor (car n) (car m))
-          (=-bit (cdr n) (cdr m)))
-        (t
-          nil)))
-
-(defun-lazy cmp-lt (x1 x2 x3) x1)
-(defun-lazy cmp-eq (x1 x2 x3) x2)
-(defun-lazy cmp-gt (x1 x2 x3) x3)
-(defrec-lazy cmp-bit (n m)
-  (cond ((isnil n)
-          cmp-eq)
-        ((and (car n) (not (car m)))
-          cmp-lt)
-        ((and (not (car n)) (car m))
-          cmp-gt)
-        (t
-          (cmp-bit (cdr n) (cdr m)))))
-
-(defun-lazy truth-data (expr)
-  (if expr t-data nil))
-
-(def-lazy t-data (atom* (list "T")))
-
-
-;;================================================================
 ;; Printing
 ;;================================================================
 (defrec-lazy reverse (l curlist cont)
@@ -79,60 +49,57 @@
     (<- (reversed) (reverse reversed item))
     (cont reversed)))
 
-(defrec-lazy printexpr-helper (expr mode cont)
-  (cond
-    (mode
-      (typematch expr
-        ;; atom
-        (do
-          (<- (outstr) (append-list (valueof expr) cont))
-          outstr)
-        ;; list
-        (cons "(" (printexpr-helper expr nil (cons ")" cont)))
-        ;; nil
-        (cons "N" (cons "I" (cons "L" cont)))))
-    (t
-      (do
-        (<- (car-ed) (car-data expr))
-        (printexpr-helper car-ed t
-          (do
-            (<- (cdr-ed) (cdr-data expr))
-            (typematch cdr-ed
-              ;; atom
-              (do
-                (<- (cdr-ed) (cdr-data expr))
-                (cons " " (cons "." (cons " "
-                  (append-list (valueof cdr-ed) cont (lambda (x) x))))))
-              ;; list
-              (cdr-data expr
-                (lambda (cdr-ed)
-                  (cons " " (printexpr-helper cdr-ed nil cont))))
-              ;; nil
-              cont)))))))
+(defun-lazy printatom (expr cont)
+  (do
+    (<- (outstr) (append-list (valueof expr) cont))
+    outstr))
 
-(defun-lazy printexpr (expr cont)
-  (printexpr-helper expr t cont))
+(defrec-lazy printexpr (expr cont)
+  (typematch expr
+    ;; atom
+    (printatom expr cont)
+    ;; list
+    (cons "(" (printlist expr cont))
+    ;; nil
+    (cons "N" (cons "I" (cons "L" cont)))))
+
+(defrec-lazy printlist (expr cont)
+  (do
+    (<- (car-ed) (car-data expr))
+    (<- (cdr-ed) (cdr-data expr))
+    (printexpr car-ed
+      (typematch cdr-ed
+        ;; atom
+        (cons " " (cons "." (cons " " (printatom expr cont))))
+        ;; list
+        (cons " " (printlist cdr-ed cont))
+        ;; nil
+        (cons ")" cont)))))
 
 
 ;;================================================================
 ;; Reader
 ;;================================================================
-(defrec-lazy read-string (curstr stdin cont)
+(defrec-lazy =-bit (n m)
+  (cond ((isnil n)
+          t)
+        ((xnor (car n) (car m))
+          (=-bit (cdr n) (cdr m)))
+        (t
+          nil)))
+
+(defrec-lazy read-atom* (curstr stdin cont)
   (let ((c (car stdin)))
     (cond
       ((or (=-bit "(" c) (=-bit ")" c) (=-bit " " c) (=-bit "\\n" c))
-        (reverse curstr nil
-          (lambda (reversed)
-            (cont reversed stdin))))
+        (do
+          (<- (reversed) (reverse curstr nil))
+          (cont (atom* reversed) stdin)))
       (t
-        (read-string (cons (car stdin) curstr) (cdr stdin) cont)))))
+        (read-atom* (cons (car stdin) curstr) (cdr stdin) cont)))))
 
 (defun-lazy read-atom (stdin cont)
-  (do
-    (let* read-string read-string)
-    (<- (retstr stdin) (read-string nil stdin))
-    (let* retatom (atom* retstr))
-    (cont retatom stdin)))
+  (read-atom* nil stdin cont))
 
 (defrec-lazy stringeq (s1 s2)
   (do
@@ -153,8 +120,7 @@
 (defrec-lazy read-skip-whitespace (stdin cont)
   (let ((c (car stdin)))
     (cond ((or (=-bit " " c) (=-bit "\\n" c))
-            (let ((x (cdr stdin)))
-              (read-skip-whitespace x cont)))
+            (read-skip-whitespace (cdr stdin) cont))
           (t
             (cont stdin)))))
 
@@ -163,28 +129,26 @@
     (<- (consed) (cons-data (car l) curlist))
     (if-then-return (isnil l)
       (cont curlist))
-    (let* x (cdr l))
-    (reverse-base2data x consed cont)))
+    (reverse-base2data (cdr l) consed cont)))
 
 (defrec-lazy read-list (stdin curexpr cont)
-  (cond ((=-bit ")" (car stdin))
+  (do
+    (cond ((=-bit ")" (car stdin))
           (do
-            (let* reverse-base2data reverse-base2data)
             (<- (reversed) (reverse-base2data curexpr nil))
             (cont reversed (cdr stdin))))
         (t
           (do
             (<- (expr stdin) (read-expr stdin))
-            (let* x (cons expr curexpr))
-            (read-list stdin x cont)))))
+            (read-list stdin (cons expr curexpr) cont))))))
+
 (defrec-lazy read-expr (stdin cont)
   (do
     (<- (stdin) (read-skip-whitespace stdin))
     (cond ((=-bit "(" (car stdin))
             (read-list (cdr stdin) nil cont))
           (t
-            (let ((read-atom read-atom))
-              (read-atom stdin cont))))))
+            (read-atom stdin cont)))))
 
 
 ;;================================================================
@@ -287,6 +251,11 @@
 (def-lazy "DEF" (list "D" "E" "F"))
 (def-lazy "DEFINE" (list "D" "E" "F" "I" "N" "E"))
 (def-lazy "NIL" (list "N" "I" "L"))
+
+(defun-lazy truth-data (expr)
+  (if expr t-data nil))
+
+(def-lazy t-data (atom* (list "T")))
 
 (defrec-lazy eval (expr evalstate cont)
   (typematch expr
