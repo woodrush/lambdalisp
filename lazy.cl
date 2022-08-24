@@ -173,10 +173,10 @@
 ;; (defun-lazy cons (x y f) (f x y))
 (defun-lazy car* (l) (l t))
 (defun-lazy cdr* (l) (l nil))
-(defmacro-lazy car (l) `(,l t))
-(defmacro-lazy cdr (l) `(,l nil))
-;; (defun-lazy car (l) (l t))
-;; (defun-lazy cdr (l) (l nil))
+;; (defmacro-lazy car (l) `(,l t))
+;; (defmacro-lazy cdr (l) `(,l nil))
+(defun-lazy car (l) (l t))
+(defun-lazy cdr (l) (l nil))
 (defmacro-lazy cons (x y) `(lambda (f) (f ,x ,y)))
 
 (defmacro-lazy isnil (l) `((lambda (a) (a (lambda (v n x) nil) t)) ,l))
@@ -246,14 +246,14 @@
 (defmacro-lazy nth (n list)
   `(-> ,list (,n cdr*) car*))
 
-;; (def-lazy "A" (succ 64))
-;; (defmacro def-alphabet-lazy ()
-;;   (let* ((alphabet (coerce "ABCDEFGHIJKLMNOPQRSTUVWXYZ" `list))
-;;         (alphazip (mapcar #'list (cdr alphabet) alphabet))
-;;         (expr (map 'list #'(lambda (z) `(def-lazy ,(string (car z)) (succ ,(string (car (cdr z)))))) alphazip)))
-;;     `(progn ,@expr)))
-;; (def-alphabet-lazy)
-;; ;; (def-lazy "B" (succ "A"))
+(def-lazy "A" (succ 64))
+(defmacro def-alphabet-lazy ()
+  (let* ((alphabet (coerce "ABCDEFGHIJKLMNOPQRSTUVWXYZ" `list))
+        (alphazip (mapcar #'list (cdr alphabet) alphabet))
+        (expr (map 'list #'(lambda (z) `(def-lazy ,(string (car z)) (succ ,(string (car (cdr z)))))) alphazip)))
+    `(progn ,@expr)))
+(def-alphabet-lazy)
+;; (def-lazy "B" (succ "A"))
 
 (def-lazy "a" (succ (+ 64 32)))
 (defmacro def-alphabet-lazy ()
@@ -272,7 +272,8 @@
   `(Y-comb (lambda (,name) (lambda ,args ,body))))
 
 (defmacro defrec-lazy (name args body)
-  `(def-lazy ,name (letrec-lazy ,name ,args ,body)))
+  `(def-lazy ,name
+    ((lambda ,args ((letrec-lazy ,name ,args ,body) ,@args)))))
 
 (defmacro-lazy -> (target &rest args)
   (if (not args)
@@ -289,9 +290,6 @@
           (take (pred n) (cdr l) (cons (car l) ret)))))
    n l nil))
 
-;; (defmacro-lazy take (n list)
-;;   `(take* ,n ,list nil))
-
 (defrec-lazy length (l)
   ((letrec-lazy length (l n)
       (if (isnil l)
@@ -299,6 +297,10 @@
         (length (cdr l) (succ n))))
     l 0))
 
+(defrec-lazy reverse* (l curlist)
+  (if (isnil l) curlist (reverse* (cdr l) (cons (car l) curlist))))
+(defun-lazy reverse (l)
+  (reverse* l nil))
 
 
 (defun compile-to-blc (expr)
