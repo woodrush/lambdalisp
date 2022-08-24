@@ -4,7 +4,7 @@
 (defrec-lazy Evcon (c a cont)
   (do
     (<- (x) (car-data c))
-    (<- (x) (car-data c))
+    (<- (x) (car-data x))
     (<- (expr) (Eval x a))
     (cond
       ((isnil expr)
@@ -14,8 +14,8 @@
       (t
         (do
           (<- (x) (car-data c))
-          (<- (x) (cdr-data c))
-          (<- (x) (car-data c))
+          (<- (x) (cdr-data x))
+          (<- (x) (car-data x))
           (Eval x a cont))))))
 
 (defrec-lazy Evlis (m a cont)
@@ -25,10 +25,10 @@
     (t
       (do
         (<- (x) (car-data m))
+        (<- (x) (Eval x a))
         (<- (y) (cdr-data m))
-        (<- (v) (Eval x a))
-        (<- (w) (Evlis y a))
-        (cons-data v w cont)))))
+        (<- (y) (Evlis y a))
+        (cons-data x y cont)))))
 
 (defrec-lazy Assoc (x y cont)
   (do
@@ -79,9 +79,12 @@
           (t
             (do
               (<- (x) (car-data e))
-              (<- (p) (cdr-data e))
-              (<- (p) (Evlis p a))
-              (Apply x p a cont)))))
+              (<- (y) (cdr-data e))
+              (<- (y) (Evlis y a))
+              (Apply x y a cont)
+              )
+              )
+              ))
               )))
 
 (defrec-lazy Apply (f x a cont)
