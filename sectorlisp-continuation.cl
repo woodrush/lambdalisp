@@ -70,13 +70,14 @@
 ;;================================================================
 ;; Printing
 ;;================================================================
-(defun-lazy append-item-to-stream (stream item)
-  (lambda (x) (stream (cons item x))))
+(defrec-lazy reverse (l curlist cont)
+  (if (isnil l) (cont curlist) (reverse (cdr l) (cons (car l) curlist) cont)))
 
-(defrec-lazy append-list (l item curstream cont)
-  (if (isnil l)
-    (cont (curstream item))
-    (append-list (cdr l) item (append-item-to-stream curstream (car l)) cont)))
+(defun-lazy append-list (l item cont)
+  (do
+    (<- (reversed) (reverse l nil))
+    (<- (reversed) (reverse reversed item))
+    (cont reversed)))
 
 (defrec-lazy printexpr-helper (expr mode cont)
   (cond
@@ -84,7 +85,7 @@
       (typematch expr
         ;; atom
         (do
-          (<- (outstr) (append-list (valueof expr) cont (lambda (x) x)))
+          (<- (outstr) (append-list (valueof expr) cont))
           outstr)
         ;; list
         (cons "(" (printexpr-helper expr nil (cons ")" cont)))
@@ -101,7 +102,7 @@
               (cdr-data expr
                 (lambda (cdr-ed)
                   (cons " " (cons "." (cons " "
-                  (append-list (valueof cdr-ed) cont (lambda (x) x) (lambda (x) x))
+                  (append-list (valueof cdr-ed) cont (lambda (x) x))
                   )))))
               ;; list
               (cdr-data expr
@@ -112,9 +113,6 @@
 
 (defun-lazy printexpr (expr cont)
   (printexpr-helper expr t cont))
-
-(defrec-lazy reverse (l curlist cont)
-  (if (isnil l) (cont curlist) (reverse (cdr l) (cons (car l) curlist) cont)))
 
 
 ;;================================================================
@@ -195,17 +193,29 @@
 ;;================================================================
 ;; Evaluation helpers
 ;;================================================================
-(defrec-lazy eval-cond (clauselist evalret cont)
+(defun-lazy new-evalstate (varenv stdin globalenv cont)
+  (cont (list varenv stdin globalenv)))
+
+(defmacro-lazy let-parse-evalstate (evalstate varenv stdin globalenv body)
+  `(let ((evtmp ,evalstate)
+         (,varenv      (car evtmp))
+         (evtmp (cdr evtmp))
+         (,stdin       (car evtmp))
+         (evtmp (cdr evtmp))
+         (,globalenv   (car evtmp)))
+      ,body))
+
+(defrec-lazy eval-cond (clauselist evalstate cont)
   (do
     (<- (carclause) (car-data clauselist))
     (<- (carcond) (car-data carclause))
     (<- (cdr-ed) (cdr-data carclause))
     (<- (carbody) (car-data cdr-ed))
-    (<- (expr evalret) (eval carcond evalret))
+    (<- (expr evalstate) (eval carcond evalstate))
     (<- (cdr-ed) (cdr-data clauselist))
     (if (isnil expr)
-      (eval-cond cdr-ed evalret cont)
-      (eval carbody evalret cont))))
+      (eval-cond cdr-ed evalstate cont)
+      (eval carbody evalstate cont))))
 
 (defrec-lazy varenv-lookup (varenv varval cont)
   (let ((pair (car varenv))
@@ -218,23 +228,23 @@
           (t
             (varenv-lookup (cdr varenv) varval cont)))))
 
-(defrec-lazy eval-map-base (lexpr curexpr evalret cont)
+(defrec-lazy eval-map-base (lexpr curexpr evalstate cont)
   (cond ((isnil lexpr)
-          (cont curexpr evalret))
+          (cont curexpr evalstate))
         (t
           (do
             (<- (car-ed) (car-data lexpr))
-            (<- (expr evalret) (eval car-ed evalret))
+            (<- (expr evalstate) (eval car-ed evalstate))
             (let* expr-list (cons expr nil))
-            (<- (appended) (append-list curexpr expr-list (lambda (x) x)))
+            (<- (appended) (append-list curexpr expr-list))
             (<- (cdr-ed) (cdr-data lexpr))
-            (eval-map-base cdr-ed appended evalret cont)))))
+            (eval-map-base cdr-ed appended evalstate cont)))))
 
 (defrec-lazy prepend-envzip (argnames evargs env curenv cont)
   (cond ((isnil argnames)
           (do
             (<- (reversed) (reverse curenv nil))
-            (<- (appended) (append-list reversed env (lambda (x) x)))
+            (<- (appended) (append-list reversed env))
             (cont appended)))
         (t
           (do
@@ -246,102 +256,90 @@
             (let* next-curenv (cons inner-cons curenv))
             (prepend-envzip cdr-ed next-evargs env next-curenv cont)))))
 
-(defun-lazy eval-lambda (lambdaexpr callargs evalret cont)
+(defun-lazy eval-lambda (lambdaexpr callargs evalstate cont)
   (do
     (<- (lambda-cdr) (cdr-data lambdaexpr))
     (<- (argnames) (car-data lambda-cdr))
     (<- (cdr-ed) (cdr-data lambda-cdr))
     (<- (lambdabody) (car-data cdr-ed))
-    (let* varenv-orig (car evalret))
-    (<- (argvalues evalret) (eval-map-base callargs nil evalret))
-    (let-parse-evalret* evalret varenv stdin globalenv)
+    (let* varenv-orig (car evalstate))
+    (<- (argvalues evalstate) (eval-map-base callargs nil evalstate))
+    (let-parse-evalstate evalstate varenv stdin globalenv)
     (<- (envzip) (prepend-envzip argnames argvalues varenv nil))
-    (<- (new-evalret) (evalret* envzip stdin globalenv))
-    (<- (expr evalret) (eval lambdabody new-evalret))
-    (let-parse-evalret* evalret varenv stdin globalenv)
+    (<- (evalstate-new) (new-evalstate envzip stdin globalenv))
+    (<- (expr evalstate) (eval lambdabody evalstate-new))
+    (let-parse-evalstate evalstate varenv stdin globalenv)
     ;; Evaluate the rest of the arguments in the original environment
-    (<- (new-evalret) (evalret* varenv-orig stdin globalenv))
-    (cont expr new-evalret)))
-
-(defun-lazy evalret* (varenv stdin globalenv cont)
-  (cont (list varenv stdin globalenv)))
-
-(defmacro-lazy let-parse-evalret* (evalret varenv stdin globalenv body)
-  `(let ((evtmp ,evalret)
-         (,varenv      (car evtmp))
-         (evtmp (cdr evtmp))
-         (,stdin       (car evtmp))
-         (evtmp (cdr evtmp))
-         (,globalenv   (car evtmp)))
-      ,body))
+    (<- (evalstate-new) (new-evalstate varenv-orig stdin globalenv))
+    (cont expr evalstate-new)))
 
 
 ;;================================================================
 ;; Evaluation
 ;;================================================================
-(defrec-lazy eval (expr evalret cont)
+(defrec-lazy eval (expr evalstate cont)
   (typematch expr
     ;; atom
-    (let-parse-evalret* evalret varenv stdin globalenv
+    (let-parse-evalstate evalstate varenv stdin globalenv
       (cond
         ((isnil globalenv)
           (varenv-lookup
             varenv
             (valueof expr)
             (lambda (ret)
-              (cont ret evalret))))
+              (cont ret evalstate))))
         (t
-          (append-list varenv globalenv (lambda (x) x)
+          (append-list varenv globalenv
             (lambda (appended)
               (varenv-lookup
                 appended
                 (valueof expr)
                 (lambda (ret)
-                  (cont ret evalret))))))))
+                  (cont ret evalstate))))))))
     ;; list
     (do
-      (let* evalret-top evalret)
+      (let* evalstate-top evalstate)
       (<- (head) (car-data expr))
       (let* head-index (valueof head))
       (<- (tail) (cdr-data expr))
       (<- (car-tail) (car-data tail))
       (let* quote-case
-        (cont car-tail evalret))
+        (cont car-tail evalstate))
       (let* car-case
-        (eval car-tail evalret
-          (lambda (expr evalret)
+        (eval car-tail evalstate
+          (lambda (expr evalstate)
             (car-data expr
               (lambda (car-ed)
-                (cont car-ed evalret))))))
+                (cont car-ed evalstate))))))
       (let* cdr-case
-        (eval car-tail evalret
-          (lambda (expr evalret)
+        (eval car-tail evalstate
+          (lambda (expr evalstate)
             (cdr-data expr
               (lambda (cdr-ed)
-                (cont cdr-ed evalret))))))
+                (cont cdr-ed evalstate))))))
       (let* cons-case
-        (eval car-tail evalret
-          (lambda (cons-x evalret)
+        (eval car-tail evalstate
+          (lambda (cons-x evalstate)
             (cdr-data tail
               (lambda (cdr-ed)
                 (car-data cdr-ed
                   (lambda (car-ed)
-                    (eval car-ed evalret
-                      (lambda (cons-y evalret)
+                    (eval car-ed evalstate
+                      (lambda (cons-y evalstate)
                         (cons-data cons-x cons-y
                           (lambda (consed)
-                            (cont consed evalret))))))))))))
+                            (cont consed evalstate))))))))))))
       (let* atom-case
-        (eval car-tail evalret
-          (lambda (expr evalret)
-            (cont (truth-data (isatom expr)) evalret))))
+        (eval car-tail evalstate
+          (lambda (expr evalstate)
+            (cont (truth-data (isatom expr)) evalstate))))
       (let* eq-case
         (do
           (<- (car-ed) (car-data tail))
-          (<- (eq-x evalret) (eval car-ed evalret))
+          (<- (eq-x evalstate) (eval car-ed evalstate))
           (<- (cdr-ed) (cdr-data tail))
           (<- (car-ed) (car-data cdr-ed))
-          (<- (eq-y evalret) (eval car-ed evalret))
+          (<- (eq-y evalstate) (eval car-ed evalstate))
           (cont
             (cond ((and (isnil eq-x) (isnil eq-y))
                     t-data)
@@ -351,39 +349,39 @@
                     nil)
                   (t
                     (truth-data (stringeq (valueof eq-x) (valueof eq-y)))))
-            evalret)))
+            evalstate)))
       (let* cond-case
-        (eval-cond tail evalret cont))
+        (eval-cond tail evalstate cont))
       (let* print-case
         (if (isnil tail)
-          (cons "\\n" (cont nil evalret))
-          (eval car-tail evalret
-            (lambda (expr evalret)
-              (let ((next-text (cont expr evalret)))
+          (cons "\\n" (cont nil evalstate))
+          (eval car-tail evalstate
+            (lambda (expr evalstate)
+              (let ((next-text (cont expr evalstate)))
                 (printexpr expr next-text))))))
       (let* read-case
-        (let-parse-evalret* evalret varenv stdin globalenv
+        (let-parse-evalstate evalstate varenv stdin globalenv
           (read-expr stdin nil nil
             (lambda (expr stdin)
-              (evalret* varenv stdin globalenv
-                (lambda (new-evalret)
-                  (cont expr new-evalret)))))))
+              (new-evalstate varenv stdin globalenv
+                (lambda (evalstate-new)
+                  (cont expr evalstate-new)))))))
       (let* def-case
         (do
           (<- (varname) (car-data tail))
           (<- (cdr-ed) (cdr-data tail))
           (<- (defbody) (car-data cdr-ed))
-          (<- (expr evalret) (eval defbody evalret))
-          (let-parse-evalret* evalret varenv stdin globalenv)
+          (<- (expr evalstate) (eval defbody evalstate))
+          (let-parse-evalstate evalstate varenv stdin globalenv)
           (<- (consed) (cons-data varname nil))
           (let* x (cons expr nil))
           (<- (envzip) (prepend-envzip consed x globalenv nil))
-          (<- (new-evalret) (evalret* varenv stdin envzip))
-          (cont expr new-evalret)))
+          (<- (evalstate-new) (new-evalstate varenv stdin envzip))
+          (cont expr evalstate-new)))
       (let* default-case
-        (eval head evalret
-          (lambda (expr evalret)
-            (eval-lambda expr tail evalret cont))))
+        (eval head evalstate
+          (lambda (expr evalstate)
+            (eval-lambda expr tail evalstate cont))))
       (let* c-top (car head-index))
       (let* c-tail (cdr head-index))
       (let* cmp-result (cmp-bit c-top "C"))
@@ -437,11 +435,11 @@
                 read-case
                 default-case))))
         ;; list: parse as lambda
-        (eval-lambda head tail evalret-top cont)
+        (eval-lambda head tail evalstate-top cont)
         ;; nil
-        (cont nil evalret)))
+        (cont nil evalstate)))
     ;; nil
-    (cont nil evalret)))
+    (cont nil evalstate)))
 
 
 ;;================================================================
@@ -459,9 +457,9 @@
       stringterm
       (do
         (<- (expr stdin) (read-expr stdin nil nil))
-        (<- (new-evalret) (evalret* varenv stdin globalenv))
-        (<- (expr evalret) (eval expr new-evalret))
-        (let-parse-evalret* evalret varenv stdin globalenv)
+        (<- (evalstate-new) (new-evalstate varenv stdin globalenv))
+        (<- (expr evalstate) (eval expr evalstate-new))
+        (let-parse-evalstate evalstate varenv stdin globalenv)
         (let* repl-next (repl varenv stdin globalenv))
         (let* text-next (cons "\\n" repl-next))
         (printexpr expr text-next))))))
