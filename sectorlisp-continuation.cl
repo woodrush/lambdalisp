@@ -129,11 +129,11 @@
             (cont stdin)))))
 
 (defrec-lazy reverse-base2data (l curlist cont)
-  (do
-    (<- (consed) (cons-data (car l) curlist))
-    (if-then-return (isnil l)
-      (cont curlist))
-    (reverse-base2data (cdr l) consed cont)))
+  (if (isnil l)
+    (cont curlist)
+    (do
+      (<- (consed) (cons-data (car l) curlist))
+      (reverse-base2data (cdr l) consed cont))))
 
 (defrec-lazy read-list (stdin curexpr cont)
   (do
@@ -148,8 +148,6 @@
 
 (defrec-lazy read-expr (stdin cont)
   (do
-    (if-then-return (isnil stdin)
-      nil)
     (<- (stdin) (read-skip-whitespace stdin))
     (if-then-return (isnil stdin)
       nil)
@@ -258,6 +256,8 @@
 (def-lazy "READ" (list "R" "E" "A" "D"))
 (def-lazy "DEF" (list "D" "E" "F"))
 (def-lazy "DEFINE" (list "D" "E" "F" "I" "N" "E"))
+(def-lazy "AS" (list "A" "S"))
+(def-lazy "LAMBDA" (list "L" "A" "M" "B" "D" "A"))
 (def-lazy "NIL" (list "N" "I" "L"))
 
 (defun-lazy truth-data (expr)
@@ -371,8 +371,13 @@
           (if-then-return (stringeq* head-index "DEFINE")
             (do
               (<- (varname) (car-data tail))
-              (<- (cdr-ed) (cdr-data tail))
-              (<- (defbody) (car-data cdr-ed))
+              (<- (tail) (cdr-data tail))
+              (<- (option) (car-data tail))
+              (<- (tail) (cdr-data tail))
+              (let* defbody
+                (if (stringeq* (valueof option) "AS")
+                  (cons-data (atom* "LAMBDA") tail (lambda (x) x))
+                  (car-data tail (lambda (x) x))))
               (<- (consed) (cons-data varname nil))
               (let* x (cons defbody nil))
               (<- (envzip) (prepend-envzip consed x globalenv nil))
@@ -397,7 +402,7 @@
 ;;================================================================
 (def-lazy stringterm nil)
 
-(def-lazy initial-varenv
+(def-lazy initial-globalenv
   (list
     (cons "NIL" nil)))
 
@@ -405,8 +410,6 @@
   (cons "*" (cons " "
     (do
       (<- (expr stdin) (read-expr stdin))
-      (if-then-return (isnil expr)
-        stringterm)
       (<- (evalstate-new) (new-evalstate varenv stdin globalenv))
       (<- (expr evalstate) (eval expr evalstate-new))
       (let-parse-evalstate evalstate varenv stdin globalenv)
@@ -416,7 +419,7 @@
 
 
 (defun-lazy main (stdin)
-  (repl initial-varenv stdin nil))
+  (repl nil stdin initial-globalenv))
 
 
 ;;================================================================
