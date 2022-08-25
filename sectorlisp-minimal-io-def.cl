@@ -317,7 +317,8 @@
     (let* gen-symbols (lambda (cont)
       (do
         (let* symbol-prefix symbol-prefix)
-        (cont "."
+        (cont "*"
+              "."
               " "
               "\\n"
               "("
@@ -344,7 +345,7 @@
          kCons
          kCond
          kNil
-        ;;  t-atom
+         "*"
          "."
          " "
          "\\n"
@@ -356,9 +357,11 @@
     (let* isnil isnil)
     (let* stringeq stringeq)
     (let* reverse reverse)
-    (<- (expr stdin) (read-expr stdin))
-    (<- (expr a stdin) (Eval expr a stdin))
-    (printexpr expr (cons "\\n" (repl a stdin)))))
+    (cons "*" (cons " "
+      (do
+        (<- (expr stdin) (read-expr stdin))
+        (<- (expr a stdin) (Eval expr a stdin))
+        (printexpr expr (cons "\\n" (repl a stdin))))))))
 
 (defun-lazy main (stdin)
   (repl (atom* nil) stdin))
@@ -433,6 +436,7 @@
 (def-lazy " "   (symbol-prefix (p-t-t (p-t-t nil))))
 (def-lazy "."   (symbol-prefix (p-nil-nil (p-nil-t nil))))
 (def-lazy "\\n" (p-t-t (symbol-prefix (p-nil-t nil))))
+(def-lazy "*"   (symbol-prefix (p-nil-t (p-nil-t nil))))
 
 ;; (def-lazy "*" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
 ;; (def-lazy "?" (cons t (cons t (cons nil (cons nil (cons nil (cons nil (cons nil (cons nil nil)))))))))
