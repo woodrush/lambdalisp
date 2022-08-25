@@ -57,6 +57,7 @@
 
 (defrec-lazy Eval (e a cont)
   (do
+    (let* Assoc Assoc)
     (let* stringeq stringeq)
     (let* cons-data cons-data)
     (let* isnil-data isnil-data)
