@@ -58,6 +58,12 @@
               (do
                 (<- (expr stdin) (read-expr stdin))
                 (cont expr a stdin)))
+            ((stringeq val-e kPrint)
+              (do
+                (if-then-return (isnil-data cdr-e)
+                  (cons "\\n" (cont (atom* nil) a stdin)))
+                (<- (expr a stdin) (Eval (car-data* cdr-e) a stdin))
+                (printexpr expr (cont expr a stdin))))
             ((stringeq val-e kCond)
               (Evcon cdr-e a stdin cont))
             (t
