@@ -195,11 +195,15 @@
   (do
     (let* isnil-s1 (isnil s1))
     (let* isnil-s2 (isnil s2))
-    (if-then-return isnil-s1 isnil-s2)
-    (if-then-return isnil-s2 isnil-s1)
-    (if-then-return (=-bit (car s1) (car s2))
-      (stringeq (cdr s1) (cdr s2)))
-    nil))
+    (cond
+      (isnil-s1
+        isnil-s2)
+      (isnil-s2
+        isnil-s1)
+      ((=-bit (car s1) (car s2))
+        (stringeq (cdr s1) (cdr s2)))
+      (t
+        nil))))
 
 (defrec-lazy reverse-base2data (l curlist cont)
   (if (isnil l)
