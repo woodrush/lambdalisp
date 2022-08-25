@@ -218,9 +218,10 @@
       ((or (=-bit "(" c) (=-bit ")" c) (=-bit " " c) (=-bit "\\n" c))
         (do
           (let* reversed (reverse curstr nil))
+          (let* next (lambda (x) (cont (atom* x) stdin)))
           (if-then-return (stringeq reversed kNil)
-            (cont (atom* nil) stdin))
-          (cont (atom* reversed) stdin)))
+            (next nil))
+          (next reversed)))
       (t
         (do
           (read-atom* (cons (car stdin) curstr) (cdr stdin) cont))))))
@@ -285,16 +286,16 @@
           ;; (let* "M" "M")
           ;; (let* "S" "S")
           ;; (let* "U" "U")
-          (let* "A" "A")
-          (let* "D" "D")
           (let* "E" "E")
           (let* "Q" "Q")
+          (let* "A" "A")
+          (let* "D" "D")
           ;; (let* "R" "R")
           (let* "N" "N")
           (let* "T" "T")
           ;; (let* "C" "C")
           (let* "O" "O")
-          (<- (prefix-CON gen-CXR) ((lambda (cont)
+          (<- (gen-CONX gen-CXR) ((lambda (cont)
             (do
               (let* "C" "C")
               (cont
@@ -306,8 +307,8 @@
             (gen-CXR "A") ;kCar
             (gen-CXR "D") ;kCdr
             (list "E" "Q"); kEq
-            (prefix-CON (list "S")) ;kCons
-            (prefix-CON (list "D")) ;kCond
+            (gen-CONX (list "S")) ;kCons
+            (gen-CONX (list "D")) ;kCond
             (list "N" "I" "L") ;kNil
             (atom* (list "T")) ;t-atom
         ))))
