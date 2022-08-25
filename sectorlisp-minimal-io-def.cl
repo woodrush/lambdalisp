@@ -20,12 +20,14 @@
         (<- (y _ stdin) (Evlis (cdr-data* m) a stdin))
         (cont (cons-data* x y) a stdin)))))
 
-(defrec-lazy Assoc (x y cont)
+(defrec-lazy Assoc (x y stdin cont)
   (cond
+    ((isnil-data y)
+      (cons "?" (printexpr x (cons "\\n" (repl a stdin)))))
     ((stringeq (valueof x) (valueof (car-data* (car-data* y))))
       (cont (cdr-data* (car-data* y))))
     (t
-      (Assoc x (cdr-data* y) cont))))
+      (Assoc x (cdr-data* y) stdin cont))))
 
 (defrec-lazy Pairlis (x y a cont)
   (cond
@@ -46,7 +48,7 @@
         (cont e a stdin))
       ((isatom e)
         (do
-          (<- (expr) (Assoc e a))
+          (<- (expr) (Assoc e a stdin))
           (cont expr a stdin)))
       (t
         (do
@@ -113,7 +115,7 @@
             (cont (cdr-data* car-x) a stdin))
           (t
             (do
-              (<- (p) (Assoc f a))
+              (<- (p) (Assoc f a stdin))
               (Apply p x a stdin cont))))))
     (t
       (do
@@ -317,7 +319,8 @@
     (let* gen-symbols (lambda (cont)
       (do
         (let* symbol-prefix symbol-prefix)
-        (cont "*"
+        (cont "?"
+              "*"
               "."
               " "
               "\\n"
@@ -345,6 +348,7 @@
          kCons
          kCond
          kNil
+         "?"
          "*"
          "."
          " "
@@ -437,6 +441,7 @@
 (def-lazy "."   (symbol-prefix (p-nil-nil (p-nil-t nil))))
 (def-lazy "\\n" (p-t-t (symbol-prefix (p-nil-t nil))))
 (def-lazy "*"   (symbol-prefix (p-nil-t (p-nil-t nil))))
+(def-lazy "?"   (p-t-t (p-nil-nil (p-nil-nil (p-nil-nil nil)))))
 
 ;; (def-lazy "*" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
 ;; (def-lazy "?" (cons t (cons t (cons nil (cons nil (cons nil (cons nil (cons nil (cons nil nil)))))))))
