@@ -20,13 +20,13 @@
         (<- (y a stdin) (Evlis (cdr-data* m) a stdin))
         (cont (cons-data* x y) a stdin)))))
 
-(defrec-lazy Assoc (x y a stdin cont)
+(defrec-lazy Assoc (x y cont)
   (do
     (cond
       ((stringeq (valueof x) (valueof (car-data* (car-data* y))))
-        (cont (cdr-data* (car-data* y)) a stdin))
+        (cont (cdr-data* (car-data* y))))
       (t
-        (Assoc x (cdr-data* y) a stdin cont)))))
+        (Assoc x (cdr-data* y) cont)))))
 
 (defrec-lazy Pairlis (x y a cont)
   (cond
@@ -46,7 +46,9 @@
       ((isnil-data e)
         (cont e a stdin))
       ((isatom e)
-        (Assoc e a a stdin cont))
+        (do
+          (<- (expr) (Assoc e a))
+          (cont expr a stdin)))
       (t
         (do
           (let* cdr-e (cdr-data* e))
@@ -95,13 +97,14 @@
             (cont (cdr-data* car-x) a stdin))
           (t
             (do
-              (<- (p a stdin) (Assoc f a a stdin))
+              (<- (p) (Assoc f a))
               (Apply p x a stdin cont))))))
     (t
       (do
         (let* cdr-f (cdr-data* f))
         (<- (q) (Pairlis (car-data* cdr-f) x a))
-        (Eval (car-data* (cdr-data* cdr-f)) q stdin cont)))))
+        (Eval (car-data* (cdr-data* cdr-f)) q stdin cont)
+        ))))
 
 
 ;;================================================================
@@ -331,7 +334,7 @@
     (printexpr expr (cons "\\n" (repl a stdin)))))
 
 (defun-lazy main (stdin)
-  (repl nil stdin))
+  (repl (atom* nil) stdin))
 
 
 ;;================================================================
