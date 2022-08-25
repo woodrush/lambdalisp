@@ -172,13 +172,13 @@
 ;;================================================================
 ;; Printing
 ;;================================================================
-(defrec-lazy reverse (l curlist cont)
-  (if (isnil l) (cont curlist) (reverse (cdr l) (cons (car l) curlist) cont)))
+(defrec-lazy reverse (l curlist)
+  (if (isnil l) curlist (reverse (cdr l) (cons (car l) curlist))))
 
 (defun-lazy append-list (l item)
   (do
-    (<- (reversed) (reverse l nil))
-    (<- (reversed) (reverse reversed item))
+    (let* reversed (reverse l nil))
+    (let* reversed (reverse reversed item))
     reversed))
 
 (defun-lazy printatom (expr cont)
@@ -225,7 +225,7 @@
     (cond
       ((or (=-bit "(" c) (=-bit ")" c) (=-bit " " c) (=-bit "\\n" c))
         (do
-          (<- (reversed) (reverse curstr nil))
+          (let* reversed (reverse curstr nil))
           (if-then-return (stringeq reversed kNil)
             (cont (atom* nil) stdin))
           (cont (atom* reversed) stdin)))
@@ -324,6 +324,7 @@
       (let* cdr-data cdr-data)
       (let* car-data car-data)
       (let* reverse reverse)
+      (let* Y-comb Y-comb)
       (<- (expr stdin) (read-expr stdin))
       (<- (expr) (Eval expr nil))
       (printexpr expr (cons "\\n" (main stdin))))))
