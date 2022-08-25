@@ -270,10 +270,7 @@
         (read-atom stdin cont)))))
 
 
-;;================================================================
-;; User interface
-;;================================================================
-(defrec-lazy main (stdin)
+(defun-lazy string-generator (cont)
   (do
     (let* p-nil-nil p-nil-nil)
     (let* p-nil-t p-nil-t)
@@ -304,16 +301,56 @@
     (let* "T" "T")
     (let* "C" "C")
     (let* "O" "O")
-    (let* kQuote (list "Q" "U" "O" "T" "E"))
-    (let* kAtom  (list "A" "T" "O" "M"))
-    (let* kCar   (list "C" "A" "R"))
-    (let* kCdr   (list "C" "D" "R"))
-    (let* kNil   (list "N" "I" "L"))
+    ;; (let* kQuote (list "Q" "U" "O" "T" "E"))
+    ;; (let* kAtom  (list "A" "T" "O" "M"))
+    ;; (let* kCar   (list "C" "A" "R"))
+    ;; (let* kCdr   (list "C" "D" "R"))
+    ;; (let* kNil   (list "N" "I" "L"))
     (let* prefix-CON (lambda (x) (cons "C" (cons "O" (cons "N" x)))))
-    (let* kEq    (list "E" "Q"))
-    (let* kCons  (prefix-CON (list "S")))
-    (let* kCond  (prefix-CON (list "D")))
-    (let* t-atom (atom* (list "T")))
+    ;; (let* kEq    (list "E" "Q"))
+    ;; (let* kCons  (prefix-CON (list "S")))
+    ;; (let* kCond  (prefix-CON (list "D")))
+    ;; (let* t-atom (atom* (list "T")))
+    (cont
+    " " 
+    "\\n"
+    "." 
+    "(" 
+    ")" 
+    (list "Q" "U" "O" "T" "E") ;kQuote
+    (list "A" "T" "O" "M") ;kAtom 
+    (list "C" "A" "R") ;kCar  
+    (list "C" "D" "R") ;kCdr  
+    (list "N" "I" "L") ;kNil  
+    (list "E" "Q"); kEq    
+    (prefix-CON (list "S")) ;kCons  
+    (prefix-CON (list "D")) ;kCond  
+    (atom* (list "T")) ;t-atom 
+    )
+    ))
+
+;;================================================================
+;; User interface
+;;================================================================
+(defrec-lazy main (stdin)
+  (do
+    (<- (
+      " " 
+    "\\n"
+    "." 
+    "(" 
+    ")" 
+    kQuote
+    kAtom 
+    kCar  
+    kCdr  
+    kNil  
+    kEq    
+    kCons  
+    kCond  
+    t-atom
+    
+    ) (string-generator))
     (let* cons-data cons-data)
     (let* Y-comb Y-comb)
     (let* isnil isnil)
