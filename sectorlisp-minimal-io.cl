@@ -46,7 +46,7 @@
       ((isnil-data e)
         (cont e a stdin))
       ((isatom e)
-        (Assoc e a stdin cont))
+        (Assoc e a a stdin cont))
       (t
         (do
           (let* cdr-e (cdr-data* e))
@@ -55,10 +55,10 @@
             ((stringeq val-e kQuote)
               (cont (car-data* cdr-e) a stdin))
             ((stringeq val-e kCond)
-              (Evcon cdr-e a cont a stdin))
+              (Evcon cdr-e a stdin cont))
             (t
               (do
-                (<- (y a) (Evlis cdr-e a stdin))
+                (<- (y a stdin) (Evlis cdr-e a stdin))
                 (Apply (car-data* e) y a stdin cont)))))))))
 
 (defrec-lazy Apply (f x a stdin cont)
@@ -85,12 +85,12 @@
             (cont (cdr-data* car-x) a stdin))
           (t
             (do
-              (<- (p) (Assoc f a))
+              (<- (p a stdin) (Assoc f a a stdin))
               (Apply p x a stdin cont))))))
     (t
       (do
         (let* cdr-f (cdr-data* f))
-        (<- (q) (Pairlis (car-data* cdr-f) x a stdin))
+        (<- (q a stdin) (Pairlis (car-data* cdr-f) x a stdin))
         (Eval (car-data* (cdr-data* cdr-f)) q stdin cont)))))
 
 
@@ -317,7 +317,7 @@
     (let* stringeq stringeq)
     (let* reverse reverse)
     (<- (expr stdin) (read-expr stdin))
-    (<- (expr a stdin) (Eval expr nil))
+    (<- (expr a stdin) (Eval expr a stdin))
     (printexpr expr (cons "\\n" (repl a stdin)))))
 
 (defun-lazy main (stdin)
