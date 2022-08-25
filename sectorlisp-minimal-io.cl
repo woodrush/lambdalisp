@@ -70,7 +70,7 @@
               (Evcon cdr-e a stdin cont))
             (t
               (do
-                (<- (y a stdin) (Evlis cdr-e a stdin))
+                (<- (y adash stdin) (Evlis cdr-e a stdin))
                 (Apply (car-data* e) y a stdin cont)))))))))
 
 (defrec-lazy Apply (f x a stdin cont)
