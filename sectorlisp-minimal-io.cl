@@ -62,9 +62,9 @@
             ((stringeq val-e kPrint)
               (do
                 (if-then-return (isnil-data cdr-e)
-                  (cons "\\n" (cont (atom* nil) a stdin)))
+                  (cons "\\n" (cont cdr-e stdin)))
                 (<- (expr stdin) (Eval (car-data* cdr-e) a stdin))
-                (printexpr expr (cont expr a stdin))))
+                (printexpr expr (cont expr stdin))))
             ((stringeq val-e kCond)
               (Evcon cdr-e a stdin cont))
             (t
@@ -305,7 +305,7 @@
 ;;================================================================
 ;; User interface
 ;;================================================================
-(defrec-lazy repl (stdin)
+(defrec-lazy main (stdin)
   (do
     (<- (
          kPrint
@@ -331,11 +331,8 @@
     (let* stringeq stringeq)
     (let* reverse reverse)
     (<- (expr stdin) (read-expr stdin))
-    (<- (expr stdin) (Eval expr a stdin))
-    (printexpr expr (cons "\\n" (repl stdin)))))
-
-(defun-lazy main (stdin)
-  (repl (atom* nil) stdin))
+    (<- (expr stdin) (Eval expr (atom* nil) stdin))
+    (printexpr expr (cons "\\n" (main stdin)))))
 
 
 ;;================================================================
