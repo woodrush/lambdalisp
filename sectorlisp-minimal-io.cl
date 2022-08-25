@@ -272,23 +272,26 @@
           (let* "N" "N")
           (let* "T" "T")
           (let* "O" "O")
+          (let* list4 (lambda (a b c d) (list a b c d)))
           (<- (gen-CONX gen-CXR) ((lambda (cont)
             (do
               (let* "C" "C")
               (cont
-                (lambda (x) (cons "C" (cons "O" (cons "N" (cons x nil)))))
-                (lambda (x) (cons "C" (cons x (cons "R" nil)))))))))
+                (lambda (x) (list4 "C" "O" "N" x))
+                (lambda (x) (cdr (list4 nil "C" x "R")))
+                ;; (lambda (x) (cons "C" (cons x (cons "R" nil))))
+                )))))
           (cont
-            (list "P" "R" "I" "N" "T")
-            (list "R" "E" "A" "D")
-            (list "Q" "U" "O" "T" "E") ;kQuote
-            (list "A" "T" "O" "M") ;kAtom
+            (cons "P" (list4 "R" "I" "N" "T"))
+            (list4 "R" "E" "A" "D")
+            (cons "Q" (list4 "U" "O" "T" "E")) ;kQuote
+            (list4 "A" "T" "O" "M") ;kAtom
             (gen-CXR "A") ;kCar
             (gen-CXR "D") ;kCdr
             (list "E" "Q"); kEq
             (gen-CONX "S") ;kCons
             (gen-CONX "D") ;kCond
-            (list "N" "I" "L") ;kNil
+            (cdr (list4 nil "N" "I" "L")) ;kNil
             ;; (atom* (list "T")) ;t-atom
         ))))
     (let* gen-symbols (lambda (cont)
