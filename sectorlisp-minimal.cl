@@ -191,7 +191,7 @@
     (typematch expr
       ;; atom
       (if (isnil-data expr)
-        (cons "N" (cons "I" (cons "L" cont)))
+        (printatom (atom* kNil) cont)
         (printatom expr cont))
       ;; list
       (cons "(" (printlist expr cont)))))
@@ -200,6 +200,8 @@
   (do
     (<- (car-ed) (car-data expr))
     (<- (cdr-ed) (cdr-data expr))
+    (let* ")" ")")
+    (let* " " " ")
     (printexpr car-ed
       (typematch cdr-ed
         ;; atom
@@ -330,6 +332,8 @@
     (let* cdr-data cdr-data)
     (let* car-data car-data)
     (let* reverse reverse)
+    (let* " " " ")
+    (let* "\\n" "\\n")
     (<- (expr stdin) (read-expr stdin))
     (<- (expr) (Eval expr nil))
     (printexpr expr (cons "\\n" (main stdin)))))
