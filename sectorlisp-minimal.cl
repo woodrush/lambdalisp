@@ -22,10 +22,8 @@
 
 (defrec-lazy Assoc (x y cont)
   (do
-    (let* car-y  (car-data* y))
-    (let* caar-y (car-data* car-y))
     (cond
-      ((stringeq (valueof x) (valueof caar-y))
+      ((stringeq (valueof x) (valueof (car-data* (car-data* y))))
         (cont (cdr-data* (car-data* y))))
       (t
         (Assoc x (cdr-data* y) cont)))))
@@ -51,9 +49,8 @@
         (Assoc e a cont))
       (t
         (do
-          (let* car-e (car-data* e))
           (let* cdr-e (cdr-data* e))
-          (let* val-e (valueof car-e))
+          (let* val-e (valueof (car-data* e)))
           (cond
             ((stringeq val-e kQuote)
               (cont (car-data* cdr-e)))
@@ -62,7 +59,7 @@
             (t
               (do
                 (<- (y) (Evlis cdr-e a))
-                (Apply car-e y a cont)))))))))
+                (Apply (car-data* e) y a cont)))))))))
 
 (defrec-lazy Apply (f x a cont)
   (cond
