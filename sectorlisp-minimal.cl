@@ -92,7 +92,7 @@
       ((isatom f)
         (do
           (<- (arg2) (cdr-data x))
-          (<- (arg2) (car-data arg2))        
+          (<- (arg2) (car-data arg2))
           (<- (car-x) (car-data x))
           (let* fv (valueof f))
           (cond
@@ -301,31 +301,22 @@
     (let* "T" "T")
     (let* "C" "C")
     (let* "O" "O")
-    ;; (let* kQuote (list "Q" "U" "O" "T" "E"))
-    ;; (let* kAtom  (list "A" "T" "O" "M"))
-    ;; (let* kCar   (list "C" "A" "R"))
-    ;; (let* kCdr   (list "C" "D" "R"))
-    ;; (let* kNil   (list "N" "I" "L"))
     (let* prefix-CON (lambda (x) (cons "C" (cons "O" (cons "N" x)))))
-    ;; (let* kEq    (list "E" "Q"))
-    ;; (let* kCons  (prefix-CON (list "S")))
-    ;; (let* kCond  (prefix-CON (list "D")))
-    ;; (let* t-atom (atom* (list "T")))
     (cont
-    " " 
-    "\\n"
-    "." 
-    "(" 
-    ")" 
     (list "Q" "U" "O" "T" "E") ;kQuote
-    (list "A" "T" "O" "M") ;kAtom 
-    (list "C" "A" "R") ;kCar  
-    (list "C" "D" "R") ;kCdr  
-    (list "N" "I" "L") ;kNil  
-    (list "E" "Q"); kEq    
-    (prefix-CON (list "S")) ;kCons  
-    (prefix-CON (list "D")) ;kCond  
-    (atom* (list "T")) ;t-atom 
+    (list "A" "T" "O" "M") ;kAtom
+    (list "C" "A" "R") ;kCar
+    (list "C" "D" "R") ;kCdr
+    (list "E" "Q"); kEq
+    (prefix-CON (list "S")) ;kCons
+    (prefix-CON (list "D")) ;kCond
+    (list "N" "I" "L") ;kNil
+    (atom* (list "T")) ;t-atom
+    " "
+    "\\n"
+    "."
+    "("
+    ")"
     )
     ))
 
@@ -335,21 +326,20 @@
 (defrec-lazy main (stdin)
   (do
     (<- (
-      " " 
-    "\\n"
-    "." 
-    "(" 
-    ")" 
     kQuote
-    kAtom 
-    kCar  
-    kCdr  
-    kNil  
-    kEq    
-    kCons  
-    kCond  
+    kAtom
+    kCar
+    kCdr
+    kEq
+    kCons
+    kCond
+    kNil
     t-atom
-    
+      " "
+    "\\n"
+    "."
+    "("
+    ")"
     ) (string-generator))
     (let* cons-data cons-data)
     (let* Y-comb Y-comb)
@@ -358,8 +348,6 @@
     (let* cdr-data cdr-data)
     (let* car-data car-data)
     (let* reverse reverse)
-    (let* " " " ")
-    (let* "\\n" "\\n")
     (<- (expr stdin) (read-expr stdin))
     (<- (expr) (Eval expr nil))
     (printexpr expr (cons "\\n" (main stdin)))))
