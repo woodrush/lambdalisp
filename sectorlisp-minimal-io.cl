@@ -21,12 +21,11 @@
         (cont (cons-data* x y) a stdin)))))
 
 (defrec-lazy Assoc (x y cont)
-  (do
-    (cond
-      ((stringeq (valueof x) (valueof (car-data* (car-data* y))))
-        (cont (cdr-data* (car-data* y))))
-      (t
-        (Assoc x (cdr-data* y) cont)))))
+  (cond
+    ((stringeq (valueof x) (valueof (car-data* (car-data* y))))
+      (cont (cdr-data* (car-data* y))))
+    (t
+      (Assoc x (cdr-data* y) cont))))
 
 (defrec-lazy Pairlis (x y a cont)
   (cond
@@ -103,8 +102,7 @@
       (do
         (let* cdr-f (cdr-data* f))
         (<- (q) (Pairlis (car-data* cdr-f) x a))
-        (Eval (car-data* (cdr-data* cdr-f)) q stdin cont)
-        ))))
+        (Eval (car-data* (cdr-data* cdr-f)) q stdin cont)))))
 
 
 ;;================================================================
@@ -260,12 +258,12 @@
       (do
           (let* alphabet-prefix-nil alphabet-prefix-nil)
           (let* alphabet-prefix-t alphabet-prefix-t)
-          ;; (let* "I" "I")
           ;; (let* "L" "L")
           ;; (let* "M" "M")
           ;; (let* "S" "S")
           ;; (let* "U" "U")
-          ;; (let* "R" "R")
+          (let* "I" "I")
+          (let* "R" "R")
           ;; (let* "C" "C")
           (let* "E" "E")
           (let* "Q" "Q")
