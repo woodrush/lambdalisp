@@ -18,12 +18,12 @@
       (do
         (<- (x) (Eval (car-data* m) a))
         (<- (y) (Evlis (cdr-data* m) a))
-        (cons-data x y cont)))))
+        (cont (cons-data* x y))))))
 
 (defrec-lazy Assoc (x y cont)
   (do
-    (<- (car-y) (car-data y))
-    (<- (caar-y) (car-data car-y))
+    (let* car-y  (car-data* y))
+    (let* caar-y (car-data* car-y))
     (cond
       ((stringeq (valueof x) (valueof caar-y))
         (cont (cdr-data* (car-data* y))))
@@ -45,24 +45,24 @@
     (let* stringeq stringeq)
     (let* isnil-data isnil-data)
     (cond
-    ((isnil-data e)
-      (cont e))
-    ((isatom e)
-      (Assoc e a cont))
-    (t
-      (do
-        (<- (car-e) (car-data e))
-        (<- (cdr-e) (cdr-data e))
-        (let* val-e (valueof car-e))
-        (cond
-          ((stringeq val-e kQuote)
-            (car-data cdr-e cont))
-          ((stringeq val-e kCond)
-            (Evcon cdr-e a cont))
-          (t
-            (do
-              (<- (y) (Evlis cdr-e a))
-              (Apply car-e y a cont)))))))))
+      ((isnil-data e)
+        (cont e))
+      ((isatom e)
+        (Assoc e a cont))
+      (t
+        (do
+          (let* car-e (car-data* e))
+          (let* cdr-e (cdr-data* e))
+          (let* val-e (valueof car-e))
+          (cond
+            ((stringeq val-e kQuote)
+              (cont (car-data* cdr-e)))
+            ((stringeq val-e kCond)
+              (Evcon cdr-e a cont))
+            (t
+              (do
+                (<- (y) (Evlis cdr-e a))
+                (Apply car-e y a cont)))))))))
 
 (defrec-lazy Apply (f x a cont)
   (do
@@ -116,17 +116,8 @@
 (defmacro-lazy cons-data* (x y)
   `(cons type-list (cons ,x ,y)))
 
-(defun-lazy car-data (data cont)
-  (cont (car (valueof data))))
-
-(defun-lazy cdr-data (data cont)
-  (cont (cdr (valueof data))))
-
-(defun-lazy cons-data (x y cont)
-  (cont (cons type-list (cons x y))))
-
-(defun-lazy atom* (value)
-  (cons type-atom value))
+(defmacro-lazy atom* (value)
+  `(cons type-atom ,value))
 
 (defmacro-lazy typematch (expr atomcase listcase)
   `((typeof ,expr)
@@ -138,8 +129,6 @@
 
 (defun-lazy isnil-data (expr)
   (isnil (valueof expr)))
-
-(def-lazy t-atom (atom* kT))
 
 
 ;;================================================================
@@ -164,8 +153,8 @@
 
 (defrec-lazy printlist (expr cont)
   (do
-    (<- (car-ed) (car-data expr))
-    (<- (cdr-ed) (cdr-data expr))
+    (let* car-ed (car-data* expr))
+    (let* cdr-ed (cdr-data* expr))
     (let* ")" ")")
     (let* " " " ")
     (printexpr car-ed
@@ -219,9 +208,7 @@
 (defrec-lazy reverse-base2data (l curlist cont)
   (if (isnil l)
     (cont curlist)
-    (do
-      ;; (<- (consed) )
-      (reverse-base2data (cdr l) (cons-data* (car l) curlist) cont))))
+    (reverse-base2data (cdr l) (cons-data* (car l) curlist) cont)))
 
 (defrec-lazy read-list (stdin curexpr cont)
   (do
