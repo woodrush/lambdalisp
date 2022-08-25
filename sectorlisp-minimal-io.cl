@@ -296,9 +296,9 @@
     (let* gen-symbols (lambda (cont)
       (do
         (let* symbol-prefix symbol-prefix)
-        (cont " "
+        (cont "."
+              " "
               "\\n"
-              "."
               "("
               ")"))))
     (gen-symbols (gen-keywords cont))))
@@ -326,12 +326,12 @@
          "\\n"
          "("
          ")") (string-generator))
+    (let* read-expr read-expr)
+    (let* printexpr printexpr)
     (let* Y-comb Y-comb)
     (let* isnil isnil)
     (let* stringeq stringeq)
     (let* reverse reverse)
-    (let* read-expr read-expr)
-    (let* printexpr printexpr)
     (<- (expr stdin) (read-expr stdin))
     (<- (expr a stdin) (Eval expr a stdin))
     (printexpr expr (cons "\\n" (repl a stdin)))))
@@ -390,8 +390,8 @@
 (def-lazy "L-tail" (p-nil-nil (p-t-t     nil)))
 (def-lazy "M-tail" (p-nil-nil (p-t-nil     nil)))
 (def-lazy "N-tail" (p-nil-nil (p-nil-t     nil)))
-(def-lazy "O-tail" (p-nil-nil (p-nil-nil nil)))
-(def-lazy "P-tail" (p-t-t     (p-t-t     nil)))
+(def-lazy "O-tail" (p-nil-nil(p-nil-nil nil)))
+(def-lazy "P-tail" (2 p-t-t     nil))
 (def-lazy "Q-tail" (p-t-t     (p-t-nil     nil)))
 (def-lazy "R-tail" (p-t-t     (p-nil-t     nil)))
 (def-lazy "S-tail" (p-t-t     (p-nil-nil     nil)))
