@@ -65,37 +65,36 @@
                 (Apply car-e y a cont)))))))))
 
 (defrec-lazy Apply (f x a cont)
-  (do
-    (let* stringeq stringeq)
-    (cond
-      ((isatom f)
-        (do
-          (let* arg2 (car-data* (cdr-data* x)))
-          (let* car-x (car-data* x))
-          (let* fv (valueof f))
-          (cond
-            ((stringeq fv kEq)
-              (do
-                (if-then-return (not (and (isatom car-x) (isatom arg2)))
-                  (cont (atom* nil)))
-                (cont (if (stringeq (valueof car-x) (valueof arg2)) t-atom (atom* nil)))))
-            ((stringeq fv kCons)
-              (cont (cons-data* car-x arg2)))
-            ((stringeq fv kAtom)
-              (cont (if (isatom car-x) t-atom (atom* nil))))
-            ((stringeq fv kCar)
-              (cont (car-data* car-x)))
-            ((stringeq fv kCdr)
-              (cont (cdr-data* car-x)))
-            (t
-              (do
-                (<- (p) (Assoc f a))
-                (Apply p x a cont))))))
-      (t
-        (do
-          (let* cdr-f (cdr-data* f))
-          (<- (q) (Pairlis (car-data* cdr-f) x a))
-          (Eval (car-data* (cdr-data* cdr-f)) q cont))))))
+  (cond
+    ((isatom f)
+      (do
+        (let* t-atom (atom* (list (car (cdr kAtom)))))
+        (let* arg2 (car-data* (cdr-data* x)))
+        (let* car-x (car-data* x))
+        (let* fv (valueof f))
+        (let* stringeq stringeq)
+        (cond
+          ((stringeq fv kEq)
+            (if (not (and (isatom car-x) (isatom arg2)))
+              (cont (atom* nil))
+              (cont (if (stringeq (valueof car-x) (valueof arg2)) t-atom (atom* nil)))))
+          ((stringeq fv kCons)
+            (cont (cons-data* car-x arg2)))
+          ((stringeq fv kAtom)
+            (cont (if (isatom car-x) t-atom (atom* nil))))
+          ((stringeq fv kCar)
+            (cont (car-data* car-x)))
+          ((stringeq fv kCdr)
+            (cont (cdr-data* car-x)))
+          (t
+            (do
+              (<- (p) (Assoc f a))
+              (Apply p x a cont))))))
+    (t
+      (do
+        (let* cdr-f (cdr-data* f))
+        (<- (q) (Pairlis (car-data* cdr-f) x a))
+        (Eval (car-data* (cdr-data* cdr-f)) q cont)))))
 
 
 ;;================================================================
@@ -277,7 +276,7 @@
             (gen-CONX "S") ;kCons
             (gen-CONX "D") ;kCond
             (list "N" "I" "L") ;kNil
-            (atom* (list "T")) ;t-atom
+            ;; (atom* (list "T")) ;t-atom
         ))))
     (let* gen-symbols (lambda (cont)
       (do
@@ -303,7 +302,7 @@
          kCons
          kCond
          kNil
-         t-atom
+        ;;  t-atom
          " "
          "\\n"
          "."
