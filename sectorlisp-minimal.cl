@@ -318,7 +318,7 @@
       (let* kCons  (prefix-CON (list "S")))
       (let* kCond  (prefix-CON (list "D")))
       (let* kNil   (list "N" "I" "L"))
-      (let* t-atom t-atom)
+      (let* t-atom (atom* (list "T")))
       (let* cons-data cons-data)
       (let* stringeq stringeq)
       (let* cdr-data cdr-data)
