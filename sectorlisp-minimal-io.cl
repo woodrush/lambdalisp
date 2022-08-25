@@ -281,6 +281,8 @@
                 (lambda (x) (cons "C" (cons "O" (cons "N" (cons x nil)))))
                 (lambda (x) (cons "C" (cons x (cons "R" nil)))))))))
           (cont
+            (list "P" "R" "I" "N" "T")
+            (list "R" "E" "A" "D")
             (list "Q" "U" "O" "T" "E") ;kQuote
             (list "A" "T" "O" "M") ;kAtom
             (gen-CXR "A") ;kCar
@@ -288,8 +290,6 @@
             (list "E" "Q"); kEq
             (gen-CONX "S") ;kCons
             (gen-CONX "D") ;kCond
-            (list "P" "R" "I" "N" "T")
-            (list "R" "E" "A" "D")
             (list "N" "I" "L") ;kNil
             ;; (atom* (list "T")) ;t-atom
         ))))
@@ -309,26 +309,29 @@
 ;;================================================================
 (defrec-lazy repl (a stdin)
   (do
-    (<- (kQuote
+    (<- (
+         kPrint
+         kRead
+         kQuote
          kAtom
          kCar
          kCdr
          kEq
          kCons
          kCond
-         kPrint
-         kRead
          kNil
         ;;  t-atom
+         "."
          " "
          "\\n"
-         "."
          "("
          ")") (string-generator))
     (let* Y-comb Y-comb)
     (let* isnil isnil)
     (let* stringeq stringeq)
     (let* reverse reverse)
+    (let* read-expr read-expr)
+    (let* printexpr printexpr)
     (<- (expr stdin) (read-expr stdin))
     (<- (expr a stdin) (Eval expr a stdin))
     (printexpr expr (cons "\\n" (repl a stdin)))))
@@ -387,8 +390,8 @@
 (def-lazy "L-tail" (p-nil-nil (p-t-t     nil)))
 (def-lazy "M-tail" (p-nil-nil (p-t-nil     nil)))
 (def-lazy "N-tail" (p-nil-nil (p-nil-t     nil)))
-(def-lazy "O-tail" (p-nil-nil(p-nil-nil nil)))
-(def-lazy "P-tail" (2 p-t-t     nil))
+(def-lazy "O-tail" (p-nil-nil (p-nil-nil nil)))
+(def-lazy "P-tail" (p-t-t     (p-t-t     nil)))
 (def-lazy "Q-tail" (p-t-t     (p-t-nil     nil)))
 (def-lazy "R-tail" (p-t-t     (p-nil-t     nil)))
 (def-lazy "S-tail" (p-t-t     (p-nil-nil     nil)))
