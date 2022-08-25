@@ -28,14 +28,14 @@
       (t
         (Assoc x (cdr-data* y) a stdin cont)))))
 
-(defrec-lazy Pairlis (x y a stdin cont)
+(defrec-lazy Pairlis (x y a cont)
   (cond
     ((isnil-data x)
-      (cont a a stdin))
+      (cont a))
     (t
       (do
-        (<- (h a stdin) (Pairlis (cdr-data* x) (cdr-data* y) a stdin))
-        (cont (cons-data* (cons-data* (car-data* x) (car-data* y)) h) a stdin)))))
+        (<- (h) (Pairlis (cdr-data* x) (cdr-data* y) a))
+        (cont (cons-data* (cons-data* (car-data* x) (car-data* y)) h))))))
 
 (defrec-lazy Eval (e a stdin cont)
   (do
@@ -100,7 +100,7 @@
     (t
       (do
         (let* cdr-f (cdr-data* f))
-        (<- (q a stdin) (Pairlis (car-data* cdr-f) x a stdin))
+        (<- (q) (Pairlis (car-data* cdr-f) x a))
         (Eval (car-data* (cdr-data* cdr-f)) q stdin cont)))))
 
 
