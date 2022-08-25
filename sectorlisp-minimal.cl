@@ -100,16 +100,11 @@
               (do
                 (if-then-return (not (and (isatom car-x) (isatom arg2)))
                   (cont (atom* nil)))
-                (let* p-val (valueof car-x))
-                (let* q-val (valueof arg2))
-                (let* ret (if (stringeq p-val q-val) t-atom (atom* nil)))
-                (cont ret)))
+                (cont (if (stringeq (valueof car-x) (valueof arg2)) t-atom (atom* nil)))))
             ((stringeq fv kCons)
               (cons-data car-x arg2 cont))
             ((stringeq fv kAtom)
-              (do
-                (let* ret (if (isatom car-x) t-atom (atom* nil)))
-                (cont ret)))
+              (cont (if (isatom car-x) t-atom (atom* nil))))
             ((stringeq fv kCar)
               (car-data car-x cont))
             ((stringeq fv kCdr)
@@ -176,14 +171,8 @@
 (defrec-lazy reverse (l curlist)
   (if (isnil l) curlist (reverse (cdr l) (cons (car l) curlist))))
 
-(defun-lazy append-list (l item)
-  (do
-    (let* reversed (reverse l nil))
-    (let* reversed (reverse reversed item))
-    reversed))
-
 (defun-lazy printatom (expr cont)
-  (append-list (valueof expr) cont))
+  (reverse (reverse (valueof expr) nil) cont))
 
 (defrec-lazy printexpr (expr cont)
   (let ((isnil-data isnil-data)
@@ -270,8 +259,8 @@
 
 (defrec-lazy read-expr (stdin cont)
   (do
-    (let* =-bit =-bit)
     (let* c (car stdin))
+    (let* =-bit =-bit)
     (cond
       ((or (=-bit " " c) (=-bit "\\n" c))
         (read-expr (cdr stdin) cont))
