@@ -3,19 +3,14 @@
 
 (defrec-lazy Evcon (c a cont)
   (do
-    (<- (car-c) (car-data c))
-    (<- (x) (car-data car-c))
-    (<- (expr) (Eval x a))
+    ;; (<- (car-c) (car-data c))
+    ;; (<- (x) (car-data (car-data* c)))
+    (<- (expr) (Eval (car-data* (car-data* c)) a))
     (cond
       ((isnil-data expr)
-        (do
-          (<- (x) (cdr-data c))
-          (Evcon x a cont)))
+        (Evcon (cdr-data* c) a cont))
       (t
-        (do
-          (<- (x) (cdr-data car-c))
-          (<- (x) (car-data x))
-          (Eval x a cont))))))
+        (Eval (car-data* (cdr-data* (car-data* c))) a cont)))))
 
 (defrec-lazy Evlis (m a cont)
   (cond
@@ -23,10 +18,10 @@
       (cont m))
     (t
       (do
-        (<- (x) (car-data m))
-        (<- (x) (Eval x a))
-        (<- (y) (cdr-data m))
-        (<- (y) (Evlis y a))
+        ;; (<- (x) (car-data m))
+        (<- (x) (Eval (car-data* m) a))
+        ;; (<- (y) (cdr-data m))
+        (<- (y) (Evlis (cdr-data* m) a))
         (cons-data x y cont)))))
 
 (defrec-lazy Assoc (x y cont)
@@ -35,11 +30,9 @@
     (<- (caar-y) (car-data car-y))
     (cond
       ((stringeq (valueof x) (valueof caar-y))
-        (cdr-data car-y cont))
+        (cont (cdr-data* (car-data* y))))
       (t
-        (do
-          (<- (cdaar-y) (cdr-data y))
-          (Assoc x cdaar-y cont))))))
+        (Assoc x (cdr-data* y) cont)))))
 
 (defrec-lazy Pairlis (x y a cont)
   (cond
@@ -47,12 +40,8 @@
       (cont a))
     (t
       (do
-        (<- (p) (car-data x))
-        (<- (q) (car-data y))
-        (<- (r) (cons-data p q))
-        (<- (f) (cdr-data x))
-        (<- (g) (cdr-data y))
-        (<- (h) (Pairlis f g a))
+        (<- (r) (cons-data (car-data* x) (car-data* y)))
+        (<- (h) (Pairlis (cdr-data* x) (cdr-data* y) a))
         (cons-data r h cont)))))
 
 (defrec-lazy Eval (e a cont)
@@ -131,6 +120,15 @@
 
 (defmacro-lazy typeof  (x) `(car ,x))
 (defmacro-lazy valueof (x) `(cdr ,x))
+
+(defmacro-lazy car-data* (data)
+  `(car (valueof ,data)))
+
+(defmacro-lazy cdr-data* (data)
+  `(cdr (valueof ,data)))
+
+(defmacro-lazy cons-data* (x y)
+  `(cons type-list (cons ,x ,y)))
 
 (defun-lazy car-data (data cont)
   (cont (car (valueof data))))
@@ -236,8 +234,8 @@
   (if (isnil l)
     (cont curlist)
     (do
-      (<- (consed) (cons-data (car l) curlist))
-      (reverse-base2data (cdr l) consed cont))))
+      ;; (<- (consed) )
+      (reverse-base2data (cdr l) (cons-data* (car l) curlist) cont))))
 
 (defrec-lazy read-list (stdin curexpr cont)
   (do
