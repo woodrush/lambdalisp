@@ -289,31 +289,36 @@
           (let* "D" "D")
           (let* "E" "E")
           (let* "Q" "Q")
-          (let* "R" "R")
+          ;; (let* "R" "R")
           (let* "N" "N")
           (let* "T" "T")
-          (let* "C" "C")
+          ;; (let* "C" "C")
           (let* "O" "O")
-          (let* prefix-CON (lambda (x) (cons "C" (cons "O" (cons "N" x)))))
+          (<- (prefix-CON gen-CXR) ((lambda (cont)
+            (do
+              (let* "C" "C")
+              (cont
+                (lambda (x) (cons "C" (cons "O" (cons "N" x))))
+                (lambda (x) (cons "C" (cons x (cons "R" nil)))))))))
           (cont
             (list "Q" "U" "O" "T" "E") ;kQuote
             (list "A" "T" "O" "M") ;kAtom
-            (list "C" "A" "R") ;kCar
-            (list "C" "D" "R") ;kCdr
+            (gen-CXR "A") ;kCar
+            (gen-CXR "D") ;kCdr
             (list "E" "Q"); kEq
             (prefix-CON (list "S")) ;kCons
             (prefix-CON (list "D")) ;kCond
             (list "N" "I" "L") ;kNil
-            (atom* (list "T")) ;t-atom        
+            (atom* (list "T")) ;t-atom
         ))))
     (let* gen-symbols (lambda (cont)
       (do
         (let* symbol-prefix symbol-prefix)
         (cont
-          " "  
+          " "
           "\\n"
-          "."  
-          "("  
+          "."
+          "("
           ")"))))
     (gen-symbols (gen-keywords cont))))
 
