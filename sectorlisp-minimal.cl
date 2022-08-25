@@ -156,14 +156,7 @@
   (isnil (valueof expr)))
 
 (def-lazy t-atom (atom* kT))
-;; (def-lazy nil-atom (atom* nil))
 
-;; (def-lazy "PRINT" (list "P" "R" "I" "N" "T"))
-;; (def-lazy "READ" (list "R" "E" "A" "D"))
-;; (def-lazy "DEF" (list "D" "E" "F"))
-;; (def-lazy "DEFINE" (list "D" "E" "F" "I" "N" "E"))
-;; (def-lazy "AS" (list "A" "S"))
-;; (def-lazy "LAMBDA" (list "L" "A" "M" "B" "D" "A"))
 
 ;;================================================================
 ;; Printing
@@ -271,6 +264,9 @@
         (read-atom stdin cont)))))
 
 
+;;================================================================
+;; Constants
+;;================================================================
 (defun-lazy string-generator (cont)
   (do
     (let* p-nil-nil p-nil-nil)
@@ -286,20 +282,20 @@
           ;; (let* "M" "M")
           ;; (let* "S" "S")
           ;; (let* "U" "U")
+          ;; (let* "R" "R")
+          ;; (let* "C" "C")
           (let* "E" "E")
           (let* "Q" "Q")
           (let* "A" "A")
           (let* "D" "D")
-          ;; (let* "R" "R")
           (let* "N" "N")
           (let* "T" "T")
-          ;; (let* "C" "C")
           (let* "O" "O")
           (<- (gen-CONX gen-CXR) ((lambda (cont)
             (do
               (let* "C" "C")
               (cont
-                (lambda (x) (cons "C" (cons "O" (cons "N" x))))
+                (lambda (x) (cons "C" (cons "O" (cons "N" (cons x nil)))))
                 (lambda (x) (cons "C" (cons x (cons "R" nil)))))))))
           (cont
             (list "Q" "U" "O" "T" "E") ;kQuote
@@ -307,49 +303,44 @@
             (gen-CXR "A") ;kCar
             (gen-CXR "D") ;kCdr
             (list "E" "Q"); kEq
-            (gen-CONX (list "S")) ;kCons
-            (gen-CONX (list "D")) ;kCond
+            (gen-CONX "S") ;kCons
+            (gen-CONX "D") ;kCond
             (list "N" "I" "L") ;kNil
             (atom* (list "T")) ;t-atom
         ))))
     (let* gen-symbols (lambda (cont)
       (do
         (let* symbol-prefix symbol-prefix)
-        (cont
-          " "
-          "\\n"
-          "."
-          "("
-          ")"))))
+        (cont " "
+              "\\n"
+              "."
+              "("
+              ")"))))
     (gen-symbols (gen-keywords cont))))
+
 
 ;;================================================================
 ;; User interface
 ;;================================================================
 (defrec-lazy main (stdin)
   (do
-    (<- (
-    kQuote
-    kAtom
-    kCar
-    kCdr
-    kEq
-    kCons
-    kCond
-    kNil
-    t-atom
-      " "
-    "\\n"
-    "."
-    "("
-    ")"
-    ) (string-generator))
-    (let* cons-data cons-data)
+    (<- (kQuote
+         kAtom
+         kCar
+         kCdr
+         kEq
+         kCons
+         kCond
+         kNil
+         t-atom
+         " "
+         "\\n"
+         "."
+         "("
+         ")") (string-generator))
     (let* Y-comb Y-comb)
     (let* isnil isnil)
     (let* stringeq stringeq)
-    (let* cdr-data cdr-data)
-    (let* car-data car-data)
     (let* reverse reverse)
     (<- (expr stdin) (read-expr stdin))
     (<- (expr) (Eval expr nil))
