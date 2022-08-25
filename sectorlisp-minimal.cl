@@ -3,8 +3,6 @@
 
 (defrec-lazy Evcon (c a cont)
   (do
-    ;; (<- (car-c) (car-data c))
-    ;; (<- (x) (car-data (car-data* c)))
     (<- (expr) (Eval (car-data* (car-data* c)) a))
     (cond
       ((isnil-data expr)
@@ -18,9 +16,7 @@
       (cont m))
     (t
       (do
-        ;; (<- (x) (car-data m))
         (<- (x) (Eval (car-data* m) a))
-        ;; (<- (y) (cdr-data m))
         (<- (y) (Evlis (cdr-data* m) a))
         (cons-data x y cont)))))
 
@@ -40,17 +36,14 @@
       (cont a))
     (t
       (do
-        (<- (r) (cons-data (car-data* x) (car-data* y)))
         (<- (h) (Pairlis (cdr-data* x) (cdr-data* y) a))
-        (cons-data r h cont)))))
+        (cont (cons-data* (cons-data* (car-data* x) (car-data* y)) h))))))
 
 (defrec-lazy Eval (e a cont)
   (do
     (let* Assoc Assoc)
     (let* stringeq stringeq)
     (let* isnil-data isnil-data)
-    (let* cdr-data cdr-data)
-    (let* car-data car-data)
     (cond
     ((isnil-data e)
       (cont e))
@@ -74,15 +67,11 @@
 (defrec-lazy Apply (f x a cont)
   (do
     (let* stringeq stringeq)
-    (let* cons-data cons-data)
-    (let* cdr-data cdr-data)
-    (let* car-data car-data)
     (cond
       ((isatom f)
         (do
-          (<- (arg2) (cdr-data x))
-          (<- (arg2) (car-data arg2))
-          (<- (car-x) (car-data x))
+          (let* arg2 (car-data* (cdr-data* x)))
+          (let* car-x (car-data* x))
           (let* fv (valueof f))
           (cond
             ((stringeq fv kEq)
@@ -91,25 +80,22 @@
                   (cont (atom* nil)))
                 (cont (if (stringeq (valueof car-x) (valueof arg2)) t-atom (atom* nil)))))
             ((stringeq fv kCons)
-              (cons-data car-x arg2 cont))
+              (cont (cons-data* car-x arg2)))
             ((stringeq fv kAtom)
               (cont (if (isatom car-x) t-atom (atom* nil))))
             ((stringeq fv kCar)
-              (car-data car-x cont))
+              (cont (car-data* car-x)))
             ((stringeq fv kCdr)
-              (cdr-data car-x cont))
+              (cont (cdr-data* car-x)))
             (t
               (do
                 (<- (p) (Assoc f a))
                 (Apply p x a cont))))))
       (t
         (do
-          (<- (cdr-f) (cdr-data f))
-          (<- (p) (cdr-data cdr-f))
-          (<- (p) (car-data p))
-          (<- (q) (car-data cdr-f))
-          (<- (q) (Pairlis q x a))
-          (Eval p q cont))))))
+          (let* cdr-f (cdr-data* f))
+          (<- (q) (Pairlis (car-data* cdr-f) x a))
+          (Eval (car-data* (cdr-data* cdr-f)) q cont))))))
 
 
 ;;================================================================
