@@ -59,7 +59,6 @@
   (do
     (let* Assoc Assoc)
     (let* stringeq stringeq)
-    (let* cons-data cons-data)
     (let* isnil-data isnil-data)
     (let* cdr-data cdr-data)
     (let* car-data car-data)
@@ -86,6 +85,7 @@
 (defrec-lazy Apply (f x a cont)
   (do
     (let* stringeq stringeq)
+    (let* cons-data cons-data)
     (let* cdr-data cdr-data)
     (let* car-data car-data)
     (cond
@@ -276,49 +276,46 @@
     (let* p-nil-t p-nil-t)
     (let* p-t-nil p-t-nil)
     (let* p-t-t p-t-t)
-    (let* " " " ")
-    (let* "\\n" "\\n")
-    (let* "." ".")
-    (let* "(" "(")
-    (let* ")" ")")
-    (let* p-nil-nil p-nil-nil)
-    (let* p-nil-t p-nil-t)
-    (let* p-t-nil p-t-nil)
-    (let* p-t-t p-t-t)
-    (let* alphabet-prefix-nil alphabet-prefix-nil)
-    (let* alphabet-prefix-t alphabet-prefix-t)
-    ;; (let* "I" "I")
-    ;; (let* "L" "L")
-    ;; (let* "M" "M")
-    ;; (let* "S" "S")
-    ;; (let* "U" "U")
-    (let* "A" "A")
-    (let* "D" "D")
-    (let* "E" "E")
-    (let* "Q" "Q")
-    (let* "R" "R")
-    (let* "N" "N")
-    (let* "T" "T")
-    (let* "C" "C")
-    (let* "O" "O")
-    (let* prefix-CON (lambda (x) (cons "C" (cons "O" (cons "N" x)))))
-    (cont
-    (list "Q" "U" "O" "T" "E") ;kQuote
-    (list "A" "T" "O" "M") ;kAtom
-    (list "C" "A" "R") ;kCar
-    (list "C" "D" "R") ;kCdr
-    (list "E" "Q"); kEq
-    (prefix-CON (list "S")) ;kCons
-    (prefix-CON (list "D")) ;kCond
-    (list "N" "I" "L") ;kNil
-    (atom* (list "T")) ;t-atom
-    " "
-    "\\n"
-    "."
-    "("
-    ")"
-    )
-    ))
+    (let* gen-keywords (lambda (cont)
+      (do
+          (let* alphabet-prefix-nil alphabet-prefix-nil)
+          (let* alphabet-prefix-t alphabet-prefix-t)
+          ;; (let* "I" "I")
+          ;; (let* "L" "L")
+          ;; (let* "M" "M")
+          ;; (let* "S" "S")
+          ;; (let* "U" "U")
+          (let* "A" "A")
+          (let* "D" "D")
+          (let* "E" "E")
+          (let* "Q" "Q")
+          (let* "R" "R")
+          (let* "N" "N")
+          (let* "T" "T")
+          (let* "C" "C")
+          (let* "O" "O")
+          (let* prefix-CON (lambda (x) (cons "C" (cons "O" (cons "N" x)))))
+          (cont
+            (list "Q" "U" "O" "T" "E") ;kQuote
+            (list "A" "T" "O" "M") ;kAtom
+            (list "C" "A" "R") ;kCar
+            (list "C" "D" "R") ;kCdr
+            (list "E" "Q"); kEq
+            (prefix-CON (list "S")) ;kCons
+            (prefix-CON (list "D")) ;kCond
+            (list "N" "I" "L") ;kNil
+            (atom* (list "T")) ;t-atom        
+        ))))
+    (let* gen-symbols (lambda (cont)
+      (do
+        (let* symbol-prefix symbol-prefix)
+        (cont
+          " "  
+          "\\n"
+          "."  
+          "("  
+          ")"))))
+    (gen-symbols (gen-keywords cont))))
 
 ;;================================================================
 ;; User interface
@@ -416,11 +413,12 @@
 ;; (def-lazy "Y-tail" (cons nil (cons t (cons t (cons nil nil)))))
 ;; (def-lazy "Z-tail" (cons nil (cons t (cons nil (cons t nil)))))
 
-(def-lazy "("   (p-t-t (p-nil-t (p-nil-t (p-t-t nil)))))
-(def-lazy ")"   (p-t-t (p-nil-t (p-nil-t (p-t-nil nil)))))
-(def-lazy " "   (p-t-t (p-nil-t (p-t-t (p-t-t nil)))))
-(def-lazy "."   (p-t-t (p-nil-t (p-nil-nil (p-nil-t nil)))))
-(def-lazy "\\n" (p-t-t (p-t-t   (p-nil-t (p-nil-t nil)))))
+(defun-lazy symbol-prefix (x) (p-t-t (p-nil-t x)))
+(def-lazy "("   (symbol-prefix (p-nil-t (p-t-t nil))))
+(def-lazy ")"   (symbol-prefix (p-nil-t (p-t-nil nil))))
+(def-lazy " "   (symbol-prefix (p-t-t (p-t-t nil))))
+(def-lazy "."   (symbol-prefix (p-nil-nil (p-nil-t nil))))
+(def-lazy "\\n" (p-t-t (symbol-prefix (p-nil-t nil))))
 
 ;; (def-lazy "*" (cons t (cons t (cons nil (cons t (cons nil (cons t (cons nil (cons t nil)))))))))
 ;; (def-lazy "?" (cons t (cons t (cons nil (cons nil (cons nil (cons nil (cons nil (cons nil nil)))))))))
