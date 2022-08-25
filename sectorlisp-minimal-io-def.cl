@@ -3,7 +3,7 @@
 
 (defrec-lazy Evcon (c a stdin cont)
   (do
-    (<- (expr a stdin) (Eval (car-data* (car-data* c)) a stdin))
+    (<- (expr _ stdin) (Eval (car-data* (car-data* c)) a stdin))
     (cond
       ((isnil-data expr)
         (Evcon (cdr-data* c) a stdin cont))
@@ -16,8 +16,8 @@
       (cont m a stdin))
     (t
       (do
-        (<- (x a stdin) (Eval (car-data* m) a stdin))
-        (<- (y a stdin) (Evlis (cdr-data* m) a stdin))
+        (<- (x _ stdin) (Eval (car-data* m) a stdin))
+        (<- (y _ stdin) (Evlis (cdr-data* m) a stdin))
         (cont (cons-data* x y) a stdin)))))
 
 (defrec-lazy Assoc (x y cont)
@@ -63,7 +63,7 @@
               (do
                 (if-then-return (isnil-data cdr-e)
                   (cons "\\n" (cont (atom* nil) a stdin)))
-                (<- (expr a stdin) (Eval (car-data* cdr-e) a stdin))
+                (<- (expr _ stdin) (Eval (car-data* cdr-e) a stdin))
                 (printexpr expr (cont expr a stdin))))
             ((stringeq val-e kDefine)
               (do
@@ -81,15 +81,7 @@
                   (t
                     (do
                       (<- (a) (Pairlis name value a))
-                      (cont (car-data* value) a stdin)))))
-              (cond
-                ((stringeq (valueof (car-data* (cdr-data* cdr-e))) kAs)
-                  ()))
-              (do
-                (if-then-return (isnil-data cdr-e)
-                  (cons "\\n" (cont (atom* nil) a stdin)))
-                (<- (expr a stdin) (Eval (car-data* cdr-e) a stdin))
-                (printexpr expr (cont expr a stdin))))
+                      (cont (car-data* value) a stdin))))))
             ((stringeq val-e kCond)
               (Evcon cdr-e a stdin cont))
             (t
@@ -223,6 +215,7 @@
       (t
         (do
           (read-atom* (cons (car stdin) curstr) (cdr stdin) cont))))))
+
 
 (defmacro-lazy read-atom (stdin cont)
   `(read-atom* nil ,stdin ,cont))
