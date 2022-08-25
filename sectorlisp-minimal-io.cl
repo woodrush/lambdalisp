@@ -54,6 +54,10 @@
           (cond
             ((stringeq val-e kQuote)
               (cont (car-data* cdr-e) a stdin))
+            ((stringeq val-e kRead)
+              (do
+                (<- (expr stdin) (read-expr stdin))
+                (cont expr a stdin)))
             ((stringeq val-e kCond)
               (Evcon cdr-e a stdin cont))
             (t
