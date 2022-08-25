@@ -65,6 +65,31 @@
                   (cons "\\n" (cont (atom* nil) a stdin)))
                 (<- (expr a stdin) (Eval (car-data* cdr-e) a stdin))
                 (printexpr expr (cont expr a stdin))))
+            ((stringeq val-e kDefine)
+              (do
+                (let* name (cons-data* (car-data* cdr-e) (atom* nil)))
+                (let* option (car-data* (cdr-data* cdr-e)))
+                (let* value (cdr-data* (cdr-data* cdr-e)))
+                (cond
+                  ((stringeq (valueof (car-data* (cdr-data* cdr-e))) kAs)
+                    (do
+                      (let* value (cons-data*
+                                    (cons-data* (atom* kLambda) value)
+                                    (atom* nil)))
+                      (<- (a) (Pairlis name value a))
+                      (cont (car-data* value) a stdin)))
+                  (t
+                    (do
+                      (<- (a) (Pairlis name value a))
+                      (cont (car-data* value) a stdin)))))
+              (cond
+                ((stringeq (valueof (car-data* (cdr-data* cdr-e))) kAs)
+                  ()))
+              (do
+                (if-then-return (isnil-data cdr-e)
+                  (cons "\\n" (cont (atom* nil) a stdin)))
+                (<- (expr a stdin) (Eval (car-data* cdr-e) a stdin))
+                (printexpr expr (cont expr a stdin))))
             ((stringeq val-e kCond)
               (Evcon cdr-e a stdin cont))
             (t
@@ -272,23 +297,28 @@
           (let* "N" "N")
           (let* "T" "T")
           (let* "O" "O")
+          (let* list4 (lambda (a b c d) (list a b c d)))
           (<- (gen-CONX gen-CXR) ((lambda (cont)
             (do
               (let* "C" "C")
               (cont
-                (lambda (x) (cons "C" (cons "O" (cons "N" (cons x nil)))))
-                (lambda (x) (cons "C" (cons x (cons "R" nil)))))))))
+                (lambda (x) (list4 "C" "O" "N" x))
+                (lambda (x) (cdr (list4 nil "C" x "R")))
+                )))))
           (cont
-            (list "P" "R" "I" "N" "T")
-            (list "R" "E" "A" "D")
-            (list "Q" "U" "O" "T" "E") ;kQuote
-            (list "A" "T" "O" "M") ;kAtom
+            (cons "P" (list4 "R" "I" "N" "T"))
+            (list4 "R" "E" "A" "D")
+            (cons "D" (cons "E" (list4 "F" "I" "N" "E")))
+            (list "A" "S")
+            (cons "L" (cons "A" (list4 "M" "B" "D" "A")))
+            (cons "Q" (list4 "U" "O" "T" "E")) ;kQuote
+            (list4 "A" "T" "O" "M") ;kAtom
             (gen-CXR "A") ;kCar
             (gen-CXR "D") ;kCdr
             (list "E" "Q"); kEq
             (gen-CONX "S") ;kCons
             (gen-CONX "D") ;kCond
-            (list "N" "I" "L") ;kNil
+            (cdr (list4 nil "N" "I" "L")) ;kNil
             ;; (atom* (list "T")) ;t-atom
         ))))
     (let* gen-symbols (lambda (cont)
@@ -310,6 +340,9 @@
     (<- (
          kPrint
          kRead
+         kDefine
+         kAs
+         kLambda
          kQuote
          kAtom
          kCar
