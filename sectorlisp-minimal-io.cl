@@ -71,9 +71,7 @@
       (t
         (do
           (<- (car-e cdr-e) (d-carcdr-data e))
-          ;; (let* cdr-e (cdr-data* e))
           (<- (type-e val-e) (car-e))
-          ;; (let* val-e (valueof (car-data* e)))
           (cond
             ((stringeq val-e kQuote)
               (do
@@ -104,8 +102,6 @@
         (let* t-atom (atom* (list (car (cdr kAtom)))))
         (<- (car-x cdr-x) (d-carcdr-data x))
         (<- (arg2) (car-data cdr-x))
-        ;; (let* arg2 (car-data* cdr-x))
-        ;; (let* car-x (car-data* x))
         (let* fv (valueof f))
         (let* stringeq stringeq)
         (cond
@@ -395,7 +391,9 @@
     (let* Y-comb Y-comb)
     (let* isnil isnil)
     (let* stringeq stringeq)
-    (let* reverse reverse)
+    (let* cdr-data cdr-data)
+    (let* car-data car-data)
+    (let* d-carcdr-data d-carcdr-data)
     (<- (expr stdin) (read-expr stdin))
     (<- (expr stdin) (Eval expr (atom* nil) stdin))
     (printexpr expr (cons "\\n" (main stdin)))))
