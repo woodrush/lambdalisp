@@ -24,8 +24,9 @@
       (cont m stdin))
     (t
       (do
-        (<- (x stdin) (Eval (car-data* m) a stdin))
-        (<- (y stdin) (Evlis (cdr-data* m) a stdin))
+        (<- (car-m cdr-m) (d-carcdr-data m))
+        (<- (x stdin) (Eval car-m a stdin))
+        (<- (y stdin) (Evlis cdr-m a stdin))
         (cont (cons-data* x y) stdin)))))
 
 (defrec-lazy Assoc (x y cont)
@@ -145,6 +146,12 @@
     (<- (dtype dbody) (data))
     (<- (dcar dcdr) (dbody))
     (cont dcdr)))
+
+(defun-lazy d-carcdr-data (data cont)
+  (do
+    (<- (dtype dbody) (data))
+    (<- (dcar dcdr) (dbody))
+    (cont dcar dcdr)))
 
 (defmacro-lazy typematch (expr atomcase listcase)
   `((typeof ,expr)
