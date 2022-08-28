@@ -48,8 +48,9 @@
     (t
       (do
         (<- (car-x cdr-x) (d-carcdr-data x))
-        (<- (h) (Pairlis cdr-x (cdr-data* y) a))
-        (cont (cons-data* (cons-data* car-x (car-data* y)) h))))))
+        (<- (car-y cdr-y) (d-carcdr-data y))
+        (<- (h) (Pairlis cdr-x cdr-y a))
+        (cont (cons-data* (cons-data* car-x car-y) h))))))
 
 (defrec-lazy Eval (e a stdin cont)
   (do
@@ -94,7 +95,8 @@
       (do
         (let* t-atom (atom* (list (car (cdr kAtom)))))
         (<- (car-x cdr-x) (d-carcdr-data x))
-        (let* arg2 (car-data* cdr-x))
+        (<- (arg2) (car-data cdr-x))
+        ;; (let* arg2 (car-data* cdr-x))
         ;; (let* car-x (car-data* x))
         (let* fv (valueof f))
         (let* stringeq stringeq)
@@ -108,16 +110,22 @@
           ((stringeq fv kAtom)
             (cont (if (isatom car-x) t-atom (atom* nil)) stdin))
           ((stringeq fv kCar)
-            (cont (car-data* car-x) stdin))
+            (do
+              (<- (ret) (car-data car-x))
+              (cont ret stdin)))
           ((stringeq fv kCdr)
-            (cont (cdr-data* car-x) stdin))
+            (do
+              (<- (ret) (cdr-data car-x))
+              (cont ret stdin)))
           (t
             (do
               (<- (p) (Assoc f a))
               (Apply p x a stdin cont))))))
     (t
       (do
-        (let* cdr-f (cdr-data* f))
+        (<- (car-f cdr-f) (d-carcdr-data f))
+        (<- (car-cdr-f cdr-cdr-f) (d-carcdr-data f))
+        ;; TODO: continuations
         (<- (q) (Pairlis (car-data* cdr-f) x a))
         (Eval (car-data* (cdr-data* cdr-f)) q stdin cont)))))
 
@@ -147,7 +155,7 @@
   (do
     (<- (dtype dbody) (data))
     (dtype
-      (cont dbody)
+      (cont data)
       (do
         (<- (dcar dcdr) (dbody))
         (cont dcar)))))
@@ -155,10 +163,8 @@
 (defun-lazy cdr-data (data cont)
   (do
     (<- (dtype dbody) (data))
-    (if-then-return (isnil-data dbody)
-      (cont dbody))
     (dtype
-      (cont dbody)
+      (cont data)
       (do
         (<- (dcar dcdr) (dbody))
         (cont dcdr)))))
@@ -167,7 +173,7 @@
   (do
     (<- (dtype dbody) (data))
     (dtype
-      (cont dbody dbody)
+      (cont data data)
       (do
         (<- (dcar dcdr) (dbody))
         (cont dcar dcdr)))))
@@ -280,13 +286,13 @@
 
 (defrec-lazy read-expr (stdin cont)
   (do
-    (let* c (car stdin))
+    (<- (c cdr-stdin) (stdin))
     (let* =-bit =-bit)
     (cond
       ((or (=-bit " " c) (=-bit "\\n" c))
-        (read-expr (cdr stdin) cont))
+        (read-expr cdr-stdin cont))
       ((=-bit "(" c)
-        (read-list (cdr stdin) nil cont))
+        (read-list cdr-stdin nil cont))
       (t
         (read-atom stdin cont)))))
 
