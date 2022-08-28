@@ -68,10 +68,13 @@
         (do
           (<- (car-e cdr-e) (d-carcdr-data e))
           ;; (let* cdr-e (cdr-data* e))
-          (let* val-e (valueof (car-data* e)))
+          (<- (type-e val-e) (car-e))
+          ;; (let* val-e (valueof (car-data* e)))
           (cond
             ((stringeq val-e kQuote)
-              (cont (car-data* cdr-e) stdin))
+              (do
+                (<- (car-cdr-e) (car-data cdr-e))
+                (cont car-cdr-e stdin)))
             ((stringeq val-e kRead)
               (do
                 (<- (expr stdin) (read-expr stdin))
@@ -80,14 +83,15 @@
               (do
                 (if-then-return (isnil-data cdr-e)
                   (cons "\\n" (cont cdr-e stdin)))
-                (<- (expr stdin) (Eval (car-data* cdr-e) a stdin))
+                (<- (car-cdr-e) (car-data cdr-e))
+                (<- (expr stdin) (Eval car-cdr-e a stdin))
                 (printexpr expr (cont expr stdin))))
             ((stringeq val-e kCond)
               (Evcon cdr-e a stdin cont))
             (t
               (do
                 (<- (y stdin) (Evlis cdr-e a stdin))
-                (Apply (car-data* e) y a stdin cont)))))))))
+                (Apply car-e y a stdin cont)))))))))
 
 (defrec-lazy Apply (f x a stdin cont)
   (cond
@@ -124,10 +128,10 @@
     (t
       (do
         (<- (car-f cdr-f) (d-carcdr-data f))
-        (<- (car-cdr-f cdr-cdr-f) (d-carcdr-data f))
-        ;; TODO: continuations
-        (<- (q) (Pairlis (car-data* cdr-f) x a))
-        (Eval (car-data* (cdr-data* cdr-f)) q stdin cont)))))
+        (<- (car-cdr-f cdr-cdr-f) (d-carcdr-data cdr-f))
+        (<- (q) (Pairlis car-cdr-f x a))
+        (<- (car-cdr-cdr-f) (car-data cdr-cdr-f))
+        (Eval car-cdr-cdr-f q stdin cont)))))
 
 
 ;;================================================================
