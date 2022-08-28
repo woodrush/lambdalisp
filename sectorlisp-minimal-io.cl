@@ -3,12 +3,20 @@
 
 (defrec-lazy Evcon (c a stdin cont)
   (do
-    (<- (expr stdin) (Eval (car-data* (car-data* c)) a stdin))
+    (<- (x) (car-data c))
+    (<- (x) (car-data x))
+    (<- (expr stdin) (Eval x a stdin))
     (cond
       ((isnil-data expr)
-        (Evcon (cdr-data* c) a stdin cont))
+        (do
+          (<- (x) (cdr-data c))
+          (Evcon x a stdin cont)))
       (t
-        (Eval (car-data* (cdr-data* (car-data* c))) a stdin cont)))))
+        (do
+          (<- (x) (car-data c))
+          (<- (x) (cdr-data x))
+          (<- (x) (car-data x))
+          (Eval x a stdin cont))))))
 
 (defrec-lazy Evlis (m a stdin cont)
   (cond
@@ -125,6 +133,18 @@
 
 (defmacro-lazy atom* (value)
   `(cons type-atom ,value))
+
+(defun-lazy car-data (data cont)
+  (do
+    (<- (dtype dbody) (data))
+    (<- (dcar dcdr) (dbody))
+    (cont dcar)))
+
+(defun-lazy cdr-data (data cont)
+  (do
+    (<- (dtype dbody) (data))
+    (<- (dcar dcdr) (dbody))
+    (cont dcdr)))
 
 (defmacro-lazy typematch (expr atomcase listcase)
   `((typeof ,expr)
@@ -279,7 +299,6 @@
               (cont
                 (lambda (x) (list4 "C" "O" "N" x))
                 (lambda (x) (cdr (list4 nil "C" x "R")))
-                ;; (lambda (x) (cons "C" (cons x (cons "R" nil))))
                 )))))
           (cont
             (cons "P" (list4 "R" "I" "N" "T"))
