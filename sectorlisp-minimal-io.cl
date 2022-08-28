@@ -30,11 +30,16 @@
         (cont (cons-data* x y) stdin)))))
 
 (defrec-lazy Assoc (x y cont)
-  (cond
-    ((stringeq (valueof x) (valueof (car-data* (car-data* y))))
-      (cont (cdr-data* (car-data* y))))
-    (t
-      (Assoc x (cdr-data* y) cont))))
+  (do
+    (<- (car-y cdr-y) (d-carcdr-data y))
+    (cond
+      ((stringeq (valueof x) (valueof (car-data* (car-data* y))))
+        (do
+          (<- (cdr-car-y) (cdr-data car-y))
+          (cont cdr-car-y)))
+      (t
+        (do
+        (Assoc x cdr-y cont))))))
 
 (defrec-lazy Pairlis (x y a cont)
   (cond
