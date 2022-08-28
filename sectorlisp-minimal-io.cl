@@ -120,7 +120,9 @@
           ((stringeq fv kCons)
             (cont (cons-data* car-x arg2) stdin))
           ((stringeq fv kAtom)
-            (cont (if (isatom car-x) t-atom (atom* nil)) stdin))
+            (if ((isatom car-x))
+              (cont t-atom stdin)
+              (cont (atom* nil) stdin)))
           ((stringeq fv kCar)
             (do
               (<- (ret) (car-data car-x))
