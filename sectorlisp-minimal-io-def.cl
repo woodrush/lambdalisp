@@ -146,6 +146,33 @@
 (defmacro-lazy cons-data* (x y)
   `(cons type-list (cons ,x ,y)))
 
+(defun-lazy car-data (data cont)
+  (do
+    (<- (dtype dbody) (data))
+    (dtype
+      (cont data)
+      (do
+        (<- (dcar dcdr) (dbody))
+        (cont dcar)))))
+
+(defun-lazy cdr-data (data cont)
+  (do
+    (<- (dtype dbody) (data))
+    (dtype
+      (cont data)
+      (do
+        (<- (dcar dcdr) (dbody))
+        (cont dcdr)))))
+
+(defun-lazy d-carcdr-data (data cont)
+  (do
+    (<- (dtype dbody) (data))
+    (dtype
+      (cont data data)
+      (do
+        (<- (dcar dcdr) (dbody))
+        (cont dcar dcdr)))))
+
 (defmacro-lazy atom* (value)
   `(cons type-atom ,value))
 
@@ -165,7 +192,11 @@
 ;; Printing
 ;;================================================================
 (defrec-lazy reverse (l curlist)
-  (if (isnil l) curlist (reverse (cdr l) (cons (car l) curlist))))
+  (if (isnil l)
+    curlist
+    (do
+      (<- (car-l cdr-l) (l))
+      (reverse cdr-l (cons car-l curlist)))))
 
 (defun-lazy printatom (expr cont)
   (reverse (reverse (valueof expr) nil) cont))
@@ -183,8 +214,7 @@
 
 (defrec-lazy printlist (expr cont)
   (do
-    (let* car-ed (car-data* expr))
-    (let* cdr-ed (cdr-data* expr))
+    (<- (car-ed cdr-ed) (d-carcdr-data expr))
     (let* ")" ")")
     (let* " " " ")
     (printexpr car-ed
