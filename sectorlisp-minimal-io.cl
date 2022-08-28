@@ -268,21 +268,23 @@
       (t
         nil))))
 
-(defrec-lazy reverse-base2data (l curlist cont)
-  (if (isnil l)
-    (cont curlist)
-    (reverse-base2data (cdr l) (cons-data* (car l) curlist) cont)))
+;; (defrec-lazy reverse-base2data (l curlist cont)
+;;   (if (isnil l)
+;;     (cont curlist)
+;;     (reverse-base2data (cdr l) (cons-data* (car l) curlist) cont)))
 
-(defrec-lazy read-list (stdin curexpr cont)
-  (cond
-    ((=-bit ")" (car stdin))
-      (do
-        (<- (reversed) (reverse-base2data curexpr (atom* nil)))
-        (cont reversed (cdr stdin))))
-    (t
-      (do
-        (<- (expr stdin) (read-expr stdin))
-        (read-list stdin (cons expr curexpr) cont)))))
+(defrec-lazy read-list (stdin cont)
+  (do
+    (<- (c cdr-stdin) (stdin))
+    (cond
+      ((=-bit ")" c)
+        (do
+          (cont (atom* nil) cdr-stdin)))
+      (t
+        (do
+          (<- (expr stdin) (read-expr stdin))
+          (<- (lexpr stdin) (read-list stdin))
+          (cont (cons-data* expr lexpr) stdin))))))
 
 (defrec-lazy read-expr (stdin cont)
   (do
@@ -292,7 +294,7 @@
       ((or (=-bit " " c) (=-bit "\\n" c))
         (read-expr cdr-stdin cont))
       ((=-bit "(" c)
-        (read-list cdr-stdin nil cont))
+        (read-list cdr-stdin cont))
       (t
         (read-atom stdin cont)))))
 
