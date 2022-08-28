@@ -47,8 +47,9 @@
       (cont a))
     (t
       (do
-        (<- (h) (Pairlis (cdr-data* x) (cdr-data* y) a))
-        (cont (cons-data* (cons-data* (car-data* x) (car-data* y)) h))))))
+        (<- (car-x cdr-x) (d-carcdr-data x))
+        (<- (h) (Pairlis cdr-x (cdr-data* y) a))
+        (cont (cons-data* (cons-data* car-x (car-data* y)) h))))))
 
 (defrec-lazy Eval (e a stdin cont)
   (do
@@ -64,7 +65,8 @@
           (cont expr stdin)))
       (t
         (do
-          (let* cdr-e (cdr-data* e))
+          (<- (car-e cdr-e) (d-carcdr-data e))
+          ;; (let* cdr-e (cdr-data* e))
           (let* val-e (valueof (car-data* e)))
           (cond
             ((stringeq val-e kQuote)
@@ -91,8 +93,9 @@
     ((isatom f)
       (do
         (let* t-atom (atom* (list (car (cdr kAtom)))))
-        (let* arg2 (car-data* (cdr-data* x)))
-        (let* car-x (car-data* x))
+        (<- (car-x cdr-x) (d-carcdr-data x))
+        (let* arg2 (car-data* cdr-x))
+        ;; (let* car-x (car-data* x))
         (let* fv (valueof f))
         (let* stringeq stringeq)
         (cond
@@ -143,20 +146,31 @@
 (defun-lazy car-data (data cont)
   (do
     (<- (dtype dbody) (data))
-    (<- (dcar dcdr) (dbody))
-    (cont dcar)))
+    (dtype
+      (cont dbody)
+      (do
+        (<- (dcar dcdr) (dbody))
+        (cont dcar)))))
 
 (defun-lazy cdr-data (data cont)
   (do
     (<- (dtype dbody) (data))
-    (<- (dcar dcdr) (dbody))
-    (cont dcdr)))
+    (if-then-return (isnil-data dbody)
+      (cont dbody))
+    (dtype
+      (cont dbody)
+      (do
+        (<- (dcar dcdr) (dbody))
+        (cont dcdr)))))
 
 (defun-lazy d-carcdr-data (data cont)
   (do
     (<- (dtype dbody) (data))
-    (<- (dcar dcdr) (dbody))
-    (cont dcar dcdr)))
+    (dtype
+      (cont dbody dbody)
+      (do
+        (<- (dcar dcdr) (dbody))
+        (cont dcar dcdr)))))
 
 (defmacro-lazy typematch (expr atomcase listcase)
   `((typeof ,expr)
