@@ -32,8 +32,12 @@
 (defrec-lazy Assoc (x y cont)
   (do
     (<- (car-y cdr-y) (d-carcdr-data y))
+    (<- (type-x val-x) (x))
+    (<- (car-y) (car-data y))
+    (<- (car-car-y) (car-data car-y))
     (cond
-      ((stringeq (valueof x) (valueof (car-data* (car-data* y))))
+      ;; Destructing (valueof car-car-y) with continuation-passing fails sometimes
+      ((stringeq val-x (valueof car-car-y))
         (do
           (<- (cdr-car-y) (cdr-data car-y))
           (cont cdr-car-y)))
