@@ -110,9 +110,13 @@
         (let* stringeq stringeq)
         (cond
           ((stringeq fv kEq)
-            (if (not (and (isatom car-x) (isatom arg2)))
-              (cont (atom* nil) stdin)
-              (cont (if (stringeq (valueof car-x) (valueof arg2)) t-atom (atom* nil)) stdin)))
+            (cond
+              ((not (and (isatom car-x) (isatom arg2)))
+                (cont (atom* nil) stdin))
+              ((stringeq (valueof car-x) (valueof arg2))
+                (cont t-atom stdin))
+              (t
+                (cont (atom* nil) stdin))))
           ((stringeq fv kCons)
             (cont (cons-data* car-x arg2) stdin))
           ((stringeq fv kAtom)
