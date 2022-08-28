@@ -3,8 +3,7 @@
 
 (defrec-lazy Evcon (c a stdin cont)
   (do
-    (<- (x) (car-data c))
-    (<- (x) (car-data x))
+    (<- (x) (car-data c (car-data)))
     (<- (expr stdin) (Eval x a stdin))
     (cond
       ((isnil-data expr)
@@ -13,9 +12,11 @@
           (Evcon x a stdin cont)))
       (t
         (do
-          (<- (x) (car-data c))
-          (<- (x) (cdr-data x))
-          (<- (x) (car-data x))
+          (<- (x)
+            ((lambda (return)
+              (do
+                (<- (x) (car-data c (cdr-data)))
+                (car-data x return)))))
           (Eval x a stdin cont))))))
 
 (defrec-lazy Evlis (m a stdin cont)
@@ -32,12 +33,12 @@
 (defrec-lazy Assoc (x y cont)
   (do
     (<- (car-y cdr-y) (d-carcdr-data y))
-    (<- (type-x val-x) (x))
-    (<- (car-y) (car-data y))
     (<- (car-car-y) (car-data car-y))
+    (<- (type-x val-x) (x))
+    (<- (_ vccy) (car-car-y))
     (cond
       ;; Destructing (valueof car-car-y) with continuation-passing fails sometimes
-      ((stringeq val-x (valueof car-car-y))
+      ((stringeq val-x vccy)
         (do
           (<- (cdr-car-y) (cdr-data car-y))
           (cont cdr-car-y)))
@@ -153,11 +154,11 @@
 (defmacro-lazy typeof  (x) `(car ,x))
 (defmacro-lazy valueof (x) `(cdr ,x))
 
-(defmacro-lazy car-data* (data)
-  `(car (valueof ,data)))
+;; (defmacro-lazy car-data* (data)
+;;   `(car (valueof ,data)))
 
-(defmacro-lazy cdr-data* (data)
-  `(cdr (valueof ,data)))
+;; (defmacro-lazy cdr-data* (data)
+;;   `(cdr (valueof ,data)))
 
 (defmacro-lazy cons-data* (x y)
   `(cons type-list (cons ,x ,y)))
