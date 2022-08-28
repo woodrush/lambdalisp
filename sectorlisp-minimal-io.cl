@@ -194,7 +194,11 @@
 ;; Printing
 ;;================================================================
 (defrec-lazy reverse (l curlist)
-  (if (isnil l) curlist (reverse (cdr l) (cons (car l) curlist))))
+  (if (isnil l)
+    curlist
+    (do
+      (<- (car-l cdr-l) (l))
+      (reverse cdr-l (cons car-l curlist)))))
 
 (defun-lazy printatom (expr cont)
   (reverse (reverse (valueof expr) nil) cont))
