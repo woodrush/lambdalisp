@@ -216,8 +216,7 @@
 
 (defrec-lazy printlist (expr cont)
   (do
-    (let* car-ed (car-data* expr))
-    (let* cdr-ed (cdr-data* expr))
+    (<- (car-ed cdr-ed) (d-carcdr-data expr))
     (let* ")" ")")
     (let* " " " ")
     (printexpr car-ed
@@ -234,12 +233,14 @@
 ;; Reader
 ;;================================================================
 (defrec-lazy =-bit (n m)
-  (cond ((isnil n)
-          t)
-        ((xnor (car n) (car m))
-          (=-bit (cdr n) (cdr m)))
-        (t
-          nil)))
+  (do
+    (if-then-return (isnil n)
+      t)
+    (<- (car-n cdr-n) (n))
+    (<- (car-m cdr-m) (m))
+    (if-then-return (xnor car-n car-m)
+      (=-bit cdr-n cdr-m))
+    nil))
 
 (defrec-lazy read-string (stdin cont)
   (do
@@ -264,10 +265,13 @@
         isnil-s2)
       (isnil-s2
         isnil-s1)
-      ((=-bit (car s1) (car s2))
-        (stringeq (cdr s1) (cdr s2)))
       (t
-        nil))))
+        (do
+          (<- (car-s1 cdr-s1) (s1))
+          (<- (car-s2 cdr-s2) (s2))
+          (if-then-return (=-bit car-s1 car-s2)
+            (stringeq cdr-s1 cdr-s2))
+          nil)))))
 
 (defrec-lazy read-list (stdin cont)
   (do
