@@ -237,22 +237,19 @@
         (t
           nil)))
 
-(defrec-lazy read-atom* (curstr stdin cont)
-  (let ((c (car stdin)))
+(defrec-lazy read-string (stdin cont)
+  (do
+    (<- (c cdr-stdin) (stdin))
     (cond
       ((or (=-bit "(" c) (=-bit ")" c) (=-bit " " c) (=-bit "\\n" c))
-        (do
-          (let* reversed (reverse curstr nil))
-          (let* next (lambda (x) (cont (atom* x) stdin)))
-          (if-then-return (stringeq reversed kNil)
-            (next nil))
-          (next reversed)))
+        (cont nil stdin))
       (t
         (do
-          (read-atom* (cons (car stdin) curstr) (cdr stdin) cont))))))
-
-(defmacro-lazy read-atom (stdin cont)
-  `(read-atom* nil ,stdin ,cont))
+          (<- (str stdin) (read-string cdr-stdin))
+          (let* ret (cons c str))
+          (if-then-return (stringeq ret kNil)
+            (cont nil stdin))
+          (cont ret stdin))))))
 
 (defrec-lazy stringeq (s1 s2)
   (do
@@ -267,11 +264,6 @@
         (stringeq (cdr s1) (cdr s2)))
       (t
         nil))))
-
-;; (defrec-lazy reverse-base2data (l curlist cont)
-;;   (if (isnil l)
-;;     (cont curlist)
-;;     (reverse-base2data (cdr l) (cons-data* (car l) curlist) cont)))
 
 (defrec-lazy read-list (stdin cont)
   (do
@@ -296,7 +288,9 @@
       ((=-bit "(" c)
         (read-list cdr-stdin cont))
       (t
-        (read-atom stdin cont)))))
+        (do
+          (<- (str stdin) (read-string stdin))
+          (cont (atom* str) stdin))))))
 
 
 ;;================================================================
