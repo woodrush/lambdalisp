@@ -100,8 +100,12 @@
     ((isatom f)
       (do
         (let* t-atom (atom* (list (car (cdr kAtom)))))
-        (<- (car-x cdr-x) (d-carcdr-data x))
-        (<- (arg2) (car-data cdr-x))
+        (<- (arg2 car-x)
+          ((lambda (cont)
+            (do
+              (<- (car-x cdr-x) (d-carcdr-data x))
+              (<- (arg2) (car-data cdr-x))
+              (cont arg2 car-x)))))
         (let* fv (valueof f))
         (let* stringeq stringeq)
         (cond
