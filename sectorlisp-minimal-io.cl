@@ -94,6 +94,7 @@
   (cond
     ((isatom f)
       (do
+        (let* kAtom kAtom)
         (let* t-atom (atom* (list (car (cdr kAtom)))))
         (<- (car-x arg2)
           ((lambda (cont)
