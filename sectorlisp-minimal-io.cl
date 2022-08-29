@@ -215,15 +215,17 @@
     (cons (car str) (printstring (cdr str) cont))))
 
 (defrec-lazy printexpr (expr cont)
-  (let ((isnil-data isnil-data)
+  ((let ((isnil-data isnil-data)
         (printstring printstring))
     (typematch expr
       ;; atom
       (if (isnil-data expr)
-        (printstring kNil cont)
-        (printstring (valueof expr) cont))
+        (printstring kNil)
+        (printstring (valueof expr)))
       ;; list
-      (cons "(" (printlist expr cont)))))
+      (lambda (cont) (cons "(" (printlist expr cont)))))
+   ;; Factored out
+   cont))
 
 (defrec-lazy printlist (expr cont)
   (do
