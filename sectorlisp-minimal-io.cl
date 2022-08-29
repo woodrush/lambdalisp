@@ -296,15 +296,16 @@
   (do
     (<- (c cdr-stdin) (stdin))
     (let* =-bit =-bit)
-    (cond
+    ((cond
       ((or (=-bit " " c) (=-bit "\\n" c))
-        (read-expr cdr-stdin cont))
+        (read-expr cdr-stdin))
       ((=-bit "(" c)
-        (read-list cdr-stdin cont))
+        (read-list cdr-stdin))
       (t
         (do
           (<- (str stdin) (read-string stdin))
-          (cont (atom* str) stdin))))))
+          (lambda (cont) (cont (atom* str) stdin)))))
+      cont)))
 
 
 ;;================================================================
