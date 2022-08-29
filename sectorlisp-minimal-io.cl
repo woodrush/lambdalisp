@@ -120,17 +120,13 @@
           ((stringeq fv kCons)
             (cont (cons-data* car-x arg2)))
           ((stringeq fv kAtom)
-            (if ((isatom car-x))
+            (if (isatom car-x)
               (cont t-atom)
               (cont (atom* nil))))
           ((stringeq fv kCar)
-            (do
-              (<- (ret) (car-data car-x))
-              (cont ret)))
+            (car-data car-x cont))
           ((stringeq fv kCdr)
-            (do
-              (<- (ret) (cdr-data car-x))
-              (cont ret)))
+            (cdr-data car-x cont))
           (t
             (do
               (<- (p) (Assoc f a))
