@@ -202,24 +202,22 @@
 ;;================================================================
 ;; Printing
 ;;================================================================
-(defrec-lazy reverse (l curlist)
-  (if (isnil l)
-    curlist
-    (do
-      (<- (car-l cdr-l) (l))
-      (reverse cdr-l (cons car-l curlist)))))
+(defrec-lazy printstring (str cont)
+  (if (isnil str)
+    cont
+    (cons (car str) (printstring (cdr str) cont))))
 
-(defun-lazy printatom (expr cont)
-  (reverse (reverse (valueof expr) nil) cont))
+;; (defun-lazy printatom (expr cont)
+;;   (printstring (valueof expr) cont))
 
 (defrec-lazy printexpr (expr cont)
   (let ((isnil-data isnil-data)
-        (printatom printatom))
+        (printstring printstring))
     (typematch expr
       ;; atom
       (if (isnil-data expr)
-        (printatom (atom* kNil) cont)
-        (printatom expr cont))
+        (printstring kNil cont)
+        (printstring (valueof expr) cont))
       ;; list
       (cons "(" (printlist expr cont)))))
 
@@ -233,7 +231,7 @@
         ;; atom
         (if (isnil-data cdr-ed)
           (cons ")" cont)
-          (cons " " (cons "." (cons " " (printatom cdr-ed (cons ")" cont))))))
+          (cons " " (cons "." (cons " " (printstring (valueof cdr-ed) (cons ")" cont))))))
         ;; list
         (cons " " (printlist cdr-ed cont))))))
 

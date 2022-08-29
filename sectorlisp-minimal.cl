@@ -115,6 +115,15 @@
 (defmacro-lazy atom* (value)
   `(cons type-atom ,value))
 
+(defun-lazy d-carcdr-data (data cont)
+  (do
+    (<- (dtype dbody) (data))
+    (dtype
+      (cont data data)
+      (do
+        (<- (dcar dcdr) (dbody))
+        (cont dcar dcdr)))))
+
 (defmacro-lazy typematch (expr atomcase listcase)
   `((typeof ,expr)
     ,atomcase
@@ -130,27 +139,25 @@
 ;;================================================================
 ;; Printing
 ;;================================================================
-(defrec-lazy reverse (l curlist)
-  (if (isnil l) curlist (reverse (cdr l) (cons (car l) curlist))))
-
-(defun-lazy printatom (expr cont)
-  (reverse (reverse (valueof expr) nil) cont))
+(defrec-lazy printstring (str cont)
+  (if (isnil str)
+    cont
+    (cons (car str) (printstring (cdr str) cont))))
 
 (defrec-lazy printexpr (expr cont)
   (let ((isnil-data isnil-data)
-        (printatom printatom))
+        (printstring printstring))
     (typematch expr
       ;; atom
       (if (isnil-data expr)
-        (printatom (atom* kNil) cont)
-        (printatom expr cont))
+        (printstring kNil cont)
+        (printstring (valueof expr) cont))
       ;; list
       (cons "(" (printlist expr cont)))))
 
 (defrec-lazy printlist (expr cont)
   (do
-    (let* car-ed (car-data* expr))
-    (let* cdr-ed (cdr-data* expr))
+    (<- (car-ed cdr-ed) (d-carcdr-data expr))
     (let* ")" ")")
     (let* " " " ")
     (printexpr car-ed
@@ -158,7 +165,7 @@
         ;; atom
         (if (isnil-data cdr-ed)
           (cons ")" cont)
-          (cons " " (cons "." (cons " " (printatom cdr-ed (cons ")" cont))))))
+          (cons " " (cons "." (cons " " (printstring (valueof cdr-ed) (cons ")" cont))))))
         ;; list
         (cons " " (printlist cdr-ed cont))))))
 
@@ -317,7 +324,7 @@
     (let* Y-comb Y-comb)
     (let* isnil isnil)
     (let* stringeq stringeq)
-    (let* reverse reverse)
+    ;; (let* reverse reverse)
     (<- (expr stdin) (read-expr stdin))
     (<- (expr) (Eval expr nil))
     (printexpr expr (cons "\\n" (main stdin)))))
