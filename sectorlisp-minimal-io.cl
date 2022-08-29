@@ -27,8 +27,8 @@
       (do
         (<- (car-m cdr-m) (d-carcdr-data m))
         (<- (x stdin) (Eval car-m a stdin))
-        (<- (y stdin) (Evlis cdr-m a stdin))
-        (cont (cons-data* x y) stdin)))))
+        (<- (y) (Evlis cdr-m a stdin)) ;; Implicit parameter passing: stdin
+        (cont (cons-data* x y))))))
 
 (defrec-lazy Assoc (x y cont)
   (do
@@ -88,48 +88,49 @@
             (t
               (do
                 (<- (y stdin) (Evlis cdr-e a stdin))
-                (Apply car-e y a stdin cont)))))))))
+                (Apply car-e y a cont stdin)))))))))
 
-(defrec-lazy Apply (f x a stdin cont)
+(defrec-lazy Apply (f x a cont stdin)
   (cond
     ((isatom f)
       (do
         (let* t-atom (atom* (list (car (cdr kAtom)))))
-        (<- (arg2 car-x)
+        (<- (car-x arg2)
           ((lambda (cont)
             (do
               (<- (car-x cdr-x) (d-carcdr-data x))
-              (<- (arg2) (car-data cdr-x))
-              (cont arg2 car-x)))))
+              (car-data cdr-x) ;; Implicit parameter passing: arg2
+              (cont car-x)))))
         (let* fv (valueof f))
         (let* stringeq stringeq)
-        (cond
+        ((cond
           ((stringeq fv kEq)
             (cond
               ((not (and (isatom car-x) (isatom arg2)))
-                (cont (atom* nil) stdin))
+                (cont (atom* nil)))
               ((stringeq (valueof car-x) (valueof arg2))
-                (cont t-atom stdin))
+                (cont t-atom))
               (t
-                (cont (atom* nil) stdin))))
+                (cont (atom* nil)))))
           ((stringeq fv kCons)
-            (cont (cons-data* car-x arg2) stdin))
+            (cont (cons-data* car-x arg2)))
           ((stringeq fv kAtom)
             (if ((isatom car-x))
-              (cont t-atom stdin)
-              (cont (atom* nil) stdin)))
+              (cont t-atom)
+              (cont (atom* nil))))
           ((stringeq fv kCar)
             (do
               (<- (ret) (car-data car-x))
-              (cont ret stdin)))
+              (cont ret)))
           ((stringeq fv kCdr)
             (do
               (<- (ret) (cdr-data car-x))
-              (cont ret stdin)))
+              (cont ret)))
           (t
             (do
               (<- (p) (Assoc f a))
-              (Apply p x a stdin cont))))))
+              (Apply p x a cont))))
+        stdin)))
     (t
       (do
         (<- (car-f cdr-f) (d-carcdr-data f))
@@ -206,9 +207,6 @@
   (if (isnil str)
     cont
     (cons (car str) (printstring (cdr str) cont))))
-
-;; (defun-lazy printatom (expr cont)
-;;   (printstring (valueof expr) cont))
 
 (defrec-lazy printexpr (expr cont)
   (let ((isnil-data isnil-data)
