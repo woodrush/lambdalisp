@@ -34,17 +34,13 @@
   (do
     (<- (car-y cdr-y) (d-carcdr-data y))
     (<- (car-car-y) (car-data car-y))
-    (<- (type-x val-x) (x))
+    (<- (_ val-x) (x))
     (<- (_ vccy) (car-car-y))
     (cond
-      ;; Destructing (valueof car-car-y) with continuation-passing fails sometimes
       ((stringeq val-x vccy)
-        (do
-          (<- (cdr-car-y) (cdr-data car-y))
-          (cont cdr-car-y)))
+        (cdr-data car-y cont))
       (t
-        (do
-        (Assoc x cdr-y cont))))))
+        (Assoc x cdr-y cont)))))
 
 (defrec-lazy Pairlis (x y a cont)
   (cond
@@ -72,16 +68,14 @@
       (t
         (do
           (<- (car-e cdr-e) (d-carcdr-data e))
-          (<- (type-e val-e) (car-e))
+          (<- (_ val-e) (car-e))
           (cond
             ((stringeq val-e kQuote)
               (do
                 (<- (car-cdr-e) (car-data cdr-e))
                 (cont car-cdr-e stdin)))
             ((stringeq val-e kRead)
-              (do
-                (<- (expr stdin) (read-expr stdin))
-                (cont expr stdin)))
+              (read-expr stdin cont))
             ((stringeq val-e kPrint)
               (do
                 (if-then-return (isnil-data cdr-e)
