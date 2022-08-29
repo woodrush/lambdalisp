@@ -3,8 +3,11 @@
 
 (defrec-lazy Evcon (c a stdin cont)
   ((do
-    (<- (x) (car-data c (car-data)))
-    (<- (expr stdin) (Eval x a stdin))
+    (<- (expr stdin)
+      ((lambda (return)
+        (do
+          (<- (x) (car-data c (car-data)))
+          (Eval x a stdin return)))))
     (cond
       ((isnil-data expr)
         (do
@@ -91,13 +94,13 @@
               (Evcon cdr-e a stdin cont))
             (t
               (do
-                (<- (y stdin) (Evlis cdr-e a stdin))
-                (Apply car-e y a cont stdin)))))))))
+                (<- (y) (Evlis cdr-e a stdin)) ;; Implicit parameter passing: stdin
+                (Apply car-e y a cont)))))))))
 
 (defrec-lazy Apply (f x a cont stdin)
   (cond
     ((isatom f)
-      (do
+      ((do
         (let* kAtom kAtom)
         (let* t-atom (atom* (list (car (cdr kAtom)))))
         (<- (car-x arg2)
@@ -108,7 +111,7 @@
               (cont car-x)))))
         (let* fv (valueof f))
         (let* stringeq stringeq)
-        ((cond
+        (cond
           ((stringeq fv kEq)
             (cond
               ((not (and (isatom car-x) (isatom arg2)))
@@ -123,16 +126,20 @@
             (if (isatom car-x)
               (cont t-atom)
               (cont (atom* nil))))
-          ((stringeq fv kCar)
-            (car-data car-x cont))
-          ((stringeq fv kCdr)
-            (cdr-data car-x cont))
           (t
-            (do
-              (<- (p) (Assoc f a))
-              (Apply p x a cont))))
-        ;; Factored out
-        stdin)))
+            ((cond
+              ((stringeq fv kCar)
+                (car-data car-x))
+              ((stringeq fv kCdr)
+                (cdr-data car-x))
+              (t
+                (do
+                  (<- (p) (Assoc f a))
+                  (Apply p x a))))
+             ;; Factored out
+             cont))))
+       ;; Factored out
+       stdin))
     (t
       (do
         (<- (car-f cdr-f) (d-carcdr-data f))
@@ -212,7 +219,7 @@
 
 (defrec-lazy printexpr (expr cont)
   ((let ((isnil-data isnil-data)
-        (printstring printstring))
+         (printstring printstring))
     (typematch expr
       ;; atom
       (if (isnil-data expr)
