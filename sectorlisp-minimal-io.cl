@@ -2,14 +2,14 @@
 
 
 (defrec-lazy Evcon (c a stdin cont)
-  (do
+  ((do
     (<- (x) (car-data c (car-data)))
     (<- (expr stdin) (Eval x a stdin))
     (cond
       ((isnil-data expr)
         (do
           (<- (x) (cdr-data c))
-          (Evcon x a stdin cont)))
+          (Evcon x a stdin)))
       (t
         (do
           (<- (x)
@@ -17,7 +17,9 @@
               (do
                 (<- (x) (car-data c (cdr-data)))
                 (car-data x return)))))
-          (Eval x a stdin cont))))))
+          (Eval x a stdin)))))
+   ;; Factored out
+   cont))
 
 (defrec-lazy Evlis (m a stdin cont)
   (cond
@@ -31,16 +33,18 @@
         (cont (cons-data* x y))))))
 
 (defrec-lazy Assoc (x y cont)
-  (do
+  ((do
     (<- (car-y cdr-y) (d-carcdr-data y))
     (<- (car-car-y) (car-data car-y))
     (<- (_ val-x) (x))
     (<- (_ vccy) (car-car-y))
     (cond
       ((stringeq val-x vccy)
-        (cdr-data car-y cont))
+        (cdr-data car-y))
       (t
-        (Assoc x cdr-y cont)))))
+        (Assoc x cdr-y))))
+   ;; Factored out
+   cont))
 
 (defrec-lazy Pairlis (x y a cont)
   (cond
@@ -131,6 +135,7 @@
             (do
               (<- (p) (Assoc f a))
               (Apply p x a cont))))
+        ;; Factored out
         stdin)))
     (t
       (do
