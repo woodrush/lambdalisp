@@ -3,24 +3,12 @@
 
 (defrec-lazy Evcon (c a stdin cont)
   ((do
-    (<- (expr stdin)
-      ((lambda (return)
-        (do
-          (<- (x) (car-data c (car-data)))
-          (Eval x a stdin return)))))
+    (<- (expr stdin) (Eval (car-data@ (car-data@ c)) a stdin))
     (cond
       ((isnil-data expr)
-        (do
-          (<- (x) (cdr-data c))
-          (Evcon x a stdin)))
+        (Evcon (cdr-data@ c) a stdin))
       (t
-        (do
-          (<- (x)
-            ((lambda (return)
-              (do
-                (<- (x) (car-data c (cdr-data)))
-                (car-data x return)))))
-          (Eval x a stdin)))))
+        (Eval (car-data@ (cdr-data@ (car-data@ c))) a stdin))))
    ;; Factored out
    cont))
 
@@ -38,11 +26,11 @@
 (defrec-lazy Assoc (x y cont)
   ((do
     (<- (car-y cdr-y) (d-carcdr-data y))
-    (<- (car-car-y) (car-data car-y))
-    (<- (_ val-x) (x))
-    (<- (_ vccy) (car-car-y))
+    ;; (<- (car-car-y) (car-data car-y))
+    ;; (<- (_ val-x) (x))
+    ;; (<- (_ vccy) (car-car-y))
     (cond
-      ((stringeq val-x vccy)
+      ((stringeq (valueof x) (valueof (car-data@ car-y)))
         (cdr-data car-y))
       (t
         (Assoc x cdr-y))))
@@ -158,11 +146,19 @@
 (defmacro-lazy typeof  (x) `(car ,x))
 (defmacro-lazy valueof (x) `(cdr ,x))
 
-;; (defmacro-lazy car-data* (data)
-;;   `(car (valueof ,data)))
+(defmacro-lazy car-data@ (data)
+  `(car (valueof ,data)))
 
-;; (defmacro-lazy cdr-data* (data)
-;;   `(cdr (valueof ,data)))
+(defmacro-lazy cdr-data@ (data)
+  `(cdr (valueof ,data)))
+
+(defun-lazy car-data* (data)
+  (car (valueof data)))
+
+(defun-lazy cdr-data* (data)
+  (cdr (valueof data)))
+
+
 
 (defmacro-lazy cons-data* (x y)
   `(cons type-list (cons ,x ,y)))
@@ -399,9 +395,9 @@
          "\\n"
          "("
          ")") (string-generator))
+    (let* Y-comb Y-comb)
     (let* read-expr read-expr)
     (let* printexpr printexpr)
-    (let* Y-comb Y-comb)
     (let* isnil isnil)
     (let* stringeq stringeq)
     (let* cdr-data cdr-data)
@@ -517,8 +513,10 @@
 ;;================================================================
 ;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
 
-;; (format t (compile-to-ski-lazy main))
+;; ;; (format t (compile-to-ski-lazy main))
 (format t (compile-to-blc-lazy main))
+;; (setq *print-pretty* 'nil)
+;; (print (compile-to-simple-lambda-lazy main))
 
 ;; ;; Print lambda term
 ;; (setf *print-right-margin* 800)
