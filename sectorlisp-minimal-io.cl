@@ -306,46 +306,64 @@
 ;;================================================================
 ;; Constants
 ;;================================================================
+
+(defrec-lazy char-generator (depth curf cont)
+  (cond
+    ((isnil depth
+      (cont curf)))
+    (t
+      (do
+        (let* cont (char-generator (cdr depth) (lambda (x) (cons nil (curf x))) cont))
+        (char-generator (cdr depth) (lambda (x) (cons t (curf x))) cont)))))
+
+
 (defun-lazy string-generator (cont)
   (do
-    (let* p-nil-nil p-nil-nil)
-    (let* p-nil-t p-nil-t)
-    (let* p-t-nil p-t-nil)
-    (let* p-t-t p-t-t)
-    ((lambda (cont)
-      (do
-        (let* symbol-prefix symbol-prefix)
-        (cont "."
-              " "
-              "\\n"
-              "("
-              ")")))
+    (<- ("P" "L" "M" "S" "U" "C" "I" "R" "E" "Q" "A" "D" "N" "T" "O")
       ((lambda (cont)
-      (do
-          (<- ("P" "L" "M" "S" "U" "C" "I" "R" "E" "Q" "A" "D" "N" "T" "O")
-            ((lambda (cont)
-              (do
-                (let* alphabet-prefix-nil alphabet-prefix-nil)
-                (let* alphabet-prefix-t alphabet-prefix-t)
-                (cont "P" "L" "M" "S" "U" "C" "I" "R" "E" "Q" "A" "D" "N" "T" "O")))))
-          (let* list4 (lambda (a b c d) (list a b c d)))
-          (let* gen-CONX (lambda (x) (list4 "C" "O" "N" x)))
-          (let* gen-CXR (lambda (x) (cdr (list4 x "C" x "R"))))
+        (let ((sym4 (lambda (a b c) (do ((lambda (x) (cons t (cons t x)))) (a) (b) (c) nil)))
+              (char4 (lambda (a b c) (do ((lambda (x) (cons t (cons nil x)))) (a) (b) (c) nil)))
+              ("11" (lambda (x) (cons nil (cons nil x))))
+              ("10" (lambda (x) (cons nil (cons t x))))
+              ("01" (lambda (x) (cons t (cons nil x))))
+              ("00" (lambda (x) (cons t (cons t x)))))
           (cont
-            (cons "P" (list4 "R" "I" "N" "T"))
-            (list4 "R" "E" "A" "D")
-            (cons "Q" (list4 "U" "O" "T" "E")) ;kQuote
-            (list4 "A" "T" "O" "M") ;kAtom
-            (gen-CXR "A") ;kCar
-            (gen-CXR "D") ;kCdr
-            (list "E" "Q"); kEq
-            (gen-CONX "S") ;kCons
-            (gen-CONX "D") ;kCond
-            (cdr (list4 gen-CXR "N" "I" "L")) ;kNil
-            ;; (atom* (list "T")) ;t-atom
-        )))
-        cont))))
-
+            (char4 ("01") ("00") ("00")) ;; "P"
+            (char4 ("00") ("11") ("00")) ;; "L"
+            (char4 ("00") ("11") ("01")) ;; "M"
+            (char4 ("01") ("00") ("11")) ;; "S"
+            (char4 ("01") ("01") ("01")) ;; "U"
+            (char4 ("00") ("00") ("11")) ;; "C"
+            (char4 ("00") ("10") ("01")) ;; "I"
+            (char4 ("01") ("00") ("10")) ;; "R"
+            (char4 ("00") ("01") ("01")) ;; "E"
+            (char4 ("01") ("00") ("01")) ;; "Q"
+            (char4 ("00") ("00") ("01")) ;; "A"
+            (char4 ("00") ("01") ("00")) ;; "D"
+            (char4 ("00") ("11") ("10")) ;; "N"
+            (char4 ("01") ("01") ("00")) ;; "T"
+            (char4 ("00") ("11") ("11")) ;; "O"
+            ;; Delayed application to the outermost `cont`
+            (sym4 ("10") ("11") ("10"))  ;; "."
+            (sym4 ("10") ("00") ("00"))  ;; " "
+            (sym4 ("00") ("10") ("10"))  ;; "\\n"
+            (sym4 ("10") ("10") ("00"))  ;; "("
+            (sym4 ("10") ("10") ("01"))  ;; ")"
+            )))))
+    (let* list4 (lambda (a b c d) (list a b c d)))
+    (let* gen-CONX (lambda (x) (list4 "C" "O" "N" x)))
+    (let* gen-CXR (lambda (x) (cdr (list4 x "C" x "R"))))
+    (cont
+      (cons "P" (list4 "R" "I" "N" "T"))
+      (list4 "R" "E" "A" "D")
+      (cons "Q" (list4 "U" "O" "T" "E")) ;kQuote
+      (list4 "A" "T" "O" "M") ;kAtom
+      (gen-CXR "A") ;kCar
+      (gen-CXR "D") ;kCdr
+      (list "E" "Q"); kEq
+      (gen-CONX "S") ;kCons
+      (gen-CONX "D") ;kCond
+      (cdr (list4 gen-CXR "N" "I" "L")))))
 
 ;;================================================================
 ;; User interface
