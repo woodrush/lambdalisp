@@ -305,63 +305,59 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (let* p-nil-nil p-nil-nil)
-    (let* p-nil-t p-nil-t)
-    (let* p-t-nil p-t-nil)
-    (let* p-t-t p-t-t)
-    (let* gen-keywords (lambda (cont)
-      (do
-          (let* alphabet-prefix-nil alphabet-prefix-nil)
-          (let* alphabet-prefix-t alphabet-prefix-t)
-          ;; (let* "L" "L")
-          ;; (let* "M" "M")
-          ;; (let* "S" "S")
-          ;; (let* "U" "U")
-          (let* "I" "I")
-          (let* "R" "R")
-          ;; (let* "C" "C")
-          (let* "E" "E")
-          (let* "Q" "Q")
-          (let* "A" "A")
-          (let* "D" "D")
-          (let* "N" "N")
-          (let* "T" "T")
-          (let* "O" "O")
-          (let* list4 (lambda (a b c d) (list a b c d)))
-          (<- (gen-CONX gen-CXR) ((lambda (cont)
-            (do
-              (let* "C" "C")
-              (cont
-                (lambda (x) (list4 "C" "O" "N" x))
-                (lambda (x) (cdr (list4 nil "C" x "R")))
-                )))))
+    (<- ("B" "F" "L" "M" "P" "S" "U" "C" "I" "Q" "A" "D" "E" "N" "O" "R" "T")
+      ((lambda (cont)
+        (let ((cons2 (lambda (x y z) (cons x (cons y z))))
+              (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
+              (char3 (lambda (a b c) (cons t (cons nil (do (a) (b) (c) nil)))))
+              ("11" (cons2 nil nil))
+              ("10" (cons2 nil t))
+              ("01" (cons2 t nil))
+              ("00" (cons2 t t)))
           (cont
-            (cons "P" (list4 "R" "I" "N" "T"))
-            (list4 "R" "E" "A" "D")
-            (cons "D" (cons "E" (list4 "F" "I" "N" "E")))
-            (list "A" "S")
-            (cons "L" (cons "A" (list4 "M" "B" "D" "A")))
-            (cons "Q" (list4 "U" "O" "T" "E")) ;kQuote
-            (list4 "A" "T" "O" "M") ;kAtom
-            (gen-CXR "A") ;kCar
-            (gen-CXR "D") ;kCdr
-            (list "E" "Q"); kEq
-            (gen-CONX "S") ;kCons
-            (gen-CONX "D") ;kCond
-            (cdr (list4 nil "N" "I" "L")) ;kNil
-            ;; (atom* (list "T")) ;t-atom
-        ))))
-    (let* gen-symbols (lambda (cont)
-      (do
-        (let* symbol-prefix symbol-prefix)
-        (cont "?"
-              "*"
-              "."
-              " "
-              "\\n"
-              "("
-              ")"))))
-    (gen-symbols (gen-keywords cont))))
+            (char3 ("00") ("00") ("10")) ;; "B"
+            (char3 ("00") ("01") ("10")) ;; "F"
+            (char3 ("00") ("11") ("00")) ;; "L"
+            (char3 ("00") ("11") ("01")) ;; "M"
+            (char3 ("01") ("00") ("00")) ;; "P"
+            (char3 ("01") ("00") ("11")) ;; "S"
+            (char3 ("01") ("01") ("01")) ;; "U"
+            (char3 ("00") ("00") ("11")) ;; "C"
+            (char3 ("00") ("10") ("01")) ;; "I"
+            (char3 ("01") ("00") ("01")) ;; "Q"
+            (char3 ("00") ("00") ("01")) ;; "A"
+            (char3 ("00") ("01") ("00")) ;; "D"
+            (char3 ("00") ("01") ("01")) ;; "E"
+            (char3 ("00") ("11") ("10")) ;; "N"
+            (char3 ("00") ("11") ("11")) ;; "O"
+            (char3 ("01") ("00") ("10")) ;; "R"
+            (char3 ("01") ("01") ("00")) ;; "T"
+            ;; Delayed application to the outermost `cont`
+            (sym2 ("11") ("10"))         ;; "?"
+            (sym2 ("11") ("10"))         ;; "*"
+            (sym2 ("11") ("10"))         ;; "."
+            (sym2 ("00") ("00"))         ;; " "
+            (do ("00") ("00") ("10") ("10") nil)  ;; "\\n"
+            (sym2 ("10") ("00"))         ;; "("
+            (sym2 ("10") ("01"))         ;; ")"
+            )))))
+    (let* list4 (lambda (a b c d) (list a b c d)))
+    (let* gen-CONX (lambda (x) (list4 "C" "O" "N" x)))
+    (let* gen-CXR (lambda (x) (cdr (list4 x "C" x "R"))))
+    (cont
+      (cons "D" (cons "E" (list4 "F" "I" "N" "E")))
+      (list "A" "S")
+      (cons "L" (cons "A" (list4 "M" "B" "D" "A")))
+      (cons "P" (list4 "R" "I" "N" "T"))
+      (list4 "R" "E" "A" "D")
+      (cons "Q" (list4 "U" "O" "T" "E")) ;kQuote
+      (list4 "A" "T" "O" "M") ;kAtom
+      (gen-CXR "A") ;kCar
+      (gen-CXR "D") ;kCdr
+      (list "E" "Q"); kEq
+      (gen-CONX "S") ;kCons
+      (gen-CONX "D") ;kCond
+      (cdr (list4 gen-CXR "N" "I" "L")))))
 
 
 ;;================================================================
@@ -370,11 +366,11 @@
 (defrec-lazy repl (a stdin)
   (do
     (<- (
-         kPrint
-         kRead
          kDefine
          kAs
          kLambda
+         kPrint
+         kRead
          kQuote
          kAtom
          kCar
