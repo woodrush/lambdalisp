@@ -5,11 +5,13 @@
   ((do
     (<- (car-c cdr-c) (d-carcdr-data c))
     (<- (expr stdin) (Eval (car-data@ car-c) a stdin))
-    (cond
+    ((cond
       ((isnil-data expr)
-        (Evcon cdr-c a stdin))
+        (Evcon cdr-c))
       (t
-        (Eval (car-data@ (cdr-data@ car-c)) a stdin))))
+        (Eval (car-data@ (cdr-data@ car-c)))))
+     ;; Factored out
+     a stdin))
    ;; Factored out
    cont))
 
@@ -64,8 +66,9 @@
           (<- (car-e cdr-e) (d-carcdr-data e))
           (cond
             ((stringeq (valueof car-e) kQuote)
-              (do
-                (cont (car-data@ cdr-e) stdin)))
+              (cont (car-data@ cdr-e) stdin))
+            ((stringeq (valueof car-e) kCond)
+              (Evcon cdr-e a stdin cont))
             ((stringeq (valueof car-e) kRead)
               (read-expr stdin cont))
             ((stringeq (valueof car-e) kPrint)
@@ -74,8 +77,6 @@
                   (cons "\\n" (cont cdr-e stdin)))
                 (<- (expr stdin) (Eval (car-data@ cdr-e) a stdin))
                 (printexpr expr (cont expr stdin))))
-            ((stringeq (valueof car-e) kCond)
-              (Evcon cdr-e a stdin cont))
             (t
               (do
                 (<- (y) (Evlis cdr-e a stdin)) ;; Implicit parameter passing: stdin
