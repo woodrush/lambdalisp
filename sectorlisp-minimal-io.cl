@@ -392,8 +392,6 @@
     (let* printexpr printexpr)
     (let* isnil isnil)
     (let* stringeq stringeq)
-    (let* cdr-data cdr-data)
-    (let* car-data car-data)
     (let* d-carcdr-data d-carcdr-data)
     (<- (expr stdin) (read-expr stdin))
     (<- (expr stdin) (Eval expr (atom* nil) stdin))
