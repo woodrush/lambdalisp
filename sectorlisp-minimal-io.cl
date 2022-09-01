@@ -312,27 +312,22 @@
     (let* p-nil-t p-nil-t)
     (let* p-t-nil p-t-nil)
     (let* p-t-t p-t-t)
-    (let* gen-keywords (lambda (cont)
+    ((lambda (cont)
       (do
-          (let* alphabet-prefix-nil alphabet-prefix-nil)
-          (let* alphabet-prefix-t alphabet-prefix-t)
-          (let* gen-alphabet (lambda (cont)
-            (cont "I" "R" "E" "Q" "A" "D" "N" "T" "O")))
-          ;; (let* "L" "L")
-          ;; (let* "M" "M")
-          ;; (let* "S" "S")
-          ;; (let* "U" "U")
-          ;; (let* "C" "C")
-          ;; (let* "I" "I")
-          ;; (let* "R" "R")
-          ;; (let* "E" "E")
-          ;; (let* "Q" "Q")
-          ;; (let* "A" "A")
-          ;; (let* "D" "D")
-          ;; (let* "N" "N")
-          ;; (let* "T" "T")
-          ;; (let* "O" "O")
-          (<- ("I" "R" "E" "Q" "A" "D" "N" "T" "O") (gen-alphabet))
+        (let* symbol-prefix symbol-prefix)
+        (cont "."
+              " "
+              "\\n"
+              "("
+              ")")))
+      ((lambda (cont)
+      (do
+          (<- ("P" "L" "M" "S" "U" "C" "I" "R" "E" "Q" "A" "D" "N" "T" "O")
+            ((lambda (cont)
+              (do
+                (let* alphabet-prefix-nil alphabet-prefix-nil)
+                (let* alphabet-prefix-t alphabet-prefix-t)
+                (cont "P" "L" "M" "S" "U" "C" "I" "R" "E" "Q" "A" "D" "N" "T" "O")))))
           (let* list4 (lambda (a b c d) (list a b c d)))
           (<- (gen-CONX gen-CXR) ((lambda (cont)
             (do
@@ -353,16 +348,8 @@
             (gen-CONX "D") ;kCond
             (cdr (list4 nil "N" "I" "L")) ;kNil
             ;; (atom* (list "T")) ;t-atom
-        ))))
-    (let* gen-symbols (lambda (cont)
-      (do
-        (let* symbol-prefix symbol-prefix)
-        (cont "."
-              " "
-              "\\n"
-              "("
-              ")"))))
-    (gen-symbols (gen-keywords cont))))
+        )))
+        cont))))
 
 
 ;;================================================================
