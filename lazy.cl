@@ -1,3 +1,5 @@
+(defparameter profile-index-depth nil)
+
 (defun islambda (expr)
   (eq `lambda (car expr)))
 
@@ -35,24 +37,73 @@
   (labels
     ((lookup (env var)
        (let ((i (position var env :test #'equal)))
-         (if i (+ 1 i) (decorate-varname var)))))
+         (if profile-index-depth
+          (if i (format nil "~%~d:~a~%" (+ 1 i) (write-to-string var))
+                (format nil "~%?:~a~%" (write-to-string var)))
+          (if i (+ 1 i) (decorate-varname var)))
+         )))
     (if (atom body)
         (list (lookup env body))
         (if (not (islambda body))
             `(app ,@(to-de-bruijn (car body) env) ,@(to-de-bruijn (car (cdr body)) env))
             `(abs ,@(to-de-bruijn (lambdabody body) (cons (lambdaarg-top body) env)))))))
 
+(defparameter simple-lambda-env-vars (concatenate 'list (coerce "xyzabcdefghijklmnopqrstuvw" `list) "α" "β" "γ" "δ" "ε" "ζ" "η" "θ"
+;; "ι"
+"κ"
+"μ" "ν" "ξ" "ο" "π" "ρ"
+;; "σ"
+"τ" "υ" "φ" "χ" "ψ" "ω" (coerce "ABCDEFGHIJKLMNOPQRSTUVWXYZ" `list)))
+
+(defun to-simple-lambda (body &optional (env ()))
+  (labels
+    ((lookup (env var)
+       (let ((i (position var (reverse env) :test #'equal)))
+         (if i
+          (nth i simple-lambda-env-vars)
+          (decorate-varname var)))
+         ))
+    (if (atom body)
+        (lookup env body)
+        (if (not (islambda body))
+          (format nil "(~a ~a)"
+              (to-simple-lambda (car body) env)
+              (to-simple-lambda (car (cdr body)) env))
+          (format nil "λ~a.~a"
+            (lookup (cons (lambdaarg-top body) env) (lambdaarg-top body))
+            (to-simple-lambda (lambdabody body) (cons (lambdaarg-top body) env)))))))
+
+
+;; (defun to-blc-string (body)
+;;   (labels
+;;    ((int2varname (n)
+;;       (if (> n 0) (concatenate `string "1" (int2varname (- n 1))) "0"))
+;;     (token2string (token)
+;;       (cond ((not token) "")
+;;             ((eq token 'abs) "00")
+;;             ((eq token 'app) "01")
+;;             ((stringp token) token)
+;;             (t (int2varname token)))))
+;;    (if (not body) "" (concatenate `string (token2string (car body)) (to-blc-string (cdr body))))))
+
 (defun to-blc-string (body)
   (labels
-   ((int2varname (n)
-      (if (> n 0) (concatenate `string "1" (int2varname (- n 1))) "0"))
-    (token2string (token)
-      (cond ((not token) "")
-            ((eq token 'abs) "00")
-            ((eq token 'app) "01")
-            ((stringp token) token)
-            (t (int2varname token)))))
-   (if (not body) "" (concatenate `string (token2string (car body)) (to-blc-string (cdr body))))))
+    ((int2varname (n)
+        (if (> n 0) (concatenate 'string "1" (int2varname (- n 1))) "0"))
+     (token2string (token)
+        (cond ((not token) "")
+              ((eq token 'abs) "00")
+              ((eq token 'app) "01")
+              ((stringp token) token)
+              (t (int2varname token)))))
+    (let ((curstring ""))
+      (loop
+        (cond
+          ((not body)
+            (return curstring))
+          (t
+            (setq curstring (concatenate 'string curstring (token2string (car body))))
+            (setq body (cdr body))))))))
 
 
 
@@ -170,7 +221,7 @@
 
 (defun-lazy t (x y) x)
 (defun-lazy nil (x y) y)
-;; (defun-lazy cons (x y f) (f x y))
+(defun-lazy cons* (x y f) (f x y))
 (defun-lazy car* (l) (l t))
 (defun-lazy cdr* (l) (l nil))
 (defmacro-lazy car (l) `(,l t))
@@ -191,6 +242,8 @@
 (defmacro-lazy or (x &rest r)
   (if (not r) x `(,x t (or ,@r))))
 
+
+;; (defun-lazy xor (x y) (if x (not y) y))
 (defmacro-lazy xor (x y) `(if ,x (not ,y) ,y))
 (defun-lazy xnor (x y) (if x y (not y)))
 
@@ -313,3 +366,9 @@
 
 (defmacro compile-to-ski-lazy (expr-lazy)
   `(compile-to-ski (macroexpand-lazy ,expr-lazy)))
+
+(defun compile-to-simple-lambda (expr)
+  (to-simple-lambda (curry expr)))
+
+(defmacro compile-to-simple-lambda-lazy (expr-lazy)
+  `(compile-to-simple-lambda (macroexpand-lazy ,expr-lazy)))
