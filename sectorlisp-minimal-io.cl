@@ -308,30 +308,31 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("P" "L" "M" "S" "U" "C" "I" "R" "E" "Q" "A" "D" "N" "T" "O")
+    (<- ("L" "M" "P" "S" "U" "C" "I" "Q" "A" "D" "E" "N" "O" "R" "T")
       ((lambda (cont)
-        (let ((sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
+        (let ((cons2 (lambda (x y z) (cons x (cons y z))))
+              (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
               (char3 (lambda (a b c) (cons t (cons nil (do (a) (b) (c) nil)))))
-              ("11" (lambda (x) (cons nil (cons nil x))))
-              ("10" (lambda (x) (cons nil (cons t x))))
-              ("01" (lambda (x) (cons t (cons nil x))))
-              ("00" (lambda (x) (cons t (cons t x)))))
+              ("11" (cons2 nil nil))
+              ("10" (cons2 nil t))
+              ("01" (cons2 t nil))
+              ("00" (cons2 t t)))
           (cont
-            (char3 ("01") ("00") ("00")) ;; "P"
             (char3 ("00") ("11") ("00")) ;; "L"
             (char3 ("00") ("11") ("01")) ;; "M"
+            (char3 ("01") ("00") ("00")) ;; "P"
             (char3 ("01") ("00") ("11")) ;; "S"
             (char3 ("01") ("01") ("01")) ;; "U"
             (char3 ("00") ("00") ("11")) ;; "C"
             (char3 ("00") ("10") ("01")) ;; "I"
-            (char3 ("01") ("00") ("10")) ;; "R"
-            (char3 ("00") ("01") ("01")) ;; "E"
             (char3 ("01") ("00") ("01")) ;; "Q"
             (char3 ("00") ("00") ("01")) ;; "A"
             (char3 ("00") ("01") ("00")) ;; "D"
+            (char3 ("00") ("01") ("01")) ;; "E"
             (char3 ("00") ("11") ("10")) ;; "N"
-            (char3 ("01") ("01") ("00")) ;; "T"
             (char3 ("00") ("11") ("11")) ;; "O"
+            (char3 ("01") ("00") ("10")) ;; "R"
+            (char3 ("01") ("01") ("00")) ;; "T"
             ;; Delayed application to the outermost `cont`
             (sym2 ("11") ("10"))         ;; "."
             (sym2 ("00") ("00"))         ;; " "
@@ -359,8 +360,7 @@
 ;;================================================================
 (defrec-lazy main (stdin)
   (do
-    (<- (
-         kPrint
+    (<- (kPrint
          kRead
          kQuote
          kAtom
@@ -370,7 +370,6 @@
          kCons
          kCond
          kNil
-        ;;  t-atom
          "."
          " "
          "\\n"
