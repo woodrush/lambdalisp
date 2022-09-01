@@ -329,13 +329,8 @@
                 (let* alphabet-prefix-t alphabet-prefix-t)
                 (cont "P" "L" "M" "S" "U" "C" "I" "R" "E" "Q" "A" "D" "N" "T" "O")))))
           (let* list4 (lambda (a b c d) (list a b c d)))
-          (<- (gen-CONX gen-CXR) ((lambda (cont)
-            (do
-              (let* "C" "C")
-              (cont
-                (lambda (x) (list4 "C" "O" "N" x))
-                (lambda (x) (cdr (list4 nil "C" x "R")))
-                )))))
+          (let* gen-CONX (lambda (x) (list4 "C" "O" "N" x)))
+          (let* gen-CXR (lambda (x) (cdr (list4 x "C" x "R"))))
           (cont
             (cons "P" (list4 "R" "I" "N" "T"))
             (list4 "R" "E" "A" "D")
@@ -346,7 +341,7 @@
             (list "E" "Q"); kEq
             (gen-CONX "S") ;kCons
             (gen-CONX "D") ;kCond
-            (cdr (list4 nil "N" "I" "L")) ;kNil
+            (cdr (list4 gen-CXR "N" "I" "L")) ;kNil
             ;; (atom* (list "T")) ;t-atom
         )))
         cont))))
