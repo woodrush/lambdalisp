@@ -69,12 +69,6 @@
     nil
     (cons (f (car list)) (map f (cdr list)))))
 
-(defrec-lazy length (list)
-  ((letrec-lazy length (l n)
-      (if (isnil l)
-        n
-        (length (cdr l) (succ n))))
-    list 0))
 
 ;; Stops the evaluation until the stdin is supplied sufficiently for `body`
 (defmacro-lazy await-list (list body)
@@ -114,8 +108,8 @@
 (defun-lazy type-cons (t0 t1 t2) t1)
 (defun-lazy type-int  (t0 t1 t2) t2)
 
-(def-lazy typeof car)
-(def-lazy valueof cdr)
+(def-lazy typeof car*)
+(def-lazy valueof cdr*)
 
 (defmacro-lazy typematch (expr atomcase conscase nilcase intcase)
   `(if (isnil ,expr)
@@ -239,7 +233,7 @@
 ;; Printing
 ;;================================================================
 (defun-lazy printatom (atomenv expr cont)
-  (append-list (car ((valueof expr) cdr atomenv)) cont))
+  (append-list (car ((valueof expr) cdr* atomenv)) cont))
 
 (defrec-lazy rawint2string (n)
   ((letrec-lazy rawint2string (n cur-s)
