@@ -25,15 +25,19 @@
         (cont (cons-data@ x y))))))
 
 (defrec-lazy Assoc (x y cont)
-  ((do
-    (<- (car-y cdr-y) (d-carcdr-data y))
-    (cond
-      ((stringeq (valueof x) (valueof (car-data@ car-y)))
-        (cdr-data car-y))
-      (t
-        (Assoc x cdr-y))))
-   ;; Factored out
-   cont))
+  (cond
+    ((isnil-data y)
+      (cont (atom* nil)))
+    (t
+      ((do
+        (<- (car-y cdr-y) (d-carcdr-data y))
+        (cond
+          ((stringeq (valueof x) (valueof (car-data@ car-y)))
+            (cdr-data car-y))
+          (t
+            (Assoc x cdr-y))))
+      ;; Factored out
+      cont))))
 
 (defrec-lazy Pairlis (x y a cont)
   (cond
