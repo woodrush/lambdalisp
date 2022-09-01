@@ -3,12 +3,13 @@
 
 (defrec-lazy Evcon (c a stdin cont)
   ((do
-    (<- (expr stdin) (Eval (car-data@ (car-data@ c)) a stdin))
+    (<- (car-c cdr-c) (d-carcdr-data c))
+    (<- (expr stdin) (Eval (car-data@ car-c) a stdin))
     (cond
       ((isnil-data expr)
-        (Evcon (cdr-data@ c) a stdin))
+        (Evcon cdr-c a stdin))
       (t
-        (Eval (car-data@ (cdr-data@ (car-data@ c))) a stdin))))
+        (Eval (car-data@ (cdr-data@ car-c)) a stdin))))
    ;; Factored out
    cont))
 
@@ -21,14 +22,11 @@
         (<- (car-m cdr-m) (d-carcdr-data m))
         (<- (x stdin) (Eval car-m a stdin))
         (<- (y) (Evlis cdr-m a stdin)) ;; Implicit parameter passing: stdin
-        (cont (cons-data* x y))))))
+        (cont (cons-data@ x y))))))
 
 (defrec-lazy Assoc (x y cont)
   ((do
     (<- (car-y cdr-y) (d-carcdr-data y))
-    ;; (<- (car-car-y) (car-data car-y))
-    ;; (<- (_ val-x) (x))
-    ;; (<- (_ vccy) (car-car-y))
     (cond
       ((stringeq (valueof x) (valueof (car-data@ car-y)))
         (cdr-data car-y))
@@ -45,8 +43,7 @@
       (do
         (<- (car-x cdr-x) (d-carcdr-data x))
         (<- (car-y cdr-y) (d-carcdr-data y))
-        (<- (h) (Pairlis cdr-x cdr-y a))
-        (cont (cons-data* (cons-data* car-x car-y) h))))))
+        (cont (Pairlis cdr-x cdr-y a (cons-data1 (cons-data@ car-x car-y))))))))
 
 (defrec-lazy Eval (e a stdin cont)
   (do
@@ -57,28 +54,23 @@
       ((isnil-data e)
         (cont e stdin))
       ((isatom e)
-        (do
-          (<- (expr) (Assoc e a))
-          (cont expr stdin)))
+        ((Assoc e a cont) stdin))
       (t
         (do
           (<- (car-e cdr-e) (d-carcdr-data e))
-          (<- (_ val-e) (car-e))
           (cond
-            ((stringeq val-e kQuote)
+            ((stringeq (valueof car-e) kQuote)
               (do
-                (<- (car-cdr-e) (car-data cdr-e))
-                (cont car-cdr-e stdin)))
-            ((stringeq val-e kRead)
+                (cont (car-data@ cdr-e) stdin)))
+            ((stringeq (valueof car-e) kRead)
               (read-expr stdin cont))
-            ((stringeq val-e kPrint)
+            ((stringeq (valueof car-e) kPrint)
               (do
                 (if-then-return (isnil-data cdr-e)
                   (cons "\\n" (cont cdr-e stdin)))
-                (<- (car-cdr-e) (car-data cdr-e))
-                (<- (expr stdin) (Eval car-cdr-e a stdin))
+                (<- (expr stdin) (Eval (car-data@ cdr-e) a stdin))
                 (printexpr expr (cont expr stdin))))
-            ((stringeq val-e kCond)
+            ((stringeq (valueof car-e) kCond)
               (Evcon cdr-e a stdin cont))
             (t
               (do
@@ -102,14 +94,13 @@
         (cond
           ((stringeq fv kEq)
             (cond
-              ((not (and (isatom car-x) (isatom arg2)))
-                (cont (atom* nil)))
-              ((stringeq (valueof car-x) (valueof arg2))
+              ((and (and (isatom car-x) (isatom arg2))
+                    (stringeq (valueof car-x) (valueof arg2)))
                 (cont t-atom))
               (t
                 (cont (atom* nil)))))
           ((stringeq fv kCons)
-            (cont (cons-data* car-x arg2)))
+            (cont (cons-data@ car-x arg2)))
           ((stringeq fv kAtom)
             (if (isatom car-x)
               (cont t-atom)
@@ -121,20 +112,15 @@
               ((stringeq fv kCdr)
                 (cdr-data car-x))
               (t
-                (do
-                  (<- (p) (Assoc f a))
-                  (Apply p x a))))
+                ((Assoc f a Apply) x a)))
              ;; Factored out
              cont))))
        ;; Factored out
        stdin))
     (t
       (do
-        (<- (car-f cdr-f) (d-carcdr-data f))
-        (<- (car-cdr-f cdr-cdr-f) (d-carcdr-data cdr-f))
-        (<- (q) (Pairlis car-cdr-f x a))
-        (<- (car-cdr-cdr-f) (car-data cdr-cdr-f))
-        (Eval car-cdr-cdr-f q stdin cont)))))
+        (<- (car-cdr-f cdr-cdr-f) (d-carcdr-data (cdr-data@ f)))
+        ((Pairlis car-cdr-f x a (Eval (car-data@ cdr-cdr-f))) stdin cont)))))
 
 
 ;;================================================================
@@ -152,16 +138,19 @@
 (defmacro-lazy cdr-data@ (data)
   `(cdr (valueof ,data)))
 
+(defmacro-lazy cons-data@ (x y)
+  `(cons type-list (cons ,x ,y)))
+
 (defun-lazy car-data* (data)
   (car (valueof data)))
 
 (defun-lazy cdr-data* (data)
   (cdr (valueof data)))
 
+(defmacro-lazy cons-data1 (x)
+  `(lambda (y) (cons type-list (cons ,x y))))
 
 
-(defmacro-lazy cons-data* (x y)
-  `(cons type-list (cons ,x ,y)))
 
 (defmacro-lazy atom* (value)
   `(cons type-atom ,value))
@@ -295,8 +284,8 @@
       (t
         (do
           (<- (expr stdin) (read-expr stdin))
-          (<- (lexpr stdin) (read-list stdin))
-          (cont (cons-data* expr lexpr) stdin))))))
+          (<- (lexpr) (read-list stdin)) ;; Implicit parameter passing: stdin
+          (cont (cons-data@ expr lexpr)))))))
 
 (defrec-lazy read-expr (stdin cont)
   (do
