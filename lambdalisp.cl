@@ -294,6 +294,13 @@
             (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
             (<- (expr) (cdr-data expr))
             (cont expr reg heap stdin)))
+        ((stringeq (valueof head) kAtom)
+          (do
+            (<- (arg1) (car-data tail))
+            (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
+            (if-then-return (isatom expr)
+              (cont t-atom reg heap stdin))
+            (cont (atom* nil) reg heap stdin)))
         
         (t
           (cont expr reg heap stdin)))
@@ -350,6 +357,7 @@
       (list "e" "q"); kEq
       (gen-CONX "s") ;kCons
       (gen-CONX "d") ;kCond
+      (atom* (list "t"))
       )))
 
 ;;================================================================
@@ -377,6 +385,7 @@
          kEq
          kCons
          kCond
+         t-atom
          ">"
          "."
          " "
