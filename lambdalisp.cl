@@ -380,9 +380,14 @@
         ((stringeq (valueof head) kLet)
           (do
             (<- (arg1 newtail) (d-carcdr-data tail))
-            (<- (curenv) (lookup-tree* reg reg-curenv))
-            (<- (newenv reg heap stdin) (eval-letbind curenv arg1 reg heap stdin))
-            (eval-progn newtail reg heap stdin cont)))
+            (<- (*curenv) (lookup-tree* reg reg-curenv))
+            (<- (newenv reg heap stdin) (eval-letbind *curenv arg1 reg heap stdin))
+            (<- (*curenv _) (add* nil t *curenv int-zero))
+            (<- (reg) (memory-write* reg  reg-curenv *curenv))
+            (<- (*heap-head) (lookup-tree* reg reg-heap-head))
+            (<- (heap) (memory-write* heap *heap-head newenv))
+            (eval-progn newtail reg heap stdin cont)
+            ))
         (t
           (cont expr reg heap stdin)))
       )))
@@ -485,6 +490,9 @@
     (let* stringeq stringeq)
     (let* d-carcdr-data d-carcdr-data)
     (let* int-zero (list t t t t t t t t))
+    (let* add* add*)
+    (<- (*heap-head _) (add* t t int-zero int-zero))
+    (<- (reg) (memory-write* initreg reg-heap-head *heap-head))
     (repl initreg initheap stdin)))
 
 ;;================================================================
