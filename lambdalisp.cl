@@ -318,6 +318,10 @@
             (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
             (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
             (cont (cons-data@ arg1 arg2) reg heap stdin)))
+        ((stringeq (valueof head) kRead)
+          (do
+            (<- (expr stdin) (read-expr stdin))
+            (cont expr reg heap stdin)))
         
         (t
           (cont expr reg heap stdin)))
