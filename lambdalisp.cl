@@ -311,6 +311,13 @@
                                  (stringeq (valueof arg1) (valueof arg2)))
               (cont t-atom reg heap stdin))
             (cont (atom* nil) reg heap stdin)))
+        ((stringeq (valueof head) kCons)
+          (do
+            (<- (arg1) (car-data tail))
+            (<- (arg2) (-> tail cdr-data@ car-data@))
+            (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
+            (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
+            (cont (cons-data@ arg1 arg2) reg heap stdin)))
         
         (t
           (cont expr reg heap stdin)))
