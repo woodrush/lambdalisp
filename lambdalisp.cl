@@ -161,7 +161,7 @@
     (typematch expr
       ;; atom
       (if (isnil-data expr)
-        (printstring kNil)
+        (lambda (cont) (cons "(" (cons ")" cont)))
         (printstring (valueof expr)))
       ;; list
       (lambda (cont) (cons "(" (printlist expr cont)))))
@@ -206,8 +206,6 @@
         (do
           (<- (str stdin) (read-string cdr-stdin))
           (let* ret (cons c str))
-          (if-then-return (stringeq ret kNil)
-            (cont nil stdin))
           (cont ret stdin))))))
 
 (defrec-lazy stringeq (s1 s2)
@@ -257,6 +255,12 @@
           (lambda (cont) (cont (atom* str) stdin)))))
       cont)))
 
+
+;;================================================================
+;; Evaluation
+;;================================================================
+(defrec-lazy eval (expr reg heap stdin cont)
+  (cont expr reg heap stdin))
 
 ;;================================================================
 ;; Constants
@@ -309,12 +313,23 @@
       (list "e" "q"); kEq
       (gen-CONX "s") ;kCons
       (gen-CONX "d") ;kCond
-      (cdr (list4 gen-CXR "n" "i" "l")))))
+      )))
 
 ;;================================================================
 ;; User interface
 ;;================================================================
-(defrec-lazy main (stdin)
+(def-lazy initreg nil)
+(def-lazy initheap nil)
+
+(defrec-lazy repl (reg heap stdin)
+  (do
+    (cons ">")
+    (cons " ")
+    (<- (expr stdin) (read-expr stdin))
+    (<- (expr reg heap stdin) (eval expr reg heap stdin))
+    (printexpr expr (cons "\\n" (repl reg heap stdin)))))
+
+(defun-lazy main (stdin)
   (do
     (<- (kPrint
          kRead
@@ -325,7 +340,6 @@
          kEq
          kCons
          kCond
-         kNil
          ">"
          "."
          " "
@@ -338,12 +352,7 @@
     (let* isnil isnil)
     (let* stringeq stringeq)
     (let* d-carcdr-data d-carcdr-data)
-    (cons ">")
-    (cons " ")
-    (<- (expr stdin) (read-expr stdin))
-    ;; (<- (expr stdin) (Eval expr (atom* nil) stdin))
-    (printexpr expr (cons "\\n" (main stdin)))))
-
+    (repl initreg initheap stdin)))
 
 ;;================================================================
 ;; Constants and macros
