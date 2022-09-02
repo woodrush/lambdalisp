@@ -259,6 +259,8 @@
 ;;================================================================
 ;; Evaluation
 ;;================================================================
+(def-lazy reg-curenv (list t t))
+
 (defrec-lazy map-eval (l reg heap stdin cont)
   (cond
     ((isnil-data l)
@@ -286,6 +288,26 @@
       (<- (car-e) (backquote car-e))
       (<- (cdr-e) (backquote cdr-e))
       (cont (cons-data@ (atom* kCons) (cons-data@ car-e (cons-data@ cdr-e (atom* nil))))))))
+
+(defrec-lazy eval-progn (expr reg heap stdin cont)
+  (typematch expr
+    ;;atom
+    (cont (atom* nil) reg heap stdin)
+    ;;list
+    (do
+      (<- (car-e cdr-e) (d-carcdr-data expr))
+      (<- (expr reg heap stdin) (eval car-e reg heap stdin))
+      (if-then-return (isnil-data cdr-e)
+        (cont expr reg heap stdin))
+      (eval-progn cdr-e reg heap stdin cont)
+      )))
+
+(defrec-lazy eval-letbind (*initenv expr reg heap stdin cont)
+  (cond
+    ((isnil-data expr)
+      (cont (cons nil *initenv) reg heap stdin))
+    (t
+      (cont (cons nil *initenv) reg heap stdin))))
 
 (defrec-lazy eval (expr reg heap stdin cont)
   (typematch expr
@@ -349,7 +371,14 @@
             (<- (arg1) (car-data tail))
             (<- (expr) (backquote arg1))
             (cont expr reg heap stdin)))
-        
+        ((stringeq (valueof head) kProgn)
+          (eval-progn tail reg heap stdin cont))
+        ;; ((stringeq (valueof head) (kLet))
+        ;;   (do
+        ;;     (<- (arg1) (car-data tail))
+        ;;     (<- (curenv) (lookup-tree* reg reg-curenv))
+        ;;     (<- (newenv reg heap stdin) (eval-letbind curenv arg1 reg heap stdin))
+        ;;     (cont expr reg heap stdin)))
         (t
           (cont expr reg heap stdin)))
       )))
@@ -359,7 +388,7 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -369,6 +398,7 @@
               ("01" (cons2 t nil))
               ("00" (cons2 t t)))
           (cont
+            (char3 ("10") ("01") ("11")) ;; "g"
             (char3 ("10") ("11") ("00")) ;; "l"
             (char3 ("10") ("11") ("01")) ;; "m"
             (char3 ("11") ("00") ("00")) ;; "p"
@@ -405,6 +435,8 @@
       (list "e" "q"); kEq
       (gen-CONX "s") ;kCons
       (gen-CONX "d") ;kCond
+      (cons "p" (list4 "r" "o" "g" "n"))
+      (list "l" "e" "t"); kLet
       (atom* (list "t"))
       )))
 
@@ -433,6 +465,8 @@
          kEq
          kCons
          kBackquote
+         kProgn
+         kLet
          t-atom
          ">"
          "."
