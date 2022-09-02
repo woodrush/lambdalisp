@@ -270,6 +270,23 @@
         (<- (expr-cdr reg heap stdin) (map-eval car-l reg heap stdin))
         (cont (cons-data expr-car expr-cdr) reg heap stdin)))))
 
+(defrec-lazy backquote (expr cont)
+  (typematch expr
+    ;; atom
+    (if (isnil-data expr)
+      (cont expr)
+      (cont (cons-data@ (atom* kQuote) (cons-data@ expr (atom* nil)))))
+    ;; list
+    (do
+      (<- (car-e cdr-e) (d-carcdr-data expr))
+      (if-then-return (stringeq (valueof car-e) kBackquote)
+        (do
+          (<- (car-cdr-e) (car-data cdr-e))
+          (cont car-cdr-e)))
+      (<- (car-e) (backquote car-e))
+      (<- (cdr-e) (backquote cdr-e))
+      (cont (cons-data@ (atom* kCons) (cons-data@ car-e (cons-data@ cdr-e (atom* nil))))))))
+
 (defrec-lazy eval (expr reg heap stdin cont)
   (typematch expr
     ;; atom
@@ -327,6 +344,11 @@
             (<- (arg1) (car-data tail))
             (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
             (printexpr arg1 (cont arg1 reg heap stdin))))
+        ((stringeq (valueof head) kBackquote)
+          (do
+            (<- (arg1) (car-data tail))
+            (<- (expr) (backquote arg1))
+            (cont expr reg heap stdin)))
         
         (t
           (cont expr reg heap stdin)))
@@ -410,7 +432,7 @@
          kCdr
          kEq
          kCons
-         kCond
+         kBackquote
          t-atom
          ">"
          "."
