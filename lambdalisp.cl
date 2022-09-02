@@ -260,6 +260,7 @@
 ;; Evaluation
 ;;================================================================
 (def-lazy reg-curenv (list t t))
+(def-lazy reg-heap-head (list t nil))
 
 (defrec-lazy map-eval (l reg heap stdin cont)
   (cond
@@ -302,11 +303,15 @@
       (eval-progn cdr-e reg heap stdin cont))))
 
 (defrec-lazy eval-letbind (*initenv expr reg heap stdin cont)
-  (cond
-    ((isnil-data expr)
-      (cont (cons nil *initenv) reg heap stdin))
-    (t
-      (cont (cons nil *initenv) reg heap stdin))))
+  (do
+    (if-then-return (isnil-data expr)
+      (cont (cons (cons nil *initenv) nil) reg heap stdin))
+    (<- (car-e cdr-e) (d-carcdr-data expr))
+    (<- (bind-var bind-expr) (d-carcdr-data car-e))
+    (<- (bind-expr) (car-data bind-expr))
+    (<- (bind-expr reg heap stdin) (eval bind-expr reg heap stdin))
+    (<- (newenv reg heap stdin) (eval-letbind *initenv cdr-e reg heap stdin))
+    (cont (cons (cons (valueof bind-var) bind-expr) newenv) reg heap stdin)))
 
 (defrec-lazy eval (expr reg heap stdin cont)
   (typematch expr
