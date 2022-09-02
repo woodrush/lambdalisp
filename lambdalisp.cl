@@ -313,10 +313,29 @@
     (<- (newenv reg heap stdin) (eval-letbind *initenv cdr-e reg heap stdin))
     (cont (cons (cons (valueof bind-var) bind-expr) newenv) reg heap stdin)))
 
+(defrec-lazy lookup-var (q-varname curenv *curenv heap cont)
+  (do
+    (if-then-return (isnil curenv)
+      (cont (atom* nil) int-zero))
+    (<- (car-env cdr-env) (curenv))
+    (<- (d-varname d-value) (car-env))
+    ;; Is a redirection to another environment
+    (if-then-return (isnil d-varname)
+      (do
+        (<- (curenv) (lookup-tree* heap d-value))
+        (lookup-var q-varname curenv heap cont)))
+    (if-then-return (stringeq q-varname d-varname)
+      (cont d-value *curenv))
+    (lookup-var q-varname cdr-env *curenv heap cont)))
+
 (defrec-lazy eval (expr reg heap stdin cont)
   (typematch expr
     ;; atom
-    (cons "." (cont expr reg heap stdin))
+    (do
+      (<- (*curenv) (lookup-tree* reg reg-curenv))
+      (<- (curenv) (lookup-tree* heap *curenv))
+      (<- (val *val) (lookup-var (valueof expr) curenv *curenv heap))
+      (cont val reg heap stdin))
     ;; list
     (do
       (<- (head tail) (d-carcdr-data expr))
@@ -386,8 +405,7 @@
             (<- (reg) (memory-write* reg  reg-curenv *curenv))
             (<- (*heap-head) (lookup-tree* reg reg-heap-head))
             (<- (heap) (memory-write* heap *heap-head newenv))
-            (eval-progn newtail reg heap stdin cont)
-            ))
+            (eval-progn newtail reg heap stdin cont)))
         (t
           (cont expr reg heap stdin)))
       )))
@@ -493,7 +511,8 @@
     (let* add* add*)
     (<- (*heap-head _) (add* t t int-zero int-zero))
     (<- (reg) (memory-write* initreg reg-heap-head *heap-head))
-    (repl initreg initheap stdin)))
+    (<- (heap) (memory-write* initheap int-zero nil))
+    (repl initreg heap stdin)))
 
 ;;================================================================
 ;; Constants and macros
