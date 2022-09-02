@@ -299,8 +299,7 @@
       (<- (expr reg heap stdin) (eval car-e reg heap stdin))
       (if-then-return (isnil-data cdr-e)
         (cont expr reg heap stdin))
-      (eval-progn cdr-e reg heap stdin cont)
-      )))
+      (eval-progn cdr-e reg heap stdin cont))))
 
 (defrec-lazy eval-letbind (*initenv expr reg heap stdin cont)
   (cond
@@ -373,12 +372,12 @@
             (cont expr reg heap stdin)))
         ((stringeq (valueof head) kProgn)
           (eval-progn tail reg heap stdin cont))
-        ;; ((stringeq (valueof head) (kLet))
-        ;;   (do
-        ;;     (<- (arg1) (car-data tail))
-        ;;     (<- (curenv) (lookup-tree* reg reg-curenv))
-        ;;     (<- (newenv reg heap stdin) (eval-letbind curenv arg1 reg heap stdin))
-        ;;     (cont expr reg heap stdin)))
+        ((stringeq (valueof head) kLet)
+          (do
+            (<- (arg1 newtail) (d-carcdr-data tail))
+            (<- (curenv) (lookup-tree* reg reg-curenv))
+            (<- (newenv reg heap stdin) (eval-letbind curenv arg1 reg heap stdin))
+            (eval-progn newtail reg heap stdin cont)))
         (t
           (cont expr reg heap stdin)))
       )))
@@ -480,6 +479,7 @@
     (let* isnil isnil)
     (let* stringeq stringeq)
     (let* d-carcdr-data d-carcdr-data)
+    (let* int-zero (list t t t t t t t t))
     (repl initreg initheap stdin)))
 
 ;;================================================================
