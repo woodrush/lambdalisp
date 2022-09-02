@@ -313,7 +313,7 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("L" "M" "P" "S" "U" "C" "I" "Q" "A" "D" "E" "N" "O" "R" "T")
+    (<- ("l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -323,21 +323,21 @@
               ("01" (cons2 t nil))
               ("00" (cons2 t t)))
           (cont
-            (char3 ("00") ("11") ("00")) ;; "L"
-            (char3 ("00") ("11") ("01")) ;; "M"
-            (char3 ("01") ("00") ("00")) ;; "P"
-            (char3 ("01") ("00") ("11")) ;; "S"
-            (char3 ("01") ("01") ("01")) ;; "U"
-            (char3 ("00") ("00") ("11")) ;; "C"
-            (char3 ("00") ("10") ("01")) ;; "I"
-            (char3 ("01") ("00") ("01")) ;; "Q"
-            (char3 ("00") ("00") ("01")) ;; "A"
-            (char3 ("00") ("01") ("00")) ;; "D"
-            (char3 ("00") ("01") ("01")) ;; "E"
-            (char3 ("00") ("11") ("10")) ;; "N"
-            (char3 ("00") ("11") ("11")) ;; "O"
-            (char3 ("01") ("00") ("10")) ;; "R"
-            (char3 ("01") ("01") ("00")) ;; "T"
+            (char3 ("10") ("11") ("00")) ;; "l"
+            (char3 ("10") ("11") ("01")) ;; "m"
+            (char3 ("11") ("00") ("00")) ;; "p"
+            (char3 ("11") ("00") ("11")) ;; "s"
+            (char3 ("11") ("01") ("01")) ;; "u"
+            (char3 ("10") ("00") ("11")) ;; "c"
+            (char3 ("10") ("10") ("01")) ;; "i"
+            (char3 ("11") ("00") ("01")) ;; "q"
+            (char3 ("10") ("00") ("01")) ;; "a"
+            (char3 ("10") ("01") ("00")) ;; "d"
+            (char3 ("10") ("01") ("01")) ;; "e"
+            (char3 ("10") ("11") ("10")) ;; "n"
+            (char3 ("10") ("11") ("11")) ;; "o"
+            (char3 ("11") ("00") ("10")) ;; "r"
+            (char3 ("11") ("01") ("00")) ;; "t"
             ;; Delayed application to the outermost `cont`
             (sym2 ("11") ("10"))         ;; "."
             (sym2 ("00") ("00"))         ;; " "
@@ -346,19 +346,19 @@
             (sym2 ("10") ("01"))         ;; ")"
             )))))
     (let* list4 (lambda (a b c d) (list a b c d)))
-    (let* gen-CONX (lambda (x) (list4 "C" "O" "N" x)))
-    (let* gen-CXR (lambda (x) (cdr (list4 x "C" x "R"))))
+    (let* gen-CONX (lambda (x) (list4 "c" "o" "n" x)))
+    (let* gen-CXR (lambda (x) (cdr (list4 x "c" x "r"))))
     (cont
-      (cons "P" (list4 "R" "I" "N" "T"))
-      (list4 "R" "E" "A" "D")
-      (cons "Q" (list4 "U" "O" "T" "E")) ;kQuote
-      (list4 "A" "T" "O" "M") ;kAtom
-      (gen-CXR "A") ;kCar
-      (gen-CXR "D") ;kCdr
-      (list "E" "Q"); kEq
-      (gen-CONX "S") ;kCons
-      (gen-CONX "D") ;kCond
-      (cdr (list4 gen-CXR "N" "I" "L")))))
+      (cons "p" (list4 "r" "i" "n" "t"))
+      (list4 "r" "e" "a" "d")
+      (cons "q" (list4 "u" "o" "t" "e")) ;kQuote
+      (list4 "a" "t" "o" "m") ;kAtom
+      (gen-CXR "a") ;kCar
+      (gen-CXR "d") ;kCdr
+      (list "e" "q"); kEq
+      (gen-CONX "s") ;kCons
+      (gen-CONX "d") ;kCond
+      (cdr (list4 gen-CXR "n" "i" "l")))))
 
 ;;================================================================
 ;; User interface
