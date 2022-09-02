@@ -322,6 +322,11 @@
           (do
             (<- (expr stdin) (read-expr stdin))
             (cont expr reg heap stdin)))
+        ((stringeq (valueof head) kPrint)
+          (do
+            (<- (arg1) (car-data tail))
+            (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
+            (printexpr arg1 (cont arg1 reg heap stdin))))
         
         (t
           (cont expr reg heap stdin)))
