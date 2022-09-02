@@ -259,8 +259,45 @@
 ;;================================================================
 ;; Evaluation
 ;;================================================================
+(defrec-lazy map-eval (l reg heap stdin cont)
+  (cond
+    ((isnil-data l)
+      (atom* nil))
+    (t
+      (do
+        (<- (car-l cdr-l) (d-carcdr-data l))
+        (<- (expr-car reg heap stdin) (eval car-l reg heap stdin))
+        (<- (expr-cdr reg heap stdin) (map-eval car-l reg heap stdin))
+        (cont (cons-data expr-car expr-cdr) reg heap stdin)))))
+
 (defrec-lazy eval (expr reg heap stdin cont)
-  (cont expr reg heap stdin))
+  (typematch expr
+    ;; atom
+    (cons "." (cont expr reg heap stdin))
+    ;; list
+    (do
+      (<- (head tail) (d-carcdr-data expr))
+      (cond
+        ((stringeq (valueof head) kQuote)
+          (do
+            (<- (car-tail) (car-data tail))
+            (cont car-tail reg heap stdin)))
+        ((stringeq (valueof head) kCar)
+          (do
+            (<- (arg1) (car-data tail))
+            (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
+            (<- (expr) (car-data expr))
+            (cont expr reg heap stdin)))
+        ((stringeq (valueof head) kCdr)
+          (do
+            (<- (arg1) (car-data tail))
+            (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
+            (<- (expr) (cdr-data expr))
+            (cont expr reg heap stdin)))
+        
+        (t
+          (cont expr reg heap stdin)))
+      )))
 
 ;;================================================================
 ;; Constants
