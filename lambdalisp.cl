@@ -256,6 +256,10 @@
       (cont stdin stdin))
     (<- (c cdr-stdin) (stdin))
     (cond
+      ((=-bit ";" c)
+        (do
+          (<- (stdin) (skip-comment cdr-stdin))
+          (read-atom stdin cont)))
       ((or (=-bit "(" c) (=-bit ")" c) (=-bit " " c) (=-bit "\\n" c))
         (cont nil stdin))
       (t
