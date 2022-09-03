@@ -278,6 +278,7 @@
 (def-lazy reg-curenv (list t t))
 (def-lazy reg-heap-head (list t nil))
 (def-lazy reg-stack-head (list nil t))
+(def-lazy reg-block-cont (list nil nil))
 
 (defrec-lazy map-eval (l reg heap stdin cont)
   (cond
@@ -455,7 +456,7 @@
               (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
               (if-then-return (and (and (isatom arg1) (isatom arg2))
-                                  (stringeq (valueof arg1) (valueof arg2)))
+                                   (stringeq (valueof arg1) (valueof arg2)))
                 (cont t-atom reg heap stdin))
               (cont (atom* nil) reg heap stdin)))
           ((stringeq (valueof head) kCons)
@@ -490,6 +491,17 @@
               (eval expr reg heap stdin cont)))
           ((stringeq (valueof head) kProgn)
             (eval-progn tail reg heap stdin cont))
+          ((stringeq (valueof head) kBlock)
+            (do
+              ;; Store the current continuation in the register
+              (<- (prev-block-cont) (lookup-tree* reg reg-block-cont))
+              (<- (reg) (memory-write* reg reg-block-cont cont))
+              ;; Execute the block
+              (<- (expr reg heap stdin) (eval-progn tail reg heap stdin))
+              ;; If the block ends without returning, restore the previous continuation,
+              ;; and proceed with the current continuation
+              (<- (reg) (memory-write* reg reg-block-cont prev-block-cont))
+              (cont expr reg heap stdin)))
           ((stringeq (valueof head) kLet)
             (do
               (<- (arg1 newtail) (d-carcdr-data tail))
@@ -548,7 +560,7 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -558,6 +570,7 @@
               ("01" (cons2 t nil))
               ("00" (cons2 t t)))
           (cont
+            (char3 ("10") ("10") ("11")) ;; "k"
             (char3 ("11") ("01") ("10")) ;; "v"
             (char3 ("10") ("01") ("10")) ;; "f"
             (char3 ("10") ("00") ("10")) ;; "b"
@@ -605,6 +618,8 @@
       (cons "l" (cons "a" (list4 "m" "b" "d" "a")))
       (cons "m" (list4 "a" "c" "r" "o"))
       (cons "p" (list4 "r" "o" "g" "n"))
+      (cons "b" (list4 "l" "o" "c" "k"))
+      (cons "r" (cons "e" (list4 "t" "u" "r" "n")))
       (list "l" "e" "t"); kLet
       (list4 "s" "e" "t" "q")
       (list "i" "f")
@@ -640,6 +655,8 @@
          kLambda
          kMacro
          kProgn
+         kBlock
+         kReturn
          kLet
          kSetq
          kIf
