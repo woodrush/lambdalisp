@@ -423,7 +423,7 @@
             ;; Evaluate expression in the created environment
             (<- (expr reg heap stdin) (eval-progn newtail reg heap stdin))
             ;; Set the environment back to the original outer environment
-            (<- (reg) (memory-write* reg reg-curenv int-zero))
+            (<- (reg) (memory-write* reg reg-curenv *outerenv))
             (cont expr reg heap stdin)))
         (t
           (cont expr reg heap stdin)))
