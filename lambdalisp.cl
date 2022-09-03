@@ -275,6 +275,11 @@
           (lambda (cont) (cont (cons-data@ (atom* (list "`")) (cons-data@ expr (atom* nil))) stdin))))
       ((=-bit "," c)
         (do
+          (<- (c2 cdr-cdr-stdin) (cdr-stdin))
+          (if-then-return (=-bit "@" c2)
+            (do
+              (<- (expr stdin) (read-expr cdr-cdr-stdin))
+              (lambda (cont) (cont (cons-data@ (atom* (list "," "@")) (cons-data@ expr (atom* nil))) stdin))))
           (<- (expr stdin) (read-expr cdr-stdin))
           (lambda (cont) (cont (cons-data@ (atom* (list ",")) (cons-data@ expr (atom* nil))) stdin))))
       (t
@@ -291,6 +296,14 @@
 (def-lazy reg-heap-head (list t nil))
 (def-lazy reg-stack-head (list nil t))
 (def-lazy reg-block-cont (list nil nil))
+
+(defrec-lazy append-data (l1 l2 cont)
+  (do
+    (if-then-return (isnil-data l1)
+      (cont l2))
+    (<- (car-l1 cdr-l1) (d-carcdr-data l1))
+    (<- (appended) (append-data cdr-l1 l2))
+    (cont (cons-data@ car-l1 appended))))
 
 (defrec-lazy map-eval (l reg heap stdin cont)
   (cond
@@ -312,6 +325,11 @@
     ;; list
     (do
       (<- (car-e cdr-e) (d-carcdr-data expr))
+      (if-then-return (and (not (isatom car-e)) (stringeq (valueof (car-data@ car-e)) (list "," "@")))
+        (do
+          (let* e (-> car-e cdr-data@ car-data@))
+          (<- (cdr-e) (backquote cdr-e))
+          (cont (cons-data@ (atom* kAppend) (cons-data@ e (cons-data@ cdr-e (atom* nil)))))))
       (if-then-return (and (isatom car-e) (stringeq (valueof car-e) (list ",")))
         (do
           (<- (car-cdr-e) (car-data cdr-e))
@@ -409,7 +427,7 @@
       (cont *initenv))
     (<- (car-ldata cdr-ldata) (d-carcdr-data ldata))
     (if-then-return (stringeq (valueof car-ldata) kRest)
-      (do  
+      (do
         (<- (restvar) (car-data cdr-ldata))
         (<- (l) (baselist2datalist lbase))
         (cont (cons (cons (valueof restvar) l) *initenv))))
@@ -605,6 +623,14 @@
               (<- (arg2) (cdr-data tail))
               (<- (*outerenv) (lookup-tree* reg reg-curenv))
               (cont (lambda* nil *outerenv arg1 arg2) reg heap stdin)))
+          ((stringeq (valueof head) kAppend)
+            (do
+              (<- (arg1 arg2) (d-carcdr-data tail))
+              (<- (arg2) (car-data arg2))
+              (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
+              (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
+              (<- (appended) (append-data arg1 arg2))
+              (cont appended reg heap stdin)))
           ((stringeq (valueof head) kMacro)
             (do
               (<- (arg1) (car-data tail))
@@ -656,6 +682,7 @@
             (char3 ("11") ("01") ("00")) ;; "t"
             ;; Delayed application to the outermost `cont`
             (char3 ("10") ("11") ("00")) ;; "l"
+            (do ("01") ("00") ("00") ("00"))      ;; "@"
             (sym2 ("11") ("00"))         ;; ","
             (sym2 ("01") ("11"))         ;; "'"
             (char3 ("10") ("00") ("00")) ;; "`"
@@ -691,6 +718,7 @@
       (list "l" "e" "t"); kLet
       (list4 "s" "e" "t" "q")
       (cons "&" (list4 "r" "e" "s" "t"))
+      (cons "a" (cons "p" (list4 "p" "e" "n" "d")))
       (list "i" "f")
       (atom* (list "t"))
       )))
@@ -730,9 +758,11 @@
          kLet
          kSetq
          kRest
+         kAppend
          kIf
          t-atom
          "l"
+         "@"
          ","
          "'"
          "`"
