@@ -346,6 +346,7 @@
 (defrec-lazy lookup-var (q-varname curenv *curenv heap cont)
   (do
     (if-then-return (isnil curenv)
+      ;; TODO: return nil instead of int-zero by default (affects setq)
       (cont (atom* nil) int-zero))
     (<- (car-env cdr-env) (curenv))
     (<- (d-varname d-value) (car-env))
@@ -364,7 +365,6 @@
     (<- (curenv) (lookup-tree* heap *curenv))
     (lookup-var (valueof expr) curenv *curenv heap)))
 
-;; TODO: use a more efficient, specialized data structure instead of reusing eval-letbind?
 (defrec-lazy zip-data-base (*initenv ldata lbase cont)
   (do
     (if-then-return (isnil-data ldata)
@@ -495,9 +495,16 @@
             (do
               (<- (arg1) (car-data tail))
               (<- (_ *val) (assoc arg1 reg heap))
+              ;; TODO: throw error when *val is nil
               (<- (valenv) (lookup-tree* heap *val))
               (<- (bind-var newenv reg heap stdin) (eval-letbind valenv (cons-data@ tail (atom* nil)) reg heap stdin))
               (<- (heap) (memory-write* heap *val newenv))
+              (cont bind-var reg heap stdin)))
+          ((stringeq (valueof head) kDefvar)
+            (do
+              (<- (valenv) (lookup-tree* heap int-zero))
+              (<- (bind-var newenv reg heap stdin) (eval-letbind valenv (cons-data@ tail (atom* nil)) reg heap stdin))
+              (<- (heap) (memory-write* heap int-zero newenv))
               (cont bind-var reg heap stdin)))
           ((stringeq (valueof head) kLambda)
             (do
@@ -517,7 +524,7 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -527,6 +534,8 @@
               ("01" (cons2 t nil))
               ("00" (cons2 t t)))
           (cont
+            (char3 ("11") ("01") ("10")) ;; "v"
+            (char3 ("10") ("01") ("10")) ;; "f"
             (char3 ("10") ("00") ("10")) ;; "b"
             (char3 ("10") ("01") ("11")) ;; "g"
             (char3 ("10") ("11") ("00")) ;; "l"
@@ -568,6 +577,7 @@
       (list "e" "q"); kEq
       (gen-CONX "s") ;kCons
       (gen-CONX "d") ;kCond
+      (cons "d" (cons "e" (list4 "f" "v" "a" "r")))
       (cons "l" (cons "a" (list4 "m" "b" "d" "a")))
       (cons "p" (list4 "r" "o" "g" "n"))
       (list "l" "e" "t"); kLet
@@ -600,6 +610,7 @@
          kEq
          kCons
          kBackquote
+         kDefvar
          kLambda
          kProgn
          kLet
