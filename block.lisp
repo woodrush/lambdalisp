@@ -1,14 +1,14 @@
-(block
+(block a
   (print (quote a))
-  (return (quote b))
+  (return a (quote b))
   (print (quote c)))
 
-(block
+(block b
   (print (quote a))
-  (block
+  (block c
     (print (quote b))
-    (return (print (quote c)))
+    (return c (print (quote c)))
     (print (quote d)))
   (print (quote e))
-  (return (print (quote f)))
+  (return b (print (quote f)))
   (print (quote g)))
