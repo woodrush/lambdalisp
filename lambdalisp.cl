@@ -313,6 +313,15 @@
     (<- (newenv reg heap stdin) (eval-letbind *initenv cdr-e reg heap stdin))
     (cont (cons (cons (valueof bind-var) bind-expr) newenv) reg heap stdin)))
 
+(defrec-lazy printint (n cont)
+  (do
+    (if-then-return (isnil n)
+      cont)
+    (<- (car-n cdr-n) (n))
+    (if car-n
+      (cons "0" (printint cdr-n cont))
+      (cons "1" (printint cdr-n cont)))))
+
 (defrec-lazy lookup-var (q-varname curenv *curenv heap cont)
   (do
     (cons ">")
@@ -335,9 +344,12 @@
   (typematch expr
     ;; atom
     (do
-      (cons ".")
       (<- (*curenv) (lookup-tree* reg reg-curenv))
+      (cons ".")
+      (cons ".")
+      (printint *curenv)
       (<- (curenv) (lookup-tree* heap *curenv))
+      (cons ".")
       (<- (val *val) (lookup-var (valueof expr) curenv *curenv heap))
       (cont val reg heap stdin))
     ;; list
@@ -413,11 +425,11 @@
             ;; ;; Increment heap-head
             ;; (<- (*heap-head _) (add* nil t *heap-head int-zero))
             ;; (<- (reg) (memory-write* reg reg-heap-head *heap-head))
-            ;; ;; Evaluate expression in the created environment
-            ;; (<- (expr reg heap stdin) (eval-progn newtail reg heap stdin))
-            ;; ;; Set the environment back to the original outer environment
-            ;; (<- (reg) (memory-write* reg reg-curenv *outerenv))
+            ;; Evaluate expression in the created environment
             (<- (expr reg heap stdin) (eval-progn newtail reg heap stdin))
+            ;; Set the environment back to the original outer environment
+            (<- (reg) (memory-write* reg reg-curenv int-zero))
+            ;; (<- (expr reg heap stdin) (eval-progn newtail reg heap stdin))
             (cont expr reg heap stdin)))
         (t
           (cont expr reg heap stdin)))
@@ -455,6 +467,8 @@
             (char3 ("11") ("00") ("10")) ;; "r"
             (char3 ("11") ("01") ("00")) ;; "t"
             ;; Delayed application to the outermost `cont`
+            (do ("00") ("11") ("00") ("00") nil)  ;; "0"
+            (do ("00") ("11") ("00") ("01") nil)  ;; "1"
             (do ("00") ("11") ("11") ("10") nil)  ;; ">"
             (sym2 ("11") ("10"))         ;; "."
             (sym2 ("00") ("00"))         ;; " "
@@ -508,6 +522,8 @@
          kProgn
          kLet
          t-atom
+         "0"
+         "1"
          ">"
          "."
          " "
@@ -525,8 +541,9 @@
     (let* add* add*)
     ;; (<- (*heap-head _) (add* nil t int-zero int-zero))
     (<- (reg) (memory-write* initreg reg-heap-head int-one))
+    (<- (reg) (memory-write* reg reg-curenv int-zero))
     (<- (heap) (memory-write* initheap int-zero nil))
-    (repl initreg heap stdin)))
+    (repl reg heap stdin)))
 
 ;;================================================================
 ;; Constants and macros
