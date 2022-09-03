@@ -347,7 +347,9 @@
     (<- (func-hook) (findkey c d-hook))
     (if-then-return (isnil func-hook)
       (cont nil reg-heap stdin))
-    (<- (expr reg heap stdin) (eval-apply func-hook reg heap stdin))
+    (<- (c cdr-stdin) (stdin))
+    (<- (expr reg heap stdin) (eval-apply func-hook (atom* nil) t reg heap cdr-stdin))
+    (cons "-")
     (cont expr (cons reg heap) stdin)))
 
 (defun-lazy def-read-expr (read-expr eval reg-heap stdin cont)
@@ -551,7 +553,7 @@
     (<- (zipped) (zip-data-base *initenv cdr-ldata cdr-lbase))
     (cont (cons (cons (valueof car-ldata) car-lbase) zipped))))
 
-(defrec-lazy eval-apply (head tail reg heap stdin cont)
+(defrec-lazy eval-apply (head tail eval-tail reg heap stdin cont)
   (do
     (<- (maybelambda reg heap stdin) (eval head reg heap stdin))
     ;; TODO: show error message for non-lambdas
@@ -566,9 +568,13 @@
         (<- (ismacro *outerenv argvars newtail) ((valueof maybelambda)))
         ;; If it is a macro, do not evaluate the incoming arguments and pass their raw expressions
         (<- (mappedargs reg heap stdin)
-          ((if ismacro
-            (lambda (cont) (cont (datalist2baselist tail (lambda (x) x)) reg heap stdin))
-            (lambda (cont) (map-eval tail reg heap stdin cont)))))
+          ((cond
+            (ismacro
+              (lambda (cont) (cont (datalist2baselist tail (lambda (x) x)) reg heap stdin)))
+            (eval-tail
+              (lambda (cont) (map-eval tail reg heap stdin cont)))
+            (t
+              (lambda (cont) (cont tail reg heap stdin))))))
         ;; Write the bindings to the stack's head
         (<- (newenv) (zip-data-base (cons (cons nil *outerenv) nil) argvars mappedargs))
         (<- (*stack-head) (lookup-tree* reg reg-stack-head))
@@ -673,6 +679,16 @@
             (do
               (<- (c stdin) (stdin))
               (cont (string* (list c)) reg heap stdin)))
+          ((stringeq (valueof head) kSetMacroCharacter)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (arg2) (-> tail cdr-data@ car-data@))
+              (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
+              (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
+              (<- (charstack) (lookup-tree* reg reg-reader-hooks))
+              (<- (char _) ((valueof arg1)))
+              (<- (reg) (memory-write* reg reg-reader-hooks (cons (cons char arg2) charstack)))
+              (cont arg2 reg heap stdin)))
           ((stringeq (valueof head) (list "`"))
             (do
               (<- (arg1) (car-data tail))
@@ -780,8 +796,8 @@
               (cont (lambda* t *outerenv arg1 arg2) reg heap stdin)))
           ;; Evaluate as a lambda
           (t
-            (eval-apply head tail reg heap stdin cont))))
-        (eval-apply head tail reg heap stdin cont))
+            (eval-apply head tail t reg heap stdin cont))))
+        (eval-apply head tail t reg heap stdin cont))
       ;; lambda
       (cont expr reg heap stdin)
       ;; string
