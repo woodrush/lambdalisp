@@ -793,8 +793,7 @@
             (do
               (<- (arg1) (car-data tail))
               (<- (arg2) (cdr-data tail))
-              (<- (*outerenv) (lookup-tree* reg reg-curenv))
-              (cont (lambda* t *outerenv arg1 arg2) reg heap stdin)))
+              (cont (lambda* t int-zero arg1 arg2) reg heap stdin)))
           ;; Evaluate as a lambda
           (t
             (eval-apply head tail t reg heap stdin cont))))
