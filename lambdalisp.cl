@@ -79,8 +79,9 @@
 ;;================================================================
 ;; Data structure
 ;;================================================================
-(defun-lazy type-atom (t0 t1) t0)
-(defun-lazy type-list (t0 t1) t1)
+(defun-lazy type-atom   (t0 t1 t2) t0)
+(defun-lazy type-list   (t0 t1 t2) t1)
+(defun-lazy type-lambda (t0 t1 t2) t2)
 
 (defmacro-lazy typeof  (x) `(car ,x))
 (defmacro-lazy valueof (x) `(cdr ,x))
@@ -115,7 +116,8 @@
       (cont data)
       (do
         (<- (dcar dcdr) (dbody))
-        (cont dcar)))))
+        (cont dcar))
+      (cont data))))
 
 (defun-lazy cdr-data (data cont)
   (do
@@ -124,7 +126,8 @@
       (cont data)
       (do
         (<- (dcar dcdr) (dbody))
-        (cont dcdr)))))
+        (cont dcdr))
+      (cont data))))
 
 (defun-lazy d-carcdr-data (data cont)
   (do
@@ -133,15 +136,18 @@
       (cont data data)
       (do
         (<- (dcar dcdr) (dbody))
-        (cont dcar dcdr)))))
+        (cont dcar dcdr))
+      (cont data))))
 
-(defmacro-lazy typematch (expr atomcase listcase)
+(defmacro-lazy typematch (expr atomcase listcase lambdacase)
   `((typeof ,expr)
     ,atomcase
-    ,listcase))
+    ,listcase
+    ,lambdacase))
 
 (defmacro-lazy isatom (expr)
-  `(typeof ,expr))
+  `((typeof ,expr)
+    t nil nil))
 
 (defun-lazy isnil-data (expr)
   (isnil (valueof expr)))
@@ -164,7 +170,9 @@
         (lambda (cont) (cons "(" (cons ")" cont)))
         (printstring (valueof expr)))
       ;; list
-      (lambda (cont) (cons "(" (printlist expr cont)))))
+      (lambda (cont) (cons "(" (printlist expr cont)))
+      ;;lambda
+      (lambda (cont) (cons "l" cont))))
    ;; Factored out
    cont))
 
@@ -180,7 +188,9 @@
           (cons ")" cont)
           (cons " " (cons "." (cons " " (printstring (valueof cdr-ed) (cons ")" cont))))))
         ;; list
-        (cons " " (printlist cdr-ed cont))))))
+        (cons " " (printlist cdr-ed cont))
+        ;;lambda
+        (cons "l" cont)))))
 
 
 ;;================================================================
@@ -288,19 +298,23 @@
           (cont car-cdr-e)))
       (<- (car-e) (backquote car-e))
       (<- (cdr-e) (backquote cdr-e))
-      (cont (cons-data@ (atom* kCons) (cons-data@ car-e (cons-data@ cdr-e (atom* nil))))))))
+      (cont (cons-data@ (atom* kCons) (cons-data@ car-e (cons-data@ cdr-e (atom* nil))))))
+    ;; lambda (TODO)
+    (cont expr)))
 
 (defrec-lazy eval-progn (expr reg heap stdin cont)
   (typematch expr
-    ;;atom
+    ;; atom
     (cont (atom* nil) reg heap stdin)
-    ;;list
+    ;; list
     (do
       (<- (car-e cdr-e) (d-carcdr-data expr))
       (<- (expr reg heap stdin) (eval car-e reg heap stdin))
       (if-then-return (isnil-data cdr-e)
         (cont expr reg heap stdin))
-      (eval-progn cdr-e reg heap stdin cont))))
+      (eval-progn cdr-e reg heap stdin cont))
+    ;; lambda
+    (cont (atom* nil) reg heap stdin)))
 
 (defrec-lazy eval-letbind (*initenv expr reg heap stdin cont)
   (do
@@ -431,21 +445,21 @@
           (do
             (<- (arg1) (car-data tail))
             (<- (_ *val) (assoc arg1 reg heap))
-            (printint *val)
             (<- (valenv) (lookup-tree* heap *val))
             (<- (bind-var newenv reg heap stdin) (eval-letbind valenv (cons-data@ tail (atom* nil)) reg heap stdin))
             (<- (heap) (memory-write* heap *val newenv))
             (cont bind-var reg heap stdin)))
         (t
-          (cont expr reg heap stdin)))
-      )))
+          (cont expr reg heap stdin))))
+      ;; lambda
+      (cont expr reg heap stdin)))
 
 ;;================================================================
 ;; Constants
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -455,6 +469,7 @@
               ("01" (cons2 t nil))
               ("00" (cons2 t t)))
           (cont
+            (char3 ("10") ("00") ("10")) ;; "b"
             (char3 ("10") ("01") ("11")) ;; "g"
             (char3 ("10") ("11") ("00")) ;; "l"
             (char3 ("10") ("11") ("01")) ;; "m"
@@ -472,6 +487,7 @@
             (char3 ("11") ("00") ("10")) ;; "r"
             (char3 ("11") ("01") ("00")) ;; "t"
             ;; Delayed application to the outermost `cont`
+            "l"
             (do ("00") ("11") ("00") ("00") nil)  ;; "0"
             (do ("00") ("11") ("00") ("01") nil)  ;; "1"
             (do ("00") ("11") ("11") ("10") nil)  ;; ">"
@@ -494,6 +510,7 @@
       (list "e" "q"); kEq
       (gen-CONX "s") ;kCons
       (gen-CONX "d") ;kCond
+      (cons "l" (cons "a" (list4 "m" "b" "d" "a")))
       (cons "p" (list4 "r" "o" "g" "n"))
       (list "l" "e" "t"); kLet
       (list4 "s" "e" "t" "q")
@@ -525,10 +542,12 @@
          kEq
          kCons
          kBackquote
+         kLambda
          kProgn
          kLet
          kSetq
          t-atom
+         "l"
          "0"
          "1"
          ">"
