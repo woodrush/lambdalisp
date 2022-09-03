@@ -1,0 +1,13 @@
+(setq new-counter
+    (lambda (c)
+        (let ((a ()) (c c))
+            (lambda () (setq a (cons c a))))))
+(setq counter1 (new-counter (quote a)))
+(setq counter2 (new-counter (quote b)))
+(counter1)
+(counter1)
+(counter1)
+(counter2)
+(counter2)
+(counter1)
+(counter1)
