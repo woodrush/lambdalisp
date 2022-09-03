@@ -387,9 +387,8 @@
       ;; lambda
       (do
         (<- (*outerenv argvars newtail) ((valueof maybelambda)))
-        (<- (newenv) (zip-data-base (cons (cons nil *outerenv) nil) argvars mappedargs))
         ;; Write the bindings to the stack's head
-        ;; (<- (_ newenv reg heap stdin) (eval-letbind (cons (cons nil *outerenv) nil) zipped reg heap stdin))
+        (<- (newenv) (zip-data-base (cons (cons nil *outerenv) nil) argvars mappedargs))
         (<- (*stack-head) (lookup-tree* reg reg-stack-head))
         (<- (heap) (memory-write* heap *stack-head newenv))
         ;; Set current environment pointer to the written *stack-head
