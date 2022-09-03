@@ -418,18 +418,26 @@
             (<- (*outerenv) (lookup-tree* reg reg-curenv))
             ;; Write the bindings to the heap's head
             (<- (newenv reg heap stdin) (eval-letbind *outerenv arg1 reg heap stdin))
+            (printint *outerenv)
             (<- (*heap-head) (lookup-tree* reg reg-heap-head))
+            (printint *heap-head)
             (<- (heap) (memory-write* heap *heap-head newenv))
-            ;; ;; Set current environment pointer to the written *heap-head
-            ;; (<- (reg) (memory-write* reg reg-curenv *heap-head))
-            ;; ;; Increment heap-head
-            ;; (<- (*heap-head _) (add* nil t *heap-head int-zero))
-            ;; (<- (reg) (memory-write* reg reg-heap-head *heap-head))
+            (printint *outerenv)
+            ;; Set current environment pointer to the written *heap-head
+            (<- (reg) (memory-write* reg reg-curenv *heap-head))
+            ;; Increment heap-head
+            (cons " ")
+            (printint *heap-head)
+            (cons " ")
+            (<- (_ *heap-head) (add* nil t *heap-head int-zero))
+            (cons " ")
+            (printint *heap-head)
+            (cons " ")
+            (<- (reg) (memory-write* reg reg-heap-head *heap-head))
             ;; Evaluate expression in the created environment
             (<- (expr reg heap stdin) (eval-progn newtail reg heap stdin))
             ;; Set the environment back to the original outer environment
             (<- (reg) (memory-write* reg reg-curenv int-zero))
-            ;; (<- (expr reg heap stdin) (eval-progn newtail reg heap stdin))
             (cont expr reg heap stdin)))
         (t
           (cont expr reg heap stdin)))
@@ -539,7 +547,7 @@
     (let* int-zero (list t t t t t t t t))
     (let* int-one (list t t t t t t t nil))
     (let* add* add*)
-    ;; (<- (*heap-head _) (add* nil t int-zero int-zero))
+    ;; (<- (_ *heap-head) (add* nil t int-zero int-zero))
     (<- (reg) (memory-write* initreg reg-heap-head int-one))
     (<- (reg) (memory-write* reg reg-curenv int-zero))
     (<- (heap) (memory-write* initheap int-zero nil))
