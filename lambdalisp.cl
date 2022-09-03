@@ -376,7 +376,11 @@
     (if-then-return (isnil-data ldata)
       (cont *initenv))
     (<- (car-ldata cdr-ldata) (d-carcdr-data ldata))
-    (<- (car-lbase cdr-lbase) ((if (isnil lbase) (cons nil nil) lbase)))
+    ;; (if-then-return (stringeq (valueof car-ldata) kRest)
+    ;;   (do
+    ;;     (<- (restvar) (car-data cdr-ldata))
+    ;;     (cont (cons (cons (valueof restvar) lbase) *initenv))))
+    (<- (car-lbase cdr-lbase) ((if (isnil lbase) (cons (atom* nil) nil) lbase)))
     (<- (zipped) (zip-data-base *initenv cdr-ldata cdr-lbase))
     (cont (cons (cons (valueof car-ldata) car-lbase) zipped))))
 
@@ -582,7 +586,7 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("&" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -592,6 +596,7 @@
               ("01" (cons2 t nil))
               ("00" (cons2 t t)))
           (cont
+            (do ("00") ("10") ("01") ("10") nil)  ;; "&"
             (char3 ("10") ("10") ("11")) ;; "k"
             (char3 ("11") ("01") ("10")) ;; "v"
             (char3 ("10") ("01") ("10")) ;; "f"
@@ -645,6 +650,7 @@
       (list4 "l" "o" "o" "p")
       (list "l" "e" "t"); kLet
       (list4 "s" "e" "t" "q")
+      (list4 "&" "r" "e" "s" "t")
       (list "i" "f")
       (atom* (list "t"))
       )))
@@ -683,6 +689,7 @@
          kLoop
          kLet
          kSetq
+         kRest
          kIf
          t-atom
          "l"
