@@ -202,7 +202,9 @@
       ;; list
       (lambda (cont) (cons "(" (printlist expr cont)))
       ;; lambda
-      (lambda (cont) (cons "l" cont))
+      (do
+        (<- (ismacro ptr args body) ((valueof expr)))
+        (printstring (cons "@" (if ismacro kMacro kLambda))))
       ;; string
       (lambda (cont) (cons "\"" (printstring (valueof expr) (cons "\"" cont))))
       ;; int
@@ -349,7 +351,6 @@
       (cont nil reg-heap stdin))
     (<- (c cdr-stdin) (stdin))
     (<- (expr reg heap stdin) (eval-apply func-hook (atom* nil) t reg heap cdr-stdin))
-    (cons "-")
     (cont expr (cons reg heap) stdin)))
 
 (defun-lazy def-read-expr (read-expr eval reg-heap stdin cont)
@@ -846,7 +847,7 @@
             ;; Delayed application to the outermost `cont`
             (char3 ("10") ("11") ("00")) ;; "l"
             (char3 ("01") ("11") ("00")) ;; "\\"
-            (do ("01") ("00") ("00") ("00"))      ;; "@"
+            (do ("01") ("00") ("00") ("00") nil)  ;; "@"
             (sym2 ("11") ("00"))         ;; ","
             (sym2 ("01") ("11"))         ;; "'"
             (sym2 ("00") ("10"))         ;; "\""
