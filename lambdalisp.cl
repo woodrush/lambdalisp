@@ -163,6 +163,10 @@
   `(typematch ,expr
     t nil nil nil))
 
+(defmacro-lazy isstring (expr)
+  `(typematch ,expr
+    nil nil nil t))
+
 (defun-lazy isnil-data (expr)
   (isnil (valueof expr)))
 
@@ -564,7 +568,8 @@
               (<- (arg2) (-> tail cdr-data@ car-data@))
               (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
-              (if-then-return (and (and (isatom arg1) (isatom arg2))
+              (if-then-return (and (or (and (isatom arg1) (isatom arg2))
+                                       (and (isstring arg1) (isstring arg2)))
                                    (stringeq (valueof arg1) (valueof arg2)))
                 (cont t-atom reg heap stdin))
               (cont (atom* nil) reg heap stdin)))
