@@ -560,8 +560,12 @@
                 (lambda (return-label expr reg heap stdin)
                   (do
                     ;; On return, restore the previous continuation, for nested blocks
-                    (<- (reg) (memory-write* reg reg-block-cont (cons prev-block-label prev-block-cont)))
-                    (cont expr reg heap stdin))))
+                    (if-then-return (stringeq (valueof return-label) (valueof block-label))
+                      (do
+                        (<- (reg) (memory-write* reg reg-block-cont (cons prev-block-label prev-block-cont)))
+                        (cont expr reg heap stdin)))
+                    (prev-block-cont return-label expr reg heap stdin)
+                    )))
               ;; Update the currently stored continuation
               (<- (reg) (memory-write* reg reg-block-cont (cons block-label popcont)))
               ;; Execute the block.
