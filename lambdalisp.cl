@@ -256,11 +256,20 @@
           (<- (lexpr) (read-list stdin)) ;; Implicit parameter passing: stdin
           (cont (cons-data@ expr lexpr)))))))
 
+(defrec-lazy skip-comment (stdin cont)
+  (do
+    (<- (c cdr-stdin) (stdin))
+    (if-then-return (=-bit "\\n" c)
+      (cont cdr-stdin))
+    (skip-comment cdr-stdin cont)))
+
 (defrec-lazy read-expr (stdin cont)
   (do
     (<- (c cdr-stdin) (stdin))
     (let* =-bit =-bit)
     ((cond
+      ((=-bit ";" c)
+        (skip-comment cdr-stdin read-expr))
       ((or (=-bit " " c) (=-bit "\\n" c))
         (read-expr cdr-stdin))
       ((=-bit "(" c)
@@ -695,6 +704,7 @@
             (sym2 ("01") ("11"))         ;; "'"
             (char3 ("10") ("00") ("00")) ;; "`"
             (sym2 ("11") ("01"))         ;; "-"
+            (do ("00") ("11") ("10") ("11") nil)  ;; ";"
             (do ("00") ("11") ("00") ("00") nil)  ;; "0"
             (do ("00") ("11") ("00") ("01") nil)  ;; "1"
             (do ("00") ("11") ("11") ("10") nil)  ;; ">"
@@ -776,6 +786,7 @@
          "'"
          "`"
          "-"
+         ";"
          "0"
          "1"
          ">"
