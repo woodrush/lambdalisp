@@ -346,8 +346,7 @@
 (defrec-lazy lookup-var (q-varname curenv *curenv heap cont)
   (do
     (if-then-return (isnil curenv)
-      ;; TODO: return nil instead of int-zero by default (affects setq)
-      (cont (atom* nil) int-zero))
+      (cont (atom* nil) nil))
     (<- (car-env cdr-env) (curenv))
     (<- (d-varname d-value) (car-env))
     ;; Is a redirection to another environment
@@ -359,11 +358,17 @@
       (cont d-value *curenv))
     (lookup-var q-varname cdr-env *curenv heap cont)))
 
-(defrec-lazy assoc (expr reg heap)
+(defrec-lazy assoc (expr reg heap cont)
   (do
+    ;; First look up global variables
+    (<- (curenv) (lookup-tree* heap int-zero))
+    (<- (var *var) (lookup-var (valueof expr) curenv int-zero heap))
+    (if-then-return (not (isnil *var))
+      (cont var *var))
+    ;; If it's not in the global environment, look up the lexical environment
     (<- (*curenv) (lookup-tree* reg reg-curenv))
     (<- (curenv) (lookup-tree* heap *curenv))
-    (lookup-var (valueof expr) curenv *curenv heap)))
+    (lookup-var (valueof expr) curenv *curenv heap cont)))
 
 (defrec-lazy zip-data-base (*initenv ldata lbase cont)
   (do
@@ -495,7 +500,8 @@
             (do
               (<- (arg1) (car-data tail))
               (<- (_ *val) (assoc arg1 reg heap))
-              ;; TODO: throw error when *val is nil
+              (if-then-return (isnil *val)
+                (cons "." (repl reg heap stdin)))
               (<- (valenv) (lookup-tree* heap *val))
               (<- (bind-var newenv reg heap stdin) (eval-letbind valenv (cons-data@ tail (atom* nil)) reg heap stdin))
               (<- (heap) (memory-write* heap *val newenv))
