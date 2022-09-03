@@ -269,6 +269,14 @@
         (do
           (<- (expr stdin) (read-expr cdr-stdin))
           (lambda (cont) (cont (cons-data@ (atom* kQuote) (cons-data@ expr (atom* nil))) stdin))))
+      ((=-bit "`" c)
+        (do
+          (<- (expr stdin) (read-expr cdr-stdin))
+          (lambda (cont) (cont (cons-data@ (atom* (list "`")) (cons-data@ expr (atom* nil))) stdin))))
+      ((=-bit "," c)
+        (do
+          (<- (expr stdin) (read-expr cdr-stdin))
+          (lambda (cont) (cont (cons-data@ (atom* (list ",")) (cons-data@ expr (atom* nil))) stdin))))
       (t
         (do
           (<- (str stdin) (read-string stdin))
