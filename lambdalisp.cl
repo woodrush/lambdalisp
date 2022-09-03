@@ -312,7 +312,7 @@
     ;; list
     (do
       (<- (car-e cdr-e) (d-carcdr-data expr))
-      (if-then-return (stringeq (valueof car-e) kBackquote)
+      (if-then-return (and (isatom car-e) (stringeq (valueof car-e) (list ",")))
         (do
           (<- (car-cdr-e) (car-data cdr-e))
           (cont car-cdr-e)))
@@ -525,11 +525,11 @@
               (<- (arg1) (car-data tail))
               (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (printexpr arg1 (cont arg1 reg heap stdin))))
-          ;; ((stringeq (valueof head) kBackquote)
-          ;;   (do
-          ;;     (<- (arg1) (car-data tail))
-          ;;     (<- (expr) (backquote arg1))
-          ;;     (eval expr reg heap stdin cont)))
+          ((stringeq (valueof head) (list "`"))
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (expr) (backquote arg1))
+              (eval expr reg heap stdin cont)))
           ((stringeq (valueof head) kProgn)
             (eval-progn tail reg heap stdin cont))
           ((stringeq (valueof head) kBlock)
