@@ -308,19 +308,19 @@
             (stringeq cdr-s1 cdr-s2))
           nil)))))
 
-(defrec-lazy read-list (stdin cont)
+(defrec-lazy read-list (reg stdin cont)
   (do
     (<- (c cdr-stdin) (stdin))
     (cond
       ((or (=-bit " " c) (=-bit "\\n" c))
-        (read-list cdr-stdin cont))
+        (read-list reg cdr-stdin cont))
       ((=-bit ")" c)
         (do
           (cont (atom* nil) cdr-stdin)))
       (t
         (do
-          (<- (expr stdin) (read-expr stdin))
-          (<- (lexpr) (read-list stdin)) ;; Implicit parameter passing: stdin
+          (<- (expr stdin) (read-expr reg stdin))
+          (<- (lexpr) (read-list reg stdin)) ;; Implicit parameter passing: stdin
           (cont (cons-data@ expr lexpr)))))))
 
 (defrec-lazy skip-comment (stdin cont)
@@ -330,17 +330,17 @@
       (cont cdr-stdin))
     (skip-comment cdr-stdin cont)))
 
-(defrec-lazy read-expr (stdin cont)
+(defrec-lazy read-expr (reg stdin cont)
   (do
     (<- (c cdr-stdin) (stdin))
     (let* =-bit =-bit)
     ((cond
       ((=-bit ";" c)
-        (skip-comment cdr-stdin read-expr))
+        (skip-comment cdr-stdin (read-expr reg)))
       ((or (=-bit " " c) (=-bit "\\n" c))
-        (read-expr cdr-stdin))
+        (read-expr reg cdr-stdin))
       ((=-bit "(" c)
-        (read-list cdr-stdin))
+        (read-list reg cdr-stdin))
       ((=-bit "\"" c)
         (do
           (<- (str stdin) (read-string cdr-stdin))
@@ -351,20 +351,20 @@
           (lambda (cont) (cont (int* n) stdin))))
       ((=-bit "'" c)
         (do
-          (<- (expr stdin) (read-expr cdr-stdin))
+          (<- (expr stdin) (read-expr reg cdr-stdin))
           (lambda (cont) (cont (cons-data@ (atom* kQuote) (cons-data@ expr (atom* nil))) stdin))))
       ((=-bit "`" c)
         (do
-          (<- (expr stdin) (read-expr cdr-stdin))
+          (<- (expr stdin) (read-expr reg cdr-stdin))
           (lambda (cont) (cont (cons-data@ (atom* (list "`")) (cons-data@ expr (atom* nil))) stdin))))
       ((=-bit "," c)
         (do
           (<- (c2 cdr-cdr-stdin) (cdr-stdin))
           (if-then-return (=-bit "@" c2)
             (do
-              (<- (expr stdin) (read-expr cdr-cdr-stdin))
+              (<- (expr stdin) (read-expr reg cdr-cdr-stdin))
               (lambda (cont) (cont (cons-data@ (atom* (list "," "@")) (cons-data@ expr (atom* nil))) stdin))))
-          (<- (expr stdin) (read-expr cdr-stdin))
+          (<- (expr stdin) (read-expr reg cdr-stdin))
           (lambda (cont) (cont (cons-data@ (atom* (list ",")) (cons-data@ expr (atom* nil))) stdin))))
       (t
         (do
@@ -376,10 +376,11 @@
 ;;================================================================
 ;; Evaluation
 ;;================================================================
-(def-lazy reg-curenv (list t t))
-(def-lazy reg-heap-head (list t nil))
-(def-lazy reg-stack-head (list nil t))
-(def-lazy reg-block-cont (list nil nil))
+(def-lazy reg-reader-hooks (list t))
+(def-lazy reg-curenv (list nil t t))
+(def-lazy reg-heap-head (list nil t nil))
+(def-lazy reg-stack-head (list nil nil t))
+(def-lazy reg-block-cont (list nil nil nil))
 
 (defrec-lazy append-data (l1 l2 cont)
   (do
@@ -633,7 +634,7 @@
               (eval arg2 reg heap stdin cont)))
           ((stringeq (valueof head) kRead)
             (do
-              (<- (expr stdin) (read-expr stdin))
+              (<- (expr stdin) (read-expr reg stdin))
               (cont expr reg heap stdin)))
           ((stringeq (valueof head) kPrint)
             (do
@@ -863,7 +864,7 @@
   (do
     (cons ">")
     (cons " ")
-    (<- (expr stdin) (read-expr stdin))
+    (<- (expr stdin) (read-expr reg stdin))
     (<- (expr reg heap stdin) (eval expr reg heap stdin))
     (printexpr expr (cons "\\n" (repl reg heap stdin)))))
 
