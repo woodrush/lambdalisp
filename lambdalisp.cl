@@ -277,6 +277,7 @@
 ;;================================================================
 (def-lazy reg-curenv (list t t))
 (def-lazy reg-heap-head (list t nil))
+(def-lazy reg-stack-head (list nil t))
 
 (defrec-lazy map-eval (l reg heap stdin cont)
   (cond
@@ -363,10 +364,20 @@
     (<- (curenv) (lookup-tree* heap *curenv))
     (lookup-var (valueof expr) curenv *curenv heap)))
 
+;; TODO: use a more efficient, specialized data structure instead of reusing eval-letbind?
+(defrec-lazy zip-data-base (*initenv ldata lbase cont)
+  (do
+    (if-then-return (isnil-data ldata)
+      (cont *initenv))
+    (<- (car-ldata cdr-ldata) (d-carcdr-data ldata))
+    (<- (car-lbase cdr-lbase) ((if (isnil lbase) (cons nil nil) lbase)))
+    (<- (zipped) (zip-data-base *initenv cdr-ldata cdr-lbase))
+    (cont (cons (cons (valueof car-ldata) car-lbase) zipped))))
+
 (defrec-lazy eval-apply (expr reg heap stdin cont)
   (do
     (<- (mapped reg heap stdin) (map-eval expr reg heap stdin))
-    (<- (maybelambda args) (mapped))
+    (<- (maybelambda mappedargs) (mapped))
     ;; TODO: show error message for non-lambdas
     (typematch maybelambda
       ;; atom
@@ -375,7 +386,25 @@
       (cons "." (repl reg heap stdin))
       ;; lambda
       (do
-        (cons "l" (repl reg heap stdin))))))
+        (<- (*outerenv argvars newtail) ((valueof maybelambda)))
+        (<- (newenv) (zip-data-base (cons (cons nil *outerenv) nil) argvars mappedargs))
+        ;; Write the bindings to the stack's head
+        ;; (<- (_ newenv reg heap stdin) (eval-letbind (cons (cons nil *outerenv) nil) zipped reg heap stdin))
+        (<- (*stack-head) (lookup-tree* reg reg-stack-head))
+        (<- (heap) (memory-write* heap *stack-head newenv))
+        ;; Set current environment pointer to the written *stack-head
+        (<- (reg) (memory-write* reg reg-curenv *stack-head))
+        ;; Decrement stack-head
+        (<- (_ *stack-head) (add* t nil *stack-head int-zero))
+        (<- (reg) (memory-write* reg reg-stack-head *stack-head))
+        ;; Evaluate expression in the created environment
+        (<- (expr reg heap stdin) (eval-progn newtail reg heap stdin))
+        ;; Increment stack-head - garbage collection
+        (<- (_ *stack-head) (add* nil t *stack-head int-zero))
+        (<- (reg) (memory-write* reg reg-stack-head *stack-head))
+        ;; Set the environment back to the original outer environment
+        (<- (reg) (memory-write* reg reg-curenv *outerenv))
+        (cont expr reg heap stdin)))))
 
 (defrec-lazy eval (expr reg heap stdin cont)
   (typematch expr
@@ -592,10 +621,13 @@
     (let* stringeq stringeq)
     (let* d-carcdr-data d-carcdr-data)
     (let* int-zero (list t t t t t t t t))
+    (let* int-one (list t t t t t t t nil))
+    (let* int-minusone (list nil nil nil nil nil nil nil nil))
     (let* add* add*)
     (<- (_ *heap-head) (add* nil t int-zero int-zero))
     (<- (reg) (memory-write* initreg reg-heap-head *heap-head))
     (<- (reg) (memory-write* reg reg-curenv int-zero))
+    (<- (reg) (memory-write* reg reg-stack-head int-minusone))
     (<- (heap) (memory-write* initheap int-zero nil))
     (repl reg heap stdin)))
 
