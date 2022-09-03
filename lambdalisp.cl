@@ -265,6 +265,10 @@
         (read-expr cdr-stdin))
       ((=-bit "(" c)
         (read-list cdr-stdin))
+      ((=-bit "'" c)
+        (do
+          (<- (expr stdin) (read-expr cdr-stdin))
+          (lambda (cont) (cont (cons-data@ (atom* kQuote) (cons-data@ expr (atom* nil))) stdin))))
       (t
         (do
           (<- (str stdin) (read-string stdin))
@@ -644,6 +648,9 @@
             (char3 ("11") ("01") ("00")) ;; "t"
             ;; Delayed application to the outermost `cont`
             (char3 ("10") ("11") ("00")) ;; "l"
+            (sym2 ("11") ("00"))         ;; ","
+            (sym2 ("01") ("11"))         ;; "'"
+            (char3 ("10") ("00") ("00")) ;; "`"
             (do ("00") ("11") ("00") ("00") nil)  ;; "0"
             (do ("00") ("11") ("00") ("01") nil)  ;; "1"
             (do ("00") ("11") ("11") ("10") nil)  ;; ">"
@@ -718,6 +725,9 @@
          kIf
          t-atom
          "l"
+         ","
+         "'"
+         "`"
          "0"
          "1"
          ">"
