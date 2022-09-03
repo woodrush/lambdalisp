@@ -867,7 +867,8 @@
       (cons "b" (list4 "l" "o" "c" "k"))
       (cons "r" (cons "e" (cons "t" (cons "u" (cons "r" (cons "n" (cons "-" (list4 "f" "r" "o" "m"))))))))
       (cons "p" (cons "e" (cons "e" (cons "k" (cons "-" (list4 "c" "h" "a" "r"))))))
-      (cons "r" (cons "e" (cons "a" (cons "d" (cons "-" (list4 "c" "h" "a" "r"))))))
+      (list-tail "r" "e" "a" "d" "-" (list4 "c" "h" "a" "r"))
+      (list-tail "s" "e" "t" "-" "m" "a" "c" "r" "o" "-" "c" "h" "a" "r" "a" (list4 "c" "t" "e" "r"))
       (list4 "l" "o" "o" "p")
       (list "l" "e" "t"); kLet
       (list4 "s" "e" "t" "q")
@@ -912,6 +913,7 @@
          kReturnFrom
          kPeekchar
          kReadchar
+         kSetMacroCharacter
          kLoop
          kLet
          kSetq
@@ -947,12 +949,15 @@
     (let* int-one (list t t t t t t t nil))
     (let* int-minusone (list nil nil nil nil nil nil nil nil))
     (let* add* add*)
+
+    ;; Mutual recursion for read-expr and eval
     (let* def-read-expr def-read-expr)
     (let* def-eval def-eval)
     (let* read-expr-hat (lambda (x y) (def-read-expr (x x y) (y x y))))
     (let* eval-hat (lambda (x y) (def-eval (x x y) (y x y))))
     (let* read-expr (read-expr-hat read-expr-hat eval-hat))
     (let* eval (eval-hat read-expr-hat eval-hat))
+
     (<- (_ *heap-head) (add* nil t int-zero int-zero))
     (<- (reg) (memory-write* initreg reg-heap-head *heap-head))
     (<- (reg) (memory-write* reg reg-curenv int-zero))
