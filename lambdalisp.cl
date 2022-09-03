@@ -86,8 +86,8 @@
 (defmacro-lazy typeof  (x) `(car ,x))
 (defmacro-lazy valueof (x) `(cdr ,x))
 
-(defmacro-lazy cons3 (x y z)
-  `(lambda (f) (f ,x ,y ,z)))
+(defmacro-lazy cons4 (x y z w)
+  `(lambda (f) (f ,x ,y ,z ,w)))
 
 (defmacro-lazy car-data@ (data)
   `(car (valueof ,data)))
@@ -112,8 +112,8 @@
 (defmacro-lazy atom* (value)
   `(cons type-atom ,value))
 
-(defmacro-lazy lambda* (ptr args body)
-  `(cons type-lambda (cons3 ,ptr ,args ,body)))
+(defmacro-lazy lambda* (ismacro ptr args body)
+  `(cons type-lambda (cons4 ,ismacro ,ptr ,args ,body)))
 
 (defun-lazy car-data (data cont)
   (do
@@ -392,7 +392,7 @@
       ;; lambda
       (do
         (<- (*origenv) (lookup-tree* reg reg-curenv))
-        (<- (*outerenv argvars newtail) ((valueof maybelambda)))
+        (<- (ismacro *outerenv argvars newtail) ((valueof maybelambda)))
         ;; Write the bindings to the stack's head
         (<- (newenv) (zip-data-base (cons (cons nil *outerenv) nil) argvars mappedargs))
         (<- (*stack-head) (lookup-tree* reg reg-stack-head))
@@ -517,7 +517,13 @@
               (<- (arg1) (car-data tail))
               (<- (arg2) (cdr-data tail))
               (<- (*outerenv) (lookup-tree* reg reg-curenv))
-              (cont (lambda* *outerenv arg1 arg2) reg heap stdin)))
+              (cont (lambda* nil *outerenv arg1 arg2) reg heap stdin)))
+          ((stringeq (valueof head) kMacro)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (arg2) (cdr-data tail))
+              (<- (*outerenv) (lookup-tree* reg reg-curenv))
+              (cont (lambda* t *outerenv arg1 arg2) reg heap stdin)))
           ;; Evaluate as a lambda
           (t
             (eval-apply expr reg heap stdin cont))))
@@ -585,6 +591,7 @@
       (gen-CONX "d") ;kCond
       (cons "d" (cons "e" (list4 "f" "v" "a" "r")))
       (cons "l" (cons "a" (list4 "m" "b" "d" "a")))
+      (cons "m" (list4 "a" "c" "r" "o"))
       (cons "p" (list4 "r" "o" "g" "n"))
       (list "l" "e" "t"); kLet
       (list4 "s" "e" "t" "q")
@@ -618,6 +625,7 @@
          kBackquote
          kDefvar
          kLambda
+         kMacro
          kProgn
          kLet
          kSetq
