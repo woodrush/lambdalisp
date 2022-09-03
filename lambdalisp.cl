@@ -318,6 +318,10 @@
   (do
     (<- (c cdr-stdin) (stdin))
     (cond
+      ((=-bit ";" c)
+        (do
+          (<- (stdin) (skip-comment cdr-stdin))
+          (read-list reg-heap stdin cont)))
       ((or (=-bit " " c) (=-bit "\\n" c))
         (read-list reg-heap cdr-stdin cont))
       ((=-bit ")" c)
@@ -331,6 +335,8 @@
 
 (defrec-lazy skip-comment (stdin cont)
   (do
+    (if-then-return (isnil stdin)
+      (cont stdin))
     (<- (c cdr-stdin) (stdin))
     (if-then-return (=-bit "\\n" c)
       (cont cdr-stdin))
@@ -366,7 +372,9 @@
       (cont ret-reader-hook reg-heap stdin))
     ((cond
       ((=-bit ";" c)
-        (skip-comment cdr-stdin (read-expr reg-heap)))
+        (do
+          (<- (stdin) (skip-comment cdr-stdin))
+          (read-expr reg-heap stdin)))
       ((or (=-bit " " c) (=-bit "\\n" c))
         (read-expr reg-heap cdr-stdin))
       ((=-bit "(" c)
@@ -466,9 +474,11 @@
     ;; list
     (do
       (<- (car-e cdr-e) (d-carcdr-data expr))
+      (printexpr car-e)
       (<- (expr reg heap stdin) (eval car-e reg heap stdin))
       (if-then-return (isnil-data cdr-e)
         (cont expr reg heap stdin))
+      (cons ".")
       (eval-progn cdr-e reg heap stdin cont))
     ;; lambda (TODO)
     (cont (atom* nil) reg heap stdin)
@@ -576,6 +586,7 @@
           ((cond
             (ismacro
               (lambda (cont) (cont (datalist2baselist tail (lambda (x) x)) reg heap stdin)))
+            ;; Set to nil in reader macros
             (eval-tail
               (lambda (cont) (map-eval tail reg heap stdin cont)))
             (t
@@ -590,7 +601,9 @@
         (<- (_ *stack-head) (add* t nil *stack-head int-zero))
         (<- (reg) (memory-write* reg reg-stack-head *stack-head))
         ;; Evaluate expression in the created environment
+        (cons ".")
         (<- (expr reg heap stdin) (eval-progn newtail reg heap stdin))
+        (cons "@")
         ;; Increment stack-head - garbage collection
         (<- (_ *stack-head) (add* nil t *stack-head int-zero))
         (<- (reg) (memory-write* reg reg-stack-head *stack-head))
