@@ -493,13 +493,19 @@
             (eval-progn tail reg heap stdin cont))
           ((stringeq (valueof head) kBlock)
             (do
-              ;; Store the current continuation in the register
+              ;; Load the currently stored continuation
               (<- (prev-block-cont) (lookup-tree* reg reg-block-cont))
-              (<- (reg) (memory-write* reg reg-block-cont cont))
+              ;; Update the currently stored continuation
+              (<- (reg) (memory-write* reg reg-block-cont
+                (lambda (expr reg heap stdin)
+                  (do
+                    ;; On return, restore the previous continuation, for nested blocks
+                    (<- (reg) (memory-write* reg reg-block-cont prev-block-cont))
+                    (cont expr reg heap stdin)))))
               ;; Execute the block
               (<- (expr reg heap stdin) (eval-progn tail reg heap stdin))
-              ;; If the block ends without returning, restore the previous continuation,
-              ;; and proceed with the current continuation
+              ;; If the block ends without returning, pop the continuation here,
+              ;; instead of doing it in return
               (<- (reg) (memory-write* reg reg-block-cont prev-block-cont))
               (cont expr reg heap stdin)))
           ((stringeq (valueof head) kReturn)
