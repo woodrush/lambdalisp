@@ -478,11 +478,9 @@
     ;; list
     (do
       (<- (car-e cdr-e) (d-carcdr-data expr))
-      (printexpr car-e)
       (<- (expr reg heap stdin) (eval car-e reg heap stdin))
       (if-then-return (isnil-data cdr-e)
         (cont expr reg heap stdin))
-      (cons ".")
       (eval-progn cdr-e reg heap stdin cont))
     ;; lambda (TODO)
     (cont (atom* nil) reg heap stdin)
@@ -605,9 +603,7 @@
         (<- (_ *stack-head) (add* t nil *stack-head int-zero))
         (<- (reg) (memory-write* reg reg-stack-head *stack-head))
         ;; Evaluate expression in the created environment
-        (cons ".")
         (<- (expr reg heap stdin) (eval-progn newtail reg heap stdin))
-        (cons "@")
         ;; Increment stack-head - garbage collection
         (<- (_ *stack-head) (add* nil t *stack-head int-zero))
         (<- (reg) (memory-write* reg reg-stack-head *stack-head))
