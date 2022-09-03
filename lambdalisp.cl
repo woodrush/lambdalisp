@@ -564,15 +564,14 @@
                       (do
                         (<- (reg) (memory-write* reg reg-block-cont (cons prev-block-label prev-block-cont)))
                         (cont expr reg heap stdin)))
-                    (prev-block-cont return-label expr reg heap stdin)
-                    )))
+                    (prev-block-cont return-label expr reg heap stdin))))
               ;; Update the currently stored continuation
               (<- (reg) (memory-write* reg reg-block-cont (cons block-label popcont)))
               ;; Execute the block.
               ;; If the block ends without returning,
               ;; `popcont` will be executed here by `block` instead of `return`
               (eval-progn tail reg heap stdin (popcont block-label))))
-          ((stringeq (valueof head) kReturn)
+          ((stringeq (valueof head) kReturnFrom)
             (do
               (<- (block-label tail) (d-carcdr-data tail))
               ;; Load the saved continuation from the register
@@ -657,7 +656,7 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("&" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("-" "&" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -667,6 +666,7 @@
               ("01" (cons2 t nil))
               ("00" (cons2 t t)))
           (cont
+            (sym2 ("11") ("01"))         ;; "-"
             (do ("00") ("10") ("01") ("10") nil)  ;; "&"
             (char3 ("10") ("10") ("11")) ;; "k"
             (char3 ("11") ("01") ("10")) ;; "v"
@@ -694,6 +694,7 @@
             (sym2 ("11") ("00"))         ;; ","
             (sym2 ("01") ("11"))         ;; "'"
             (char3 ("10") ("00") ("00")) ;; "`"
+            (sym2 ("11") ("01"))         ;; "-"
             (do ("00") ("11") ("00") ("00") nil)  ;; "0"
             (do ("00") ("11") ("00") ("01") nil)  ;; "1"
             (do ("00") ("11") ("11") ("10") nil)  ;; ">"
@@ -721,7 +722,7 @@
       (cons "m" (list4 "a" "c" "r" "o"))
       (cons "p" (list4 "r" "o" "g" "n"))
       (cons "b" (list4 "l" "o" "c" "k"))
-      (cons "r" (cons "e" (list4 "t" "u" "r" "n")))
+      (cons "r" (cons "e" (cons "t" (cons "u" (cons "r" (cons "n" (cons "-" (list4 "f" "r" "o" "m"))))))))
       (list4 "l" "o" "o" "p")
       (list "l" "e" "t"); kLet
       (list4 "s" "e" "t" "q")
@@ -761,7 +762,7 @@
          kMacro
          kProgn
          kBlock
-         kReturn
+         kReturnFrom
          kLoop
          kLet
          kSetq
@@ -774,6 +775,7 @@
          ","
          "'"
          "`"
+         "-"
          "0"
          "1"
          ">"
