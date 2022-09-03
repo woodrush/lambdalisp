@@ -1,8 +1,8 @@
 (defvar i (cons () (cons () (cons () ()))))
-(block
+(block a
   (loop
     (if (atom i)
-      (return)
+      (return-from a)
       nil)
     (print i)
     (setq i (cdr i))))

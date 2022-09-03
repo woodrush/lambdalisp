@@ -31,5 +31,5 @@
     (return-from () (print (quote c)))
     (print (quote d)))
   (print (quote e))
-  (return-from b (print (quote f)))
+  (return-from b)
   (print (quote g)))
