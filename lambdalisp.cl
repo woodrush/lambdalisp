@@ -552,31 +552,35 @@
             (eval-progn tail reg heap stdin cont))
           ((stringeq (valueof head) kBlock)
             (do
+              (<- (block-label tail) (d-carcdr-data tail))
               ;; Load the currently stored continuation
-              (<- (prev-block-cont) (lookup-tree* reg reg-block-cont))
+              (<- (prev-cont-tuple) (lookup-tree* reg reg-block-cont))
+              (<- (prev-block-label prev-block-cont) ((if (isnil prev-cont-tuple) (cons nil nil) prev-cont-tuple)))
               (let* popcont
-                (lambda (expr reg heap stdin)
+                (lambda (return-label expr reg heap stdin)
                   (do
                     ;; On return, restore the previous continuation, for nested blocks
-                    (<- (reg) (memory-write* reg reg-block-cont prev-block-cont))
+                    (<- (reg) (memory-write* reg reg-block-cont (cons prev-block-label prev-block-cont)))
                     (cont expr reg heap stdin))))
               ;; Update the currently stored continuation
-              (<- (reg) (memory-write* reg reg-block-cont popcont))
+              (<- (reg) (memory-write* reg reg-block-cont (cons block-label popcont)))
               ;; Execute the block.
               ;; If the block ends without returning,
               ;; `popcont` will be executed here by `block` instead of `return`
-              (eval-progn tail reg heap stdin popcont)))
+              (eval-progn tail reg heap stdin (popcont block-label))))
           ((stringeq (valueof head) kReturn)
             (do
+              (<- (block-label tail) (d-carcdr-data tail))
               ;; Load the saved continuation from the register
-              (<- (return-block-cont) (lookup-tree* reg reg-block-cont))
+              (<- (cur-cont-tuple) (lookup-tree* reg reg-block-cont))
+              (<- (cur-block-label return-block-cont) (cur-cont-tuple))
               ;; If an argument is not supplied, return nil
               (if-then-return (isnil-data tail)
-                (return-block-cont tail reg heap stdin))
+                (return-block-cont block-label tail reg heap stdin))
               ;; Otherwise, evaluate the argument and return it (pass it to the saved continuation)
               (<- (arg1) (car-data tail))
               (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
-              (return-block-cont expr reg heap stdin)))
+              (return-block-cont block-label expr reg heap stdin)))
           ((stringeq (valueof head) kLoop)
             (do
               (let* loopcont
