@@ -293,6 +293,11 @@
     `(cons ,item (list ,@items))
     `(cons ,item nil)))
 
+(defmacro-lazy list-tail (item &rest items)
+  (if items
+    `(cons ,item (list-tail ,@items))
+    item))
+
 (defun-lazy nth (n list)
   (-> list (n cdr*) car*))
 
