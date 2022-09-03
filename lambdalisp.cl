@@ -332,7 +332,7 @@
     (if-then-return (isnil d-varname)
       (do
         (<- (curenv) (lookup-tree* heap d-value))
-        (lookup-var q-varname curenv *curenv heap cont)))
+        (lookup-var q-varname curenv d-value heap cont)))
     (if-then-return (stringeq q-varname d-varname)
       (cont d-value *curenv))
     (lookup-var q-varname cdr-env *curenv heap cont)))
