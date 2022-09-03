@@ -79,9 +79,10 @@
 ;;================================================================
 ;; Data structure
 ;;================================================================
-(defun-lazy type-atom   (t0 t1 t2) t0)
-(defun-lazy type-list   (t0 t1 t2) t1)
-(defun-lazy type-lambda (t0 t1 t2) t2)
+(defun-lazy type-atom   (t0 t1 t2 t3) t0)
+(defun-lazy type-list   (t0 t1 t2 t3) t1)
+(defun-lazy type-lambda (t0 t1 t2 t3) t2)
+(defun-lazy type-string (t0 t1 t2 t3) t3)
 
 (defmacro-lazy typeof  (x) `(car ,x))
 (defmacro-lazy valueof (x) `(cdr ,x))
@@ -112,6 +113,9 @@
 (defmacro-lazy atom* (value)
   `(cons type-atom ,value))
 
+(defmacro-lazy string* (value)
+  `(cons type-string ,value))
+
 (defmacro-lazy lambda* (ismacro ptr args body)
   `(cons type-lambda (cons4 ,ismacro ,ptr ,args ,body)))
 
@@ -123,6 +127,7 @@
       (do
         (<- (dcar dcdr) (dbody))
         (cont dcar))
+      (cont data)
       (cont data))))
 
 (defun-lazy cdr-data (data cont)
@@ -133,6 +138,7 @@
       (do
         (<- (dcar dcdr) (dbody))
         (cont dcdr))
+      (cont data)
       (cont data))))
 
 (defun-lazy d-carcdr-data (data cont)
@@ -143,17 +149,19 @@
       (do
         (<- (dcar dcdr) (dbody))
         (cont dcar dcdr))
-      (cont data))))
+      (cont data data)
+      (cont data data))))
 
-(defmacro-lazy typematch (expr atomcase listcase lambdacase)
+(defmacro-lazy typematch (expr atomcase listcase lambdacase stringcase)
   `((typeof ,expr)
     ,atomcase
     ,listcase
-    ,lambdacase))
+    ,lambdacase
+    ,stringcase))
 
 (defmacro-lazy isatom (expr)
   `(typematch ,expr
-    t nil nil))
+    t nil nil nil))
 
 (defun-lazy isnil-data (expr)
   (isnil (valueof expr)))
@@ -177,8 +185,11 @@
         (printstring (valueof expr)))
       ;; list
       (lambda (cont) (cons "(" (printlist expr cont)))
-      ;;lambda
-      (lambda (cont) (cons "l" cont))))
+      ;; lambda
+      (lambda (cont) (cons "l" cont))
+      ;; string
+      (lambda (cont) (cons "\"" (printstring (valueof expr) (cons "\"" cont))))
+      ))
    ;; Factored out
    cont))
 
@@ -195,8 +206,13 @@
           (cons " " (cons "." (cons " " (printstring (valueof cdr-ed) (cons ")" cont))))))
         ;; list
         (cons " " (printlist cdr-ed cont))
-        ;;lambda
-        (cons "l" cont)))))
+        ;; lambda
+        ;; (cons "l" cont)
+        nil
+        ;; string
+        ;; (cons "\"" (printstring (valueof cdr-ed)))
+        nil
+        ))))
 
 
 ;;================================================================
@@ -212,7 +228,7 @@
       (=-bit cdr-n cdr-m))
     nil))
 
-(defrec-lazy read-string (stdin cont)
+(defrec-lazy read-atom (stdin cont)
   (do
     (<- (c cdr-stdin) (stdin))
     (cond
@@ -220,9 +236,19 @@
         (cont nil stdin))
       (t
         (do
+          (<- (str stdin) (read-atom cdr-stdin))
+          (cont (cons c str) stdin))))))
+
+(defrec-lazy read-string (stdin cont)
+  (do
+    (<- (c cdr-stdin) (stdin))
+    (cond
+      ((=-bit "\"" c)
+        (cont nil cdr-stdin))
+      (t
+        (do
           (<- (str stdin) (read-string cdr-stdin))
-          (let* ret (cons c str))
-          (cont ret stdin))))))
+          (cont (cons c str) stdin))))))
 
 (defrec-lazy stringeq (s1 s2)
   (do
@@ -274,6 +300,10 @@
         (read-expr cdr-stdin))
       ((=-bit "(" c)
         (read-list cdr-stdin))
+      ((=-bit "\"" c)
+        (do
+          (<- (str stdin) (read-string cdr-stdin))
+          (lambda (cont) (cont (string* str) stdin))))
       ((=-bit "'" c)
         (do
           (<- (expr stdin) (read-expr cdr-stdin))
@@ -293,7 +323,7 @@
           (lambda (cont) (cont (cons-data@ (atom* (list ",")) (cons-data@ expr (atom* nil))) stdin))))
       (t
         (do
-          (<- (str stdin) (read-string stdin))
+          (<- (str stdin) (read-atom stdin))
           (lambda (cont) (cont (atom* str) stdin)))))
       cont)))
 
@@ -347,6 +377,8 @@
       (<- (cdr-e) (backquote cdr-e))
       (cont (cons-data@ (atom* kCons) (cons-data@ car-e (cons-data@ cdr-e (atom* nil))))))
     ;; lambda (TODO)
+    (cont expr)
+    ;; string (TODO)
     (cont expr)))
 
 (defrec-lazy eval-progn (expr reg heap stdin cont)
@@ -360,7 +392,9 @@
       (if-then-return (isnil-data cdr-e)
         (cont expr reg heap stdin))
       (eval-progn cdr-e reg heap stdin cont))
-    ;; lambda
+    ;; lambda (TODO)
+    (cont (atom* nil) reg heap stdin)
+    ;; string (TODO)
     (cont (atom* nil) reg heap stdin)))
 
 (defrec-lazy eval-letbind (*initenv expr reg heap stdin cont)
@@ -481,7 +515,9 @@
         ;; If it is a macro, evaluate the resulting expression again in the original outer environment
         (if-then-return ismacro
           (eval expr reg heap stdin cont))
-        (cont expr reg heap stdin)))))
+        (cont expr reg heap stdin))
+      ;;atom
+      (cons "." (repl reg heap stdin)))))
 
 (defrec-lazy eval (expr reg heap stdin cont)
   (typematch expr
@@ -658,6 +694,8 @@
             (eval-apply head tail reg heap stdin cont))))
         (eval-apply head tail reg heap stdin cont))
       ;; lambda
+      (cont expr reg heap stdin)
+      ;; string
       (cont expr reg heap stdin)))
 
 ;;================================================================
@@ -702,6 +740,7 @@
             (do ("01") ("00") ("00") ("00"))      ;; "@"
             (sym2 ("11") ("00"))         ;; ","
             (sym2 ("01") ("11"))         ;; "'"
+            (sym2 ("00") ("10"))         ;; "\""
             (char3 ("10") ("00") ("00")) ;; "`"
             (sym2 ("11") ("01"))         ;; "-"
             (do ("00") ("11") ("10") ("11") nil)  ;; ";"
@@ -784,6 +823,7 @@
          "@"
          ","
          "'"
+         "\""
          "`"
          "-"
          ";"
