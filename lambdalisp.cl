@@ -86,6 +86,9 @@
 (defmacro-lazy typeof  (x) `(car ,x))
 (defmacro-lazy valueof (x) `(cdr ,x))
 
+(defmacro-lazy cons3 (x y z)
+  `(lambda (f) (f ,x ,y ,z)))
+
 (defmacro-lazy car-data@ (data)
   `(car (valueof ,data)))
 
@@ -108,6 +111,9 @@
 
 (defmacro-lazy atom* (value)
   `(cons type-atom ,value))
+
+(defmacro-lazy lambda* (ptr args body)
+  `(cons type-lambda (cons3 ,ptr ,args ,body)))
 
 (defun-lazy car-data (data cont)
   (do
@@ -449,6 +455,12 @@
             (<- (bind-var newenv reg heap stdin) (eval-letbind valenv (cons-data@ tail (atom* nil)) reg heap stdin))
             (<- (heap) (memory-write* heap *val newenv))
             (cont bind-var reg heap stdin)))
+        ((stringeq (valueof head) kLambda)
+          (do
+            (<- (arg1) (car-data tail))
+            (<- (arg2) (cdr-data tail))
+            (<- (*outerenv) (lookup-tree* reg reg-curenv))
+            (cont (lambda* *outerenv arg1 arg2) reg heap stdin)))
         (t
           (cont expr reg heap stdin))))
       ;; lambda
@@ -487,7 +499,7 @@
             (char3 ("11") ("00") ("10")) ;; "r"
             (char3 ("11") ("01") ("00")) ;; "t"
             ;; Delayed application to the outermost `cont`
-            "l"
+            (char3 ("10") ("11") ("00")) ;; "l"
             (do ("00") ("11") ("00") ("00") nil)  ;; "0"
             (do ("00") ("11") ("00") ("01") nil)  ;; "1"
             (do ("00") ("11") ("11") ("10") nil)  ;; ">"
