@@ -371,15 +371,26 @@
     (<- (curenv) (lookup-tree* heap *curenv))
     (lookup-var (valueof expr) curenv *curenv heap cont)))
 
+(defrec-lazy baselist2datalist (l cont)
+  (cond
+    ((isnil l)
+      (cont (atom* nil)))
+    (t
+      (do
+        (<- (car-l cdr-l) (l))
+        (<- (ret) (baselist2datalist cdr-l))
+        (cont (cons-data@ car-l ret))))))
+
 (defrec-lazy zip-data-base (*initenv ldata lbase cont)
   (do
     (if-then-return (isnil-data ldata)
       (cont *initenv))
     (<- (car-ldata cdr-ldata) (d-carcdr-data ldata))
-    ;; (if-then-return (stringeq (valueof car-ldata) kRest)
-    ;;   (do
-    ;;     (<- (restvar) (car-data cdr-ldata))
-    ;;     (cont (cons (cons (valueof restvar) lbase) *initenv))))
+    (if-then-return (stringeq (valueof car-ldata) kRest)
+      (do  
+        (<- (restvar) (car-data cdr-ldata))
+        (<- (l) (baselist2datalist lbase))
+        (cont (cons (cons (valueof restvar) l) *initenv))))
     (<- (car-lbase cdr-lbase) ((if (isnil lbase) (cons (atom* nil) nil) lbase)))
     (<- (zipped) (zip-data-base *initenv cdr-ldata cdr-lbase))
     (cont (cons (cons (valueof car-ldata) car-lbase) zipped))))
@@ -650,7 +661,7 @@
       (list4 "l" "o" "o" "p")
       (list "l" "e" "t"); kLet
       (list4 "s" "e" "t" "q")
-      (list4 "&" "r" "e" "s" "t")
+      (cons "&" (list4 "r" "e" "s" "t"))
       (list "i" "f")
       (atom* (list "t"))
       )))
