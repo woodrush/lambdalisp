@@ -693,6 +693,10 @@
               (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
               (<- (appended) (append-data arg1 arg2))
               (cont appended reg heap stdin)))
+          ((stringeq (valueof head) kIntern)
+            (do
+              (<- (arg1) (car-data tail))
+              (cont (atom* (valueof arg1)) reg heap stdin)))
           ((stringeq (valueof head) kMacro)
             (do
               (<- (arg1) (car-data tail))
@@ -788,6 +792,7 @@
       (list4 "s" "e" "t" "q")
       (cons "&" (list4 "r" "e" "s" "t"))
       (cons "a" (cons "p" (list4 "p" "e" "n" "d")))
+      (cons "i" (cons "n" (list4 "t" "e" "r" "n")))
       (list "i" "f")
       (atom* (list "t"))
       )))
@@ -828,6 +833,7 @@
          kSetq
          kRest
          kAppend
+         kIntern
          kIf
          t-atom
          "l"
