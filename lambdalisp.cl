@@ -640,6 +640,14 @@
               (<- (arg1) (car-data tail))
               (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (printexpr arg1 (cont arg1 reg heap stdin))))
+          ((stringeq (valueof head) kPeekchar)
+            (do
+              (<- (c cdr-stdin) (stdin))
+              (cont (string* (list c)) reg heap stdin)))
+          ((stringeq (valueof head) kReadchar)
+            (do
+              (<- (c stdin) (stdin))
+              (cont (string* (list c)) reg heap stdin)))
           ((stringeq (valueof head) (list "`"))
             (do
               (<- (arg1) (car-data tail))
@@ -761,7 +769,7 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("-" "&" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("-" "&" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -773,6 +781,7 @@
           (cont
             (sym2 ("11") ("01"))         ;; "-"
             (do ("00") ("10") ("01") ("10") nil)  ;; "&"
+            (char3 ("10") ("10") ("00")) ;; "h"
             (char3 ("10") ("10") ("11")) ;; "k"
             (char3 ("11") ("01") ("10")) ;; "v"
             (char3 ("10") ("01") ("10")) ;; "f"
@@ -832,6 +841,8 @@
       (cons "p" (list4 "r" "o" "g" "n"))
       (cons "b" (list4 "l" "o" "c" "k"))
       (cons "r" (cons "e" (cons "t" (cons "u" (cons "r" (cons "n" (cons "-" (list4 "f" "r" "o" "m"))))))))
+      (cons "p" (cons "e" (cons "e" (cons "k" (cons "-" (list4 "c" "h" "a" "r"))))))
+      (cons "r" (cons "e" (cons "a" (cons "d" (cons "-" (list4 "c" "h" "a" "r"))))))
       (list4 "l" "o" "o" "p")
       (list "l" "e" "t"); kLet
       (list4 "s" "e" "t" "q")
@@ -873,6 +884,8 @@
          kProgn
          kBlock
          kReturnFrom
+         kPeekchar
+         kReadchar
          kLoop
          kLet
          kSetq
