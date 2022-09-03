@@ -308,20 +308,20 @@
             (stringeq cdr-s1 cdr-s2))
           nil)))))
 
-(defrec-lazy read-list (reg stdin cont)
+(defrec-lazy read-list (reg-heap stdin cont)
   (do
     (<- (c cdr-stdin) (stdin))
     (cond
       ((or (=-bit " " c) (=-bit "\\n" c))
-        (read-list reg cdr-stdin cont))
+        (read-list reg-heap cdr-stdin cont))
       ((=-bit ")" c)
         (do
-          (cont (atom* nil) cdr-stdin)))
+          (cont (atom* nil) reg-heap cdr-stdin)))
       (t
         (do
-          (<- (expr stdin) (read-expr reg stdin))
-          (<- (lexpr) (read-list reg stdin)) ;; Implicit parameter passing: stdin
-          (cont (cons-data@ expr lexpr)))))))
+          (<- (expr reg-heap stdin) (read-expr reg-heap stdin))
+          (<- (lexpr reg-heap) (read-list reg-heap stdin)) ;; Implicit parameter passing: stdin
+          (cont (cons-data@ expr lexpr) reg-heap))))))
 
 (defrec-lazy skip-comment (stdin cont)
   (do
@@ -330,46 +330,71 @@
       (cont cdr-stdin))
     (skip-comment cdr-stdin cont)))
 
-(defrec-lazy read-expr (reg stdin cont)
+(defrec-lazy findkey (k d cont)
+  (do
+    (if-then-return (isnil d)
+      (cont nil))
+    (<- (car-d cdr-d) (d))
+    (<- (k-d v-d) (car-d))
+    (if-then-return (=-bit k k-d)
+      (cont v-d))
+    (findkey k cdr-d cont)))
+
+(defrec-lazy check-reader-hooks (c reg-heap stdin cont)
+  (do
+    (<- (reg heap) (reg-heap))
+    (<- (d-hook) (lookup-tree* reg reg-reader-hooks))
+    (<- (func-hook) (findkey c d-hook))
+    (if-then-return (isnil func-hook)
+      (do
+        (<- (expr reg heap stdin) (eval-apply func-hook reg heap stdin))
+        (cont expr (cons reg heap) stdin)))
+    (cont nil reg-heap stdin)))
+
+(defun-lazy def-read-expr (read-expr eval reg-heap stdin cont)
   (do
     (<- (c cdr-stdin) (stdin))
     (let* =-bit =-bit)
+    ;; (<- (ret-reader-hook) (check-reader-hooks c reg-heap stdin))
+    ;; (<- (maybe-reader-hook-expr reg-heap stdin))
     ((cond
+      ;; ((not (isnil maybe-reader-hook-expr))
+      ;;   (cont maybe-reader-hook-expr reg-heap stdin))
       ((=-bit ";" c)
-        (skip-comment cdr-stdin (read-expr reg)))
+        (skip-comment cdr-stdin (read-expr reg-heap)))
       ((or (=-bit " " c) (=-bit "\\n" c))
-        (read-expr reg cdr-stdin))
+        (read-expr reg-heap cdr-stdin))
       ((=-bit "(" c)
-        (read-list reg cdr-stdin))
+        (read-list reg-heap cdr-stdin))
       ((=-bit "\"" c)
         (do
           (<- (str stdin) (read-string cdr-stdin))
-          (lambda (cont) (cont (string* str) stdin))))
+          (lambda (cont) (cont (string* str) reg-heap stdin))))
       ((or (=-bit "0" c) (=-bit "1" c))
         (do
           (<- (n stdin) (read-int stdin int-zero))
-          (lambda (cont) (cont (int* n) stdin))))
+          (lambda (cont) (cont (int* n) reg-heap stdin))))
       ((=-bit "'" c)
         (do
-          (<- (expr stdin) (read-expr reg cdr-stdin))
-          (lambda (cont) (cont (cons-data@ (atom* kQuote) (cons-data@ expr (atom* nil))) stdin))))
+          (<- (expr reg-heap stdin) (read-expr reg-heap cdr-stdin))
+          (lambda (cont) (cont (cons-data@ (atom* kQuote) (cons-data@ expr (atom* nil))) reg-heap stdin))))
       ((=-bit "`" c)
         (do
-          (<- (expr stdin) (read-expr reg cdr-stdin))
-          (lambda (cont) (cont (cons-data@ (atom* (list "`")) (cons-data@ expr (atom* nil))) stdin))))
+          (<- (expr reg-heap stdin) (read-expr reg-heap cdr-stdin))
+          (lambda (cont) (cont (cons-data@ (atom* (list "`")) (cons-data@ expr (atom* nil))) reg-heap stdin))))
       ((=-bit "," c)
         (do
           (<- (c2 cdr-cdr-stdin) (cdr-stdin))
           (if-then-return (=-bit "@" c2)
             (do
-              (<- (expr stdin) (read-expr reg cdr-cdr-stdin))
-              (lambda (cont) (cont (cons-data@ (atom* (list "," "@")) (cons-data@ expr (atom* nil))) stdin))))
-          (<- (expr stdin) (read-expr reg cdr-stdin))
-          (lambda (cont) (cont (cons-data@ (atom* (list ",")) (cons-data@ expr (atom* nil))) stdin))))
+              (<- (expr reg-heap stdin) (read-expr reg-heap cdr-cdr-stdin))
+              (lambda (cont) (cont (cons-data@ (atom* (list "," "@")) (cons-data@ expr (atom* nil))) reg-heap stdin))))
+          (<- (expr reg-heap stdin) (read-expr reg-heap cdr-stdin))
+          (lambda (cont) (cont (cons-data@ (atom* (list ",")) (cons-data@ expr (atom* nil))) reg-heap stdin))))
       (t
         (do
           (<- (str stdin) (read-atom stdin))
-          (lambda (cont) (cont (atom* str) stdin)))))
+          (lambda (cont) (cont (atom* str) reg-heap stdin)))))
       cont)))
 
 
@@ -571,7 +596,7 @@
       ;; int
       (cons "." (repl reg heap stdin)))))
 
-(defrec-lazy eval (expr reg heap stdin cont)
+(defun-lazy def-eval (read-expr eval expr reg heap stdin cont)
   (typematch expr
     ;; atom
     (do
@@ -634,7 +659,8 @@
               (eval arg2 reg heap stdin cont)))
           ((stringeq (valueof head) kRead)
             (do
-              (<- (expr stdin) (read-expr reg stdin))
+              (<- (expr reg-heap stdin) (read-expr (cons reg heap) stdin))
+              (<- (reg heap) (reg-heap))
               (cont expr reg heap stdin)))
           ((stringeq (valueof head) kPrint)
             (do
@@ -864,7 +890,8 @@
   (do
     (cons ">")
     (cons " ")
-    (<- (expr stdin) (read-expr reg stdin))
+    (<- (expr reg-heap stdin) (read-expr (cons reg heap) stdin))
+    (<- (reg heap) (reg-heap))
     (<- (expr reg heap stdin) (eval expr reg heap stdin))
     (printexpr expr (cons "\\n" (repl reg heap stdin)))))
 
@@ -915,7 +942,6 @@
          ")") (string-generator))
     (let* Y-comb Y-comb)
     (let* int-zero (list t t t t t t t t))
-    (let* read-expr read-expr)
     (let* printexpr printexpr)
     (let* isnil isnil)
     (let* stringeq stringeq)
@@ -923,6 +949,12 @@
     (let* int-one (list t t t t t t t nil))
     (let* int-minusone (list nil nil nil nil nil nil nil nil))
     (let* add* add*)
+    (let* def-read-expr def-read-expr)
+    (let* def-eval def-eval)
+    (let* read-expr-hat (lambda (x y) (def-read-expr (x x y) (y x y))))
+    (let* eval-hat (lambda (x y) (def-eval (x x y) (y x y))))
+    (let* read-expr (read-expr-hat read-expr-hat eval-hat))
+    (let* eval (eval-hat read-expr-hat eval-hat))
     (<- (_ *heap-head) (add* nil t int-zero int-zero))
     (<- (reg) (memory-write* initreg reg-heap-head *heap-head))
     (<- (reg) (memory-write* reg reg-curenv int-zero))
