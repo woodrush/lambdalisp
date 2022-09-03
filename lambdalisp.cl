@@ -245,6 +245,11 @@
     (cond
       ((=-bit "\"" c)
         (cont nil cdr-stdin))
+      ((=-bit "\\" c)
+        (do
+          (<- (c2 cdr-cdr-stdin) (cdr-stdin))
+          (<- (str stdin) (read-string cdr-cdr-stdin))
+          (cont (cons c2 str) stdin)))
       (t
         (do
           (<- (str stdin) (read-string cdr-stdin))
@@ -737,6 +742,7 @@
             (char3 ("11") ("01") ("00")) ;; "t"
             ;; Delayed application to the outermost `cont`
             (char3 ("10") ("11") ("00")) ;; "l"
+            (char3 ("01") ("11") ("00")) ;; "\\"
             (do ("01") ("00") ("00") ("00"))      ;; "@"
             (sym2 ("11") ("00"))         ;; ","
             (sym2 ("01") ("11"))         ;; "'"
@@ -820,6 +826,7 @@
          kIf
          t-atom
          "l"
+         "\\"
          "@"
          ","
          "'"
