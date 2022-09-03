@@ -386,6 +386,7 @@
       (cons "." (repl reg heap stdin))
       ;; lambda
       (do
+        (<- (*origenv) (lookup-tree* reg reg-curenv))
         (<- (*outerenv argvars newtail) ((valueof maybelambda)))
         ;; Write the bindings to the stack's head
         (<- (newenv) (zip-data-base (cons (cons nil *outerenv) nil) argvars mappedargs))
@@ -402,7 +403,7 @@
         (<- (_ *stack-head) (add* nil t *stack-head int-zero))
         (<- (reg) (memory-write* reg reg-stack-head *stack-head))
         ;; Set the environment back to the original outer environment
-        (<- (reg) (memory-write* reg reg-curenv *outerenv))
+        (<- (reg) (memory-write* reg reg-curenv *origenv))
         (cont expr reg heap stdin)))))
 
 (defrec-lazy eval (expr reg heap stdin cont)
