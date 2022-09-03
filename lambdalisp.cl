@@ -305,13 +305,13 @@
 (defrec-lazy eval-letbind (*initenv expr reg heap stdin cont)
   (do
     (if-then-return (isnil-data expr)
-      (cont (cons (cons nil *initenv) nil) reg heap stdin))
+      (cont nil *initenv reg heap stdin))
     (<- (car-e cdr-e) (d-carcdr-data expr))
     (<- (bind-var bind-expr) (d-carcdr-data car-e))
     (<- (bind-expr) (car-data bind-expr))
     (<- (bind-expr reg heap stdin) (eval bind-expr reg heap stdin))
-    (<- (newenv reg heap stdin) (eval-letbind *initenv cdr-e reg heap stdin))
-    (cont (cons (cons (valueof bind-var) bind-expr) newenv) reg heap stdin)))
+    (<- (_ newenv reg heap stdin) (eval-letbind *initenv cdr-e reg heap stdin))
+    (cont bind-expr (cons (cons (valueof bind-var) bind-expr) newenv) reg heap stdin)))
 
 (defrec-lazy printint (n cont)
   (do
@@ -330,22 +330,24 @@
     (<- (d-varname d-value) (car-env))
     ;; Is a redirection to another environment
     (if-then-return (isnil d-varname)
-      ;; (cont (atom* nil) int-zero)
       (do
         (<- (curenv) (lookup-tree* heap d-value))
-        (lookup-var q-varname curenv *curenv heap cont))
-        )
+        (lookup-var q-varname curenv *curenv heap cont)))
     (if-then-return (stringeq q-varname d-varname)
       (cont d-value *curenv))
     (lookup-var q-varname cdr-env *curenv heap cont)))
+
+(defrec-lazy assoc (expr reg heap)
+  (do
+    (<- (*curenv) (lookup-tree* reg reg-curenv))
+    (<- (curenv) (lookup-tree* heap *curenv))
+    (lookup-var (valueof expr) curenv *curenv heap)))
 
 (defrec-lazy eval (expr reg heap stdin cont)
   (typematch expr
     ;; atom
     (do
-      (<- (*curenv) (lookup-tree* reg reg-curenv))
-      (<- (curenv) (lookup-tree* heap *curenv))
-      (<- (val *val) (lookup-var (valueof expr) curenv *curenv heap))
+      (<- (val _) (assoc expr reg heap))
       (cont val reg heap stdin))
     ;; list
     (do
@@ -412,7 +414,7 @@
             (<- (arg1 newtail) (d-carcdr-data tail))
             (<- (*outerenv) (lookup-tree* reg reg-curenv))
             ;; Write the bindings to the heap's head
-            (<- (newenv reg heap stdin) (eval-letbind *outerenv arg1 reg heap stdin))
+            (<- (_ newenv reg heap stdin) (eval-letbind (cons (cons nil *outerenv) nil) arg1 reg heap stdin))
             (<- (*heap-head) (lookup-tree* reg reg-heap-head))
             (<- (heap) (memory-write* heap *heap-head newenv))
             ;; Set current environment pointer to the written *heap-head
@@ -425,6 +427,18 @@
             ;; Set the environment back to the original outer environment
             (<- (reg) (memory-write* reg reg-curenv *outerenv))
             (cont expr reg heap stdin)))
+        ((stringeq (valueof head) kSetq)
+          (do
+            (<- (arg1) (car-data tail))
+            ;; (<- (arg2) (-> tail cdr-data@ car-data@))
+            ;; (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
+            (<- (_ *val) (assoc arg1 reg heap))
+            (printint *val)
+            (<- (valenv) (lookup-tree* heap *val))
+            (<- (bind-var newenv reg heap stdin) (eval-letbind valenv (cons-data@ tail (atom* nil)) reg heap stdin))
+            (<- (heap) (memory-write* heap *val newenv))
+            (cont bind-var reg heap stdin)
+            ))
         (t
           (cont expr reg heap stdin)))
       )))
@@ -485,6 +499,7 @@
       (gen-CONX "d") ;kCond
       (cons "p" (list4 "r" "o" "g" "n"))
       (list "l" "e" "t"); kLet
+      (list4 "s" "e" "t" "q")
       (atom* (list "t"))
       )))
 
@@ -515,6 +530,7 @@
          kBackquote
          kProgn
          kLet
+         kSetq
          t-atom
          "0"
          "1"
