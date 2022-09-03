@@ -495,19 +495,18 @@
             (do
               ;; Load the currently stored continuation
               (<- (prev-block-cont) (lookup-tree* reg reg-block-cont))
-              ;; Update the currently stored continuation
-              (<- (reg) (memory-write* reg reg-block-cont
+              (let* popcont
                 (lambda (expr reg heap stdin)
                   (do
                     ;; On return, restore the previous continuation, for nested blocks
                     (<- (reg) (memory-write* reg reg-block-cont prev-block-cont))
-                    (cont expr reg heap stdin)))))
-              ;; Execute the block
-              (<- (expr reg heap stdin) (eval-progn tail reg heap stdin))
-              ;; If the block ends without returning, pop the continuation here,
-              ;; instead of doing it in return
-              (<- (reg) (memory-write* reg reg-block-cont prev-block-cont))
-              (cont expr reg heap stdin)))
+                    (cont expr reg heap stdin))))
+              ;; Update the currently stored continuation
+              (<- (reg) (memory-write* reg reg-block-cont popcont))
+              ;; Execute the block.
+              ;; If the block ends without returning,
+              ;; `popcont` will be executed here by `block` instead of `return`
+              (eval-progn tail reg heap stdin popcont)))
           ((stringeq (valueof head) kReturn)
             (do
               ;; Load the saved continuation from the register
