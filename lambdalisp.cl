@@ -346,20 +346,18 @@
     (<- (d-hook) (lookup-tree* reg reg-reader-hooks))
     (<- (func-hook) (findkey c d-hook))
     (if-then-return (isnil func-hook)
-      (do
-        (<- (expr reg heap stdin) (eval-apply func-hook reg heap stdin))
-        (cont expr (cons reg heap) stdin)))
-    (cont nil reg-heap stdin)))
+      (cont nil reg-heap stdin))
+    (<- (expr reg heap stdin) (eval-apply func-hook reg heap stdin))
+    (cont expr (cons reg heap) stdin)))
 
 (defun-lazy def-read-expr (read-expr eval reg-heap stdin cont)
   (do
     (<- (c cdr-stdin) (stdin))
     (let* =-bit =-bit)
-    ;; (<- (ret-reader-hook) (check-reader-hooks c reg-heap stdin))
-    ;; (<- (maybe-reader-hook-expr reg-heap stdin))
+    (<- (ret-reader-hook reg-heap stdin) (check-reader-hooks c reg-heap stdin))
+    (if-then-return (not (isnil ret-reader-hook))
+      (cont ret-reader-hook reg-heap stdin))
     ((cond
-      ;; ((not (isnil maybe-reader-hook-expr))
-      ;;   (cont maybe-reader-hook-expr reg-heap stdin))
       ((=-bit ";" c)
         (skip-comment cdr-stdin (read-expr reg-heap)))
       ((or (=-bit " " c) (=-bit "\\n" c))
@@ -959,6 +957,7 @@
     (<- (reg) (memory-write* initreg reg-heap-head *heap-head))
     (<- (reg) (memory-write* reg reg-curenv int-zero))
     (<- (reg) (memory-write* reg reg-stack-head int-minusone))
+    (<- (reg) (memory-write* reg reg-reader-hooks nil))
     (<- (heap) (memory-write* initheap int-zero (cons (cons (valueof t-atom) t-atom) nil)))
     (repl reg heap stdin)))
 
