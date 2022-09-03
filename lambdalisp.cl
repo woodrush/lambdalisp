@@ -430,15 +430,12 @@
         ((stringeq (valueof head) kSetq)
           (do
             (<- (arg1) (car-data tail))
-            ;; (<- (arg2) (-> tail cdr-data@ car-data@))
-            ;; (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
             (<- (_ *val) (assoc arg1 reg heap))
             (printint *val)
             (<- (valenv) (lookup-tree* heap *val))
             (<- (bind-var newenv reg heap stdin) (eval-letbind valenv (cons-data@ tail (atom* nil)) reg heap stdin))
             (<- (heap) (memory-write* heap *val newenv))
-            (cont bind-var reg heap stdin)
-            ))
+            (cont bind-var reg heap stdin)))
         (t
           (cont expr reg heap stdin)))
       )))
