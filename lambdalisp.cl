@@ -252,6 +252,8 @@
 
 (defrec-lazy read-atom (stdin cont)
   (do
+    (if-then-return (isnil stdin)
+      (cont stdin stdin))
     (<- (c cdr-stdin) (stdin))
     (cond
       ((or (=-bit "(" c) (=-bit ")" c) (=-bit " " c) (=-bit "\\n" c))
@@ -280,6 +282,8 @@
 
 (defrec-lazy read-int (stdin curint cont)
   (do
+    (if-then-return (isnil stdin)
+      (cont stdin stdin))
     (<- (c cdr-stdin) (stdin))
     (cond
       ((=-bit "0" c)
