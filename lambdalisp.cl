@@ -740,7 +740,7 @@
     (<- (reg) (memory-write* initreg reg-heap-head *heap-head))
     (<- (reg) (memory-write* reg reg-curenv int-zero))
     (<- (reg) (memory-write* reg reg-stack-head int-minusone))
-    (<- (heap) (memory-write* initheap int-zero nil))
+    (<- (heap) (memory-write* initheap int-zero (cons (cons (valueof t-atom) t-atom) nil)))
     (repl reg heap stdin)))
 
 ;;================================================================
