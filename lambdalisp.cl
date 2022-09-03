@@ -152,7 +152,7 @@
     ,lambdacase))
 
 (defmacro-lazy isatom (expr)
-  `((typeof ,expr)
+  `(typematch ,expr
     t nil nil))
 
 (defun-lazy isnil-data (expr)
@@ -281,13 +281,13 @@
 (defrec-lazy map-eval (l reg heap stdin cont)
   (cond
     ((isnil-data l)
-      (atom* nil))
+      (cont nil reg heap stdin))
     (t
       (do
         (<- (car-l cdr-l) (d-carcdr-data l))
         (<- (expr-car reg heap stdin) (eval car-l reg heap stdin))
-        (<- (expr-cdr reg heap stdin) (map-eval car-l reg heap stdin))
-        (cont (cons-data expr-car expr-cdr) reg heap stdin)))))
+        (<- (expr-cdr reg heap stdin) (map-eval cdr-l reg heap stdin))
+        (cont (cons expr-car expr-cdr) reg heap stdin)))))
 
 (defrec-lazy backquote (expr cont)
   (typematch expr
@@ -363,6 +363,20 @@
     (<- (curenv) (lookup-tree* heap *curenv))
     (lookup-var (valueof expr) curenv *curenv heap)))
 
+(defrec-lazy eval-apply (expr reg heap stdin cont)
+  (do
+    (<- (mapped reg heap stdin) (map-eval expr reg heap stdin))
+    (<- (maybelambda args) (mapped))
+    ;; TODO: show error message for non-lambdas
+    (typematch maybelambda
+      ;; atom
+      (cons "." (repl reg heap stdin))
+      ;; list
+      (cons "." (repl reg heap stdin))
+      ;; lambda
+      (do
+        (cons "l" (repl reg heap stdin))))))
+
 (defrec-lazy eval (expr reg heap stdin cont)
   (typematch expr
     ;; atom
@@ -372,97 +386,100 @@
     ;; list
     (do
       (<- (head tail) (d-carcdr-data expr))
-      (cond
-        ((stringeq (valueof head) kQuote)
-          (do
-            (<- (car-tail) (car-data tail))
-            (cont car-tail reg heap stdin)))
-        ((stringeq (valueof head) kCar)
-          (do
-            (<- (arg1) (car-data tail))
-            (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
-            (<- (expr) (car-data expr))
-            (cont expr reg heap stdin)))
-        ((stringeq (valueof head) kCdr)
-          (do
-            (<- (arg1) (car-data tail))
-            (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
-            (<- (expr) (cdr-data expr))
-            (cont expr reg heap stdin)))
-        ((stringeq (valueof head) kAtom)
-          (do
-            (<- (arg1) (car-data tail))
-            (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
-            (if-then-return (isatom expr)
-              (cont t-atom reg heap stdin))
-            (cont (atom* nil) reg heap stdin)))
-        ((stringeq (valueof head) kEq)
-          (do
-            (<- (arg1) (car-data tail))
-            (<- (arg2) (-> tail cdr-data@ car-data@))
-            (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
-            (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
-            (if-then-return (and (and (isatom arg1) (isatom arg2))
-                                 (stringeq (valueof arg1) (valueof arg2)))
-              (cont t-atom reg heap stdin))
-            (cont (atom* nil) reg heap stdin)))
-        ((stringeq (valueof head) kCons)
-          (do
-            (<- (arg1) (car-data tail))
-            (<- (arg2) (-> tail cdr-data@ car-data@))
-            (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
-            (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
-            (cont (cons-data@ arg1 arg2) reg heap stdin)))
-        ((stringeq (valueof head) kRead)
-          (do
-            (<- (expr stdin) (read-expr stdin))
-            (cont expr reg heap stdin)))
-        ((stringeq (valueof head) kPrint)
-          (do
-            (<- (arg1) (car-data tail))
-            (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
-            (printexpr arg1 (cont arg1 reg heap stdin))))
-        ((stringeq (valueof head) kBackquote)
-          (do
-            (<- (arg1) (car-data tail))
-            (<- (expr) (backquote arg1))
-            (cont expr reg heap stdin)))
-        ((stringeq (valueof head) kProgn)
-          (eval-progn tail reg heap stdin cont))
-        ((stringeq (valueof head) kLet)
-          (do
-            (<- (arg1 newtail) (d-carcdr-data tail))
-            (<- (*outerenv) (lookup-tree* reg reg-curenv))
-            ;; Write the bindings to the heap's head
-            (<- (_ newenv reg heap stdin) (eval-letbind (cons (cons nil *outerenv) nil) arg1 reg heap stdin))
-            (<- (*heap-head) (lookup-tree* reg reg-heap-head))
-            (<- (heap) (memory-write* heap *heap-head newenv))
-            ;; Set current environment pointer to the written *heap-head
-            (<- (reg) (memory-write* reg reg-curenv *heap-head))
-            ;; Increment heap-head
-            (<- (_ *heap-head) (add* nil t *heap-head int-zero))
-            (<- (reg) (memory-write* reg reg-heap-head *heap-head))
-            ;; Evaluate expression in the created environment
-            (<- (expr reg heap stdin) (eval-progn newtail reg heap stdin))
-            ;; Set the environment back to the original outer environment
-            (<- (reg) (memory-write* reg reg-curenv *outerenv))
-            (cont expr reg heap stdin)))
-        ((stringeq (valueof head) kSetq)
-          (do
-            (<- (arg1) (car-data tail))
-            (<- (_ *val) (assoc arg1 reg heap))
-            (<- (valenv) (lookup-tree* heap *val))
-            (<- (bind-var newenv reg heap stdin) (eval-letbind valenv (cons-data@ tail (atom* nil)) reg heap stdin))
-            (<- (heap) (memory-write* heap *val newenv))
-            (cont bind-var reg heap stdin)))
-        ((stringeq (valueof head) kLambda)
-          (do
-            (<- (arg1) (car-data tail))
-            (<- (arg2) (cdr-data tail))
-            (<- (*outerenv) (lookup-tree* reg reg-curenv))
-            (cont (lambda* *outerenv arg1 arg2) reg heap stdin)))
-        (t
-          (cont expr reg heap stdin))))
+      (if-then-return (isatom head)
+        (cond
+          ((stringeq (valueof head) kQuote)
+            (do
+              (<- (car-tail) (car-data tail))
+              (cont car-tail reg heap stdin)))
+          ((stringeq (valueof head) kCar)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
+              (<- (expr) (car-data expr))
+              (cont expr reg heap stdin)))
+          ((stringeq (valueof head) kCdr)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
+              (<- (expr) (cdr-data expr))
+              (cont expr reg heap stdin)))
+          ((stringeq (valueof head) kAtom)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
+              (if-then-return (isatom expr)
+                (cont t-atom reg heap stdin))
+              (cont (atom* nil) reg heap stdin)))
+          ((stringeq (valueof head) kEq)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (arg2) (-> tail cdr-data@ car-data@))
+              (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
+              (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
+              (if-then-return (and (and (isatom arg1) (isatom arg2))
+                                  (stringeq (valueof arg1) (valueof arg2)))
+                (cont t-atom reg heap stdin))
+              (cont (atom* nil) reg heap stdin)))
+          ((stringeq (valueof head) kCons)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (arg2) (-> tail cdr-data@ car-data@))
+              (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
+              (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
+              (cont (cons-data@ arg1 arg2) reg heap stdin)))
+          ((stringeq (valueof head) kRead)
+            (do
+              (<- (expr stdin) (read-expr stdin))
+              (cont expr reg heap stdin)))
+          ((stringeq (valueof head) kPrint)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
+              (printexpr arg1 (cont arg1 reg heap stdin))))
+          ((stringeq (valueof head) kBackquote)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (expr) (backquote arg1))
+              (cont expr reg heap stdin)))
+          ((stringeq (valueof head) kProgn)
+            (eval-progn tail reg heap stdin cont))
+          ((stringeq (valueof head) kLet)
+            (do
+              (<- (arg1 newtail) (d-carcdr-data tail))
+              (<- (*outerenv) (lookup-tree* reg reg-curenv))
+              ;; Write the bindings to the heap's head
+              (<- (_ newenv reg heap stdin) (eval-letbind (cons (cons nil *outerenv) nil) arg1 reg heap stdin))
+              (<- (*heap-head) (lookup-tree* reg reg-heap-head))
+              (<- (heap) (memory-write* heap *heap-head newenv))
+              ;; Set current environment pointer to the written *heap-head
+              (<- (reg) (memory-write* reg reg-curenv *heap-head))
+              ;; Increment heap-head
+              (<- (_ *heap-head) (add* nil t *heap-head int-zero))
+              (<- (reg) (memory-write* reg reg-heap-head *heap-head))
+              ;; Evaluate expression in the created environment
+              (<- (expr reg heap stdin) (eval-progn newtail reg heap stdin))
+              ;; Set the environment back to the original outer environment
+              (<- (reg) (memory-write* reg reg-curenv *outerenv))
+              (cont expr reg heap stdin)))
+          ((stringeq (valueof head) kSetq)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (_ *val) (assoc arg1 reg heap))
+              (<- (valenv) (lookup-tree* heap *val))
+              (<- (bind-var newenv reg heap stdin) (eval-letbind valenv (cons-data@ tail (atom* nil)) reg heap stdin))
+              (<- (heap) (memory-write* heap *val newenv))
+              (cont bind-var reg heap stdin)))
+          ((stringeq (valueof head) kLambda)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (arg2) (cdr-data tail))
+              (<- (*outerenv) (lookup-tree* reg reg-curenv))
+              (cont (lambda* *outerenv arg1 arg2) reg heap stdin)))
+          ;; Evaluate as a lambda
+          (t
+            (eval-apply expr reg heap stdin cont))))
+        (eval-apply expr reg heap stdin cont))
       ;; lambda
       (cont expr reg heap stdin)))
 
