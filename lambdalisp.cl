@@ -518,6 +518,12 @@
               (<- (arg1) (car-data tail))
               (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
               (return-block-cont expr reg heap stdin)))
+          ((stringeq (valueof head) kLoop)
+            (do
+              (let* loopcont
+                (lambda (cont _ reg heap stdin)
+                  (eval-progn tail reg heap stdin (cont cont))))
+              ((loopcont loopcont) nil reg heap stdin)))
           ((stringeq (valueof head) kLet)
             (do
               (<- (arg1 newtail) (d-carcdr-data tail))
@@ -636,6 +642,7 @@
       (cons "p" (list4 "r" "o" "g" "n"))
       (cons "b" (list4 "l" "o" "c" "k"))
       (cons "r" (cons "e" (list4 "t" "u" "r" "n")))
+      (list4 "l" "o" "o" "p")
       (list "l" "e" "t"); kLet
       (list4 "s" "e" "t" "q")
       (list "i" "f")
@@ -673,6 +680,7 @@
          kProgn
          kBlock
          kReturn
+         kLoop
          kLet
          kSetq
          kIf
