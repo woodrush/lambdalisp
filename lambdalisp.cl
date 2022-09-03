@@ -381,6 +381,16 @@
         (<- (ret) (baselist2datalist cdr-l))
         (cont (cons-data@ car-l ret))))))
 
+(defrec-lazy datalist2baselist (l cont)
+  (cond
+    ((isnil-data l)
+      (cont nil))
+    (t
+      (do
+        (<- (car-l cdr-l) (d-carcdr-data l))
+        (<- (ret) (datalist2baselist cdr-l))
+        (cont (cons car-l ret))))))
+
 (defrec-lazy zip-data-base (*initenv ldata lbase cont)
   (do
     (if-then-return (isnil-data ldata)
@@ -395,10 +405,9 @@
     (<- (zipped) (zip-data-base *initenv cdr-ldata cdr-lbase))
     (cont (cons (cons (valueof car-ldata) car-lbase) zipped))))
 
-(defrec-lazy eval-apply (expr reg heap stdin cont)
+(defrec-lazy eval-apply (head tail reg heap stdin cont)
   (do
-    (<- (mapped reg heap stdin) (map-eval expr reg heap stdin))
-    (<- (maybelambda mappedargs) (mapped))
+    (<- (maybelambda reg heap stdin) (eval head reg heap stdin))
     ;; TODO: show error message for non-lambdas
     (typematch maybelambda
       ;; atom
@@ -409,6 +418,11 @@
       (do
         (<- (*origenv) (lookup-tree* reg reg-curenv))
         (<- (ismacro *outerenv argvars newtail) ((valueof maybelambda)))
+        ;; If it is a macro, do not evaluate the incoming arguments and pass their raw expressions
+        (<- (mappedargs reg heap stdin)
+          ((if ismacro
+            (lambda (cont) (cont (datalist2baselist tail (lambda (x) x)) reg heap stdin))
+            (lambda (cont) (map-eval tail reg heap stdin cont)))))
         ;; Write the bindings to the stack's head
         (<- (newenv) (zip-data-base (cons (cons nil *outerenv) nil) argvars mappedargs))
         (<- (*stack-head) (lookup-tree* reg reg-stack-head))
@@ -499,11 +513,11 @@
               (<- (arg1) (car-data tail))
               (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (printexpr arg1 (cont arg1 reg heap stdin))))
-          ((stringeq (valueof head) kBackquote)
-            (do
-              (<- (arg1) (car-data tail))
-              (<- (expr) (backquote arg1))
-              (eval expr reg heap stdin cont)))
+          ;; ((stringeq (valueof head) kBackquote)
+          ;;   (do
+          ;;     (<- (arg1) (car-data tail))
+          ;;     (<- (expr) (backquote arg1))
+          ;;     (eval expr reg heap stdin cont)))
           ((stringeq (valueof head) kProgn)
             (eval-progn tail reg heap stdin cont))
           ((stringeq (valueof head) kBlock)
@@ -587,8 +601,8 @@
               (cont (lambda* t *outerenv arg1 arg2) reg heap stdin)))
           ;; Evaluate as a lambda
           (t
-            (eval-apply expr reg heap stdin cont))))
-        (eval-apply expr reg heap stdin cont))
+            (eval-apply head tail reg heap stdin cont))))
+        (eval-apply head tail reg heap stdin cont))
       ;; lambda
       (cont expr reg heap stdin)))
 
@@ -651,7 +665,7 @@
       (gen-CXR "d") ;kCdr
       (list "e" "q"); kEq
       (gen-CONX "s") ;kCons
-      (gen-CONX "d") ;kCond
+      ;; (gen-CONX "d") ;kCond
       (cons "d" (cons "e" (list4 "f" "v" "a" "r")))
       (cons "l" (cons "a" (list4 "m" "b" "d" "a")))
       (cons "m" (list4 "a" "c" "r" "o"))
@@ -690,7 +704,7 @@
          kCdr
          kEq
          kCons
-         kBackquote
+        ;;  kBackquote
          kDefvar
          kLambda
          kMacro
