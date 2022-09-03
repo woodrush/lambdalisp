@@ -409,6 +409,9 @@
         (<- (reg) (memory-write* reg reg-stack-head *stack-head))
         ;; Set the environment back to the original outer environment
         (<- (reg) (memory-write* reg reg-curenv *origenv))
+        ;; If it is a macro, evaluate the resulting expression again in the original outer environment
+        (if-then-return ismacro
+          (eval expr reg heap stdin cont))
         (cont expr reg heap stdin)))))
 
 (defrec-lazy eval (expr reg heap stdin cont)
@@ -462,6 +465,15 @@
               (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
               (cont (cons-data@ arg1 arg2) reg heap stdin)))
+          ((stringeq (valueof head) kIf)
+            (do
+              (<- (arg1 t1) (d-carcdr-data tail))
+              (<- (arg2 t2) (d-carcdr-data t1))
+              (<- (arg3) (car-data t2))
+              (<- (p reg heap stdin) (eval arg1 reg heap stdin))
+              (if-then-return (isnil-data p)
+                (eval arg3 reg heap stdin cont))
+              (eval arg2 reg heap stdin cont)))
           ((stringeq (valueof head) kRead)
             (do
               (<- (expr stdin) (read-expr stdin))
@@ -475,7 +487,7 @@
             (do
               (<- (arg1) (car-data tail))
               (<- (expr) (backquote arg1))
-              (cont expr reg heap stdin)))
+              (eval expr reg heap stdin cont)))
           ((stringeq (valueof head) kProgn)
             (eval-progn tail reg heap stdin cont))
           ((stringeq (valueof head) kLet)
@@ -595,6 +607,7 @@
       (cons "p" (list4 "r" "o" "g" "n"))
       (list "l" "e" "t"); kLet
       (list4 "s" "e" "t" "q")
+      (list "i" "f")
       (atom* (list "t"))
       )))
 
@@ -629,6 +642,7 @@
          kProgn
          kLet
          kSetq
+         kIf
          t-atom
          "l"
          "0"
