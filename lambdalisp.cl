@@ -560,7 +560,7 @@
                 (lambda (return-label expr reg heap stdin)
                   (do
                     ;; On return, restore the previous continuation, for nested blocks
-                    (if-then-return (stringeq (valueof return-label) (valueof block-label))
+                    (if-then-return (or (isnil-data return-label) (stringeq (valueof return-label) (valueof block-label)))
                       (do
                         (<- (reg) (memory-write* reg reg-block-cont (cons prev-block-label prev-block-cont)))
                         (cont expr reg heap stdin)))
