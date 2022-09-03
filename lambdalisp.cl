@@ -502,6 +502,17 @@
               ;; and proceed with the current continuation
               (<- (reg) (memory-write* reg reg-block-cont prev-block-cont))
               (cont expr reg heap stdin)))
+          ((stringeq (valueof head) kReturn)
+            (do
+              ;; Load the saved continuation from the register
+              (<- (return-block-cont) (lookup-tree* reg reg-block-cont))
+              ;; If an argument is not supplied, return nil
+              (if-then-return (isnil-data tail)
+                (return-block-cont tail reg heap stdin))
+              ;; Otherwise, evaluate the argument and return it (pass it to the saved continuation)
+              (<- (arg1) (car-data tail))
+              (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
+              (return-block-cont expr reg heap stdin)))
           ((stringeq (valueof head) kLet)
             (do
               (<- (arg1 newtail) (d-carcdr-data tail))
