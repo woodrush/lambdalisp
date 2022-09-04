@@ -239,8 +239,7 @@
         ;; (cons "\"" (printstring (valueof cdr-ed)))
         nil
         ;; int
-        nil
-        ))))
+        nil))))
 
 
 ;;================================================================
@@ -923,8 +922,7 @@
       (cons "i" (cons "n" (list4 "t" "e" "r" "n")))
       (list "i" "f")
       (cdr (list4 (lambda (x) x) "n" "i" "l"))
-      (atom* (list "t"))
-      )))
+      (atom* (list "t")))))
 
 ;;================================================================
 ;; User interface
@@ -956,7 +954,6 @@
          kCdr
          kEq
          kCons
-        ;;  kBackquote
          kDefvar
          kLambda
          kMacro

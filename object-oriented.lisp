@@ -118,14 +118,13 @@
     ((. (. self super) __init__) c))
 
   (defmethod sub (n)
-    (block a
+    (block subloop
       (loop
         (if (or (atom n) (atom (. self i)))
-          (return-from a)
+          (return-from subloop (. self i))
           ())
         (setf (. self i) (cdr (. self i)))
-        (setf n (cdr n))))
-    (. self i)))
+        (setf n (cdr n))))))
 
 
 (setf counter1 (new counter (quote a)))
