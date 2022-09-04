@@ -8,7 +8,10 @@
   `(,instance ',accesor))
 
 (defmacro new (&rest args)
-  `((. (,(car args)) __init__) ,@(cdr args)))
+  `((lambda (instance)
+      ((. instance __init__) ,@(cdr args))      
+      instance)
+    (,(car args))))
 
 (defmacro build-getter (args)
   (defun helper (args)
@@ -67,14 +70,15 @@
   (i ())
   (c ())
   (defmethod __init__ (c)
-    (setfield c c)
-    self)
+    (setfield c c))
   (defmethod inc ()
     (setfield i (cons c (. self i))))
   (defmethod dec ()
-    (if i
+    (if (. self i)
       (setfield i (cdr i))
-      i)))
+      (. self i)))
+  (defmethod set-to (i)
+    (setfield i i)))
 
 
 (defvar counter1 (new counter (quote a)))
@@ -86,6 +90,10 @@
 ((. counter1 dec))
 ((. counter1 inc))
 ((. counter1 inc))
+
+((. counter1 set-to) '(a a a a a a a a a a))
+((. counter2 set-to) '(b b))
+
 ((. counter2 inc))
 ((. counter2 inc))
 ((. counter1 inc))
