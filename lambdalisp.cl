@@ -630,7 +630,11 @@
     (do
       (if-then-return (isnil-data expr)
         (cont expr reg heap stdin))
-      (<- (val _) (assoc expr reg heap))
+      (<- (val val*) (assoc expr reg heap))
+      ;; If the variable is unbound, interrupt with an error
+      (if-then-return (isnil val*)
+        ;; TODO: refine error message
+        (cons "@" (printexpr expr (repl reg heap stdin))))
       (cont val reg heap stdin))
     ;; list
     (do
@@ -918,6 +922,7 @@
       (cons "a" (cons "p" (list4 "p" "e" "n" "d")))
       (cons "i" (cons "n" (list4 "t" "e" "r" "n")))
       (list "i" "f")
+      (cdr (list4 (lambda (x) x) "n" "i" "l"))
       (atom* (list "t"))
       )))
 
@@ -935,6 +940,11 @@
     (<- (reg heap) (reg-heap))
     (<- (expr reg heap stdin) (eval expr reg heap stdin))
     (printexpr expr (cons "\\n" (repl reg heap stdin)))))
+
+(def-lazy init-global-env
+  (list
+    (cons (valueof t-atom) t-atom)
+    (cons kNil (atom* nil))))
 
 (defun-lazy main (stdin)
   (do
@@ -963,6 +973,7 @@
          kAppend
          kIntern
          kIf
+         kNil
          t-atom
          "l"
          "\\"
@@ -1004,7 +1015,7 @@
     (<- (reg) (memory-write* reg reg-curenv int-zero))
     (<- (reg) (memory-write* reg reg-stack-head int-minusone))
     (<- (reg) (memory-write* reg reg-reader-hooks nil))
-    (<- (heap) (memory-write* initheap int-zero (cons (cons (valueof t-atom) t-atom) nil)))
+    (<- (heap) (memory-write* initheap int-zero init-global-env))
     (repl reg heap stdin)))
 
 ;;================================================================
