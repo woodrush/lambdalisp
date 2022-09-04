@@ -82,28 +82,25 @@
       (setq fieldname (car (cdr (cdr place))))
       `((. ,instance setter) ',fieldname ,value))))
 
-(defmacro setfield (name value)
-  `(setter ',name ,value))
-
 (defclass counter
   (i ())
   (c ())
   (defmethod __init__ (c)
-    (setfield c c))
+    (setf (. self c) c))
   (defmethod inc ()
-    (setfield i (cons c (. self i))))
+    (setf (. self i) (cons c (. self i))))
   (defmethod dec ()
     (cond
       ((. self i)
-        (setfield i (cdr i)))
+        (setf (. self i) (cdr i)))
       (t
         (. self i))))
   (defmethod set-to (i)
     (setf (. self i) i)))
 
 
-(defvar counter1 (new counter (quote a)))
-(defvar counter2 (new counter (quote b)))
+(setf counter1 (new counter (quote a)))
+(setf counter2 (new counter (quote b)))
 
 ((. counter1 inc))
 ((. counter2 inc))
@@ -112,8 +109,8 @@
 ((. counter1 inc))
 ((. counter1 inc))
 
-((. counter1 set-to) '(a a a a a a a a a a))
-((. counter2 set-to) '(b b))
+(setf (. counter1 i) '(a a a a a a a a a a))
+(setf (. counter2 i) '(b b))
 
 ((. counter2 inc))
 ((. counter2 inc))
