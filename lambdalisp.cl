@@ -171,6 +171,10 @@
   `(typematch ,expr
     t nil nil nil nil))
 
+(defmacro-lazy islist (expr)
+  `(typematch ,expr
+    nil t nil nil nil))
+
 (defmacro-lazy isstring (expr)
   `(typematch ,expr
     nil nil nil t nil))
@@ -452,7 +456,7 @@
     ;; list
     (do
       (<- (car-e cdr-e) (d-carcdr-data expr))
-      (if-then-return (and (not (isatom car-e)) (stringeq (valueof (car-data@ car-e)) (list "," "@")))
+      (if-then-return (and (islist car-e) (and (isatom (car-data@ car-e)) (stringeq (valueof (car-data@ car-e)) (list "," "@"))))
         (do
           (let* e (-> car-e cdr-data@ car-data@))
           (<- (cdr-e) (backquote cdr-e))
