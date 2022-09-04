@@ -27,7 +27,7 @@
           ,(car args)
           ,(helper (cdr args)))
       nil))
-  `(lambda (a) ,(helper args)))
+  `(lambda (a) ,(helper (cons 'setter args))))
 
 (defmacro build-setter (args)
   (defun helper (args)
@@ -47,18 +47,22 @@
 
 (defmacro defclass (name &rest body)
   (defun collect-fieldnames (args)
+    (setq head (car (car args)))
     (if args
-      (cons (if (eq (car (car args)) 'defmethod)
+      (cons (if (eq head 'defmethod)
               (car (cdr (car args)))
-              (car (car args)))
+              head)
             (collect-fieldnames (cdr args)))
       nil))
   (defun parse-body (body)
+    (setq head (car (car body)))
     (if body
-      (cons (if (eq (car (car body)) 'defmethod)
-              `(,(car (cdr (car body)))
-                  (lambda ,(car (cdr (cdr (car body))))
-                    ,@(cdr (cdr (cdr (car body))))))
+      (cons (if (eq head 'defmethod)
+              (progn            
+                (setq fieldname (car (cdr (car body))))
+                (setq arglist (car (cdr (cdr (car body)))))
+                (setq clause-rest (cdr (cdr (cdr (car body)))))
+                `(,fieldname (lambda ,arglist ,@clause-rest)))
               (car body))
             (parse-body (cdr body)))
       nil))
@@ -69,6 +73,14 @@
               ,@(parse-body body))
         (setq setter (build-setter ,fieldnames))
         (setq self (build-getter ,fieldnames)))))
+
+(defmacro setf (place value)
+  (if (atom place)
+    `(setq ,place ,value)
+    (progn
+      (setq instance (car (cdr place)))
+      (setq fieldname (car (cdr (cdr place))))
+      `((. ,instance setter) ',fieldname ,value))))
 
 (defmacro setfield (name value)
   `(setter ',name ,value))
@@ -87,7 +99,7 @@
       (t
         (. self i))))
   (defmethod set-to (i)
-    (setfield i i)))
+    (setf (. self i) i)))
 
 
 (defvar counter1 (new counter (quote a)))
