@@ -437,6 +437,14 @@
     (<- (appended) (append-data cdr-l1 l2))
     (cont (cons-data@ car-l1 appended))))
 
+(defrec-lazy append (l1 l2 cont)
+  (do
+    (if-then-return (isnil l1)
+      (cont l2))
+    (<- (car-l1 cdr-l1) (l1))
+    (<- (appended) (append cdr-l1 l2))
+    (cont (cons car-l1 appended))))
+
 (defrec-lazy map-eval (l reg heap stdin cont)
   (cond
     ((isnil-data l)
@@ -813,6 +821,11 @@
               (<- (arg2) (cdr-data tail))
               (<- (*outerenv) (lookup-tree* reg reg-curenv))
               (cont (lambda* nil *outerenv arg1 arg2) reg heap stdin)))
+          ((stringeq (valueof head) kMacro)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (arg2) (cdr-data tail))
+              (cont (lambda* t int-zero arg1 arg2) reg heap stdin)))
           ((stringeq (valueof head) kAppend)
             (do
               (<- (arg1 arg2) (d-carcdr-data tail))
@@ -825,11 +838,29 @@
             (do
               (<- (arg1) (car-data tail))
               (cont (atom* (valueof arg1)) reg heap stdin)))
-          ((stringeq (valueof head) kMacro)
+          ((stringeq (valueof head) kPlus)
             (do
-              (<- (arg1) (car-data tail))
-              (<- (arg2) (cdr-data tail))
-              (cont (lambda* t int-zero arg1 arg2) reg heap stdin)))
+              (<- (arg1 t1) (d-carcdr-data tail))
+              (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
+              (if-then-return (isnil-data t1)
+                (cont arg1 reg heap stdin))
+              (<- (arg2 t2) (d-carcdr-data t1))
+              (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
+              (let* sum
+                (cond
+                  ((and (isint arg1) (isint arg2))
+                    (do
+                      (<- (_ sum) (add* t t (valueof arg1) (valueof arg2)))
+                      (cont (int* sum))))
+                  ((and (isstring arg1) (isstring arg2))
+                    (do
+                      (<- (sum) (append (valueof arg1) (valueof arg2)))
+                      (cont (string* sum))))
+                  (t
+                    (cont nil))))
+              ;; (if-then-return (isnil sum)
+              ;;   (cons "@" (repl reg heap stdin)))
+              (cont sum reg heap stdin)))
           ;; Evaluate as a lambda
           (t
             (eval-apply head tail t reg heap stdin cont))))
@@ -846,7 +877,7 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("-" "&" "y" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("+" "-" "&" "y" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -856,6 +887,7 @@
               ("01" (cons2 t nil))
               ("00" (cons2 t t)))
           (cont
+            (sym2 ("10") ("11"))         ;; "+"
             (sym2 ("11") ("01"))         ;; "-"
             (do ("00") ("10") ("01") ("10") nil)  ;; "&"
             (char3 ("11") ("10") ("01")) ;; "y"
@@ -929,6 +961,8 @@
       (cons "&" (list4 "r" "e" "s" "t"))
       (cons "a" (cons "p" (list4 "p" "e" "n" "d")))
       (cons "i" (cons "n" (list4 "t" "e" "r" "n")))
+      (list "+")
+      (list "-")
       (list "i" "f")
       (cdr (list4 (lambda (x) x) "n" "i" "l"))
       (atom* (list "t")))))
@@ -979,6 +1013,8 @@
          kRest
          kAppend
          kIntern
+         kPlus
+         kMinus
          kIf
          kNil
          t-atom
