@@ -4,6 +4,13 @@
 (defmacro defun (name args &rest body)
   `(setq ,name (lambda ,args ,@body)))
 
+(defvar cond (macro (a &rest b)
+  (if a
+    `(if ,(car a)
+      ,(car (cdr a))
+      (cond ,@b))
+    nil)))
+
 (defmacro . (instance accesor)
   `(,instance ',accesor))
 
@@ -74,16 +81,18 @@
   (defmethod inc ()
     (setfield i (cons c (. self i))))
   (defmethod dec ()
-    (if (. self i)
-      (setfield i (cdr i))
-      (. self i)))
+    (cond
+      ((. self i)
+        (setfield i (cdr i)))
+      (t
+        (. self i))))
   (defmethod set-to (i)
     (setfield i i)))
 
 
 (defvar counter1 (new counter (quote a)))
 (defvar counter2 (new counter (quote b)))
-(print "a")
+
 ((. counter1 inc))
 ((. counter2 inc))
 ((. counter1 inc))
