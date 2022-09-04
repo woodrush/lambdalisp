@@ -981,13 +981,11 @@
          "("
          ")") (string-generator))
     (let* Y-comb Y-comb)
-    (let* int-zero (list t t t t t t t t))
+    (let* int-zero (32 (cons* t) nil))
     (let* printexpr printexpr)
     (let* isnil isnil)
     (let* stringeq stringeq)
     (let* d-carcdr-data d-carcdr-data)
-    (let* int-one (list t t t t t t t nil))
-    (let* int-minusone (list nil nil nil nil nil nil nil nil))
     (let* add* add*)
 
     ;; Mutual recursion for read-expr and eval
@@ -999,6 +997,7 @@
     (let* eval (eval-hat read-expr-hat eval-hat))
 
     (<- (_ *heap-head) (add* nil t int-zero int-zero))
+    (<- (_ int-minusone) (add* t nil int-zero int-zero))
     (<- (reg) (memory-write* initreg reg-heap-head *heap-head))
     (<- (reg) (memory-write* reg reg-curenv int-zero))
     (<- (reg) (memory-write* reg reg-stack-head int-minusone))
