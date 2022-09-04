@@ -10,7 +10,7 @@
 (defmacro new (&rest args)
   args)
 
-(defmacro build-accessor (&rest args)
+(defmacro build-accessor (args)
   (defun helper (args)
     (if args
       `(if (eq a ',(car args)) ,(car args)
@@ -25,18 +25,28 @@
       `(progn ,@body)))
   (helper binding))
 
-(defun counter (c)
-  (let* ((i ())
-        (c c)
-    (inc (lambda ()
-            (setq i (cons c i))))
-          (dec (lambda ()
-            (if i (setq i (cdr i)) i))))
-      (build-accessor inc dec i c)))
+(defmacro defclass (name &rest body)
+  (defun helper (args)
+    (if args
+      (cons (car (car args)) (helper (cdr args))
+      nil)))
+  `(defun ,name ()
+      (let* (
+        (self ())
+        ,@body)
+        (setq self (build-accessor ,(helper body))))))
 
+(defclass counter
+  (i ())
+  (c (quote a))
+  (inc (lambda ()
+    (setq i (cons c i))))
+  (dec (lambda ()
+    (if i (setq i (cdr i)) i))))
 
 (defvar counter1 (new counter (quote a)))
 (defvar counter2 (new counter (quote b)))
+(print "a")
 ((. counter1 inc))
 ((. counter2 inc))
 ((. counter1 inc))
