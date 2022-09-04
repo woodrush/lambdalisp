@@ -85,18 +85,22 @@
 (defclass counter
   (i ())
   (c ())
+
   (defmethod __init__ (c)
     (setf (. self c) c))
+
   (defmethod inc ()
     (setf (. self i) (cons c (. self i))))
+
   (defmethod dec ()
     (cond
       ((. self i)
         (setf (. self i) (cdr i)))
       (t
         (. self i))))
-  (defmethod set-to (i)
-    (setf (. self i) i)))
+
+  (defmethod add (n)
+    (setf (. self i) (append n i))))
 
 
 (setf counter1 (new counter (quote a)))
@@ -106,6 +110,10 @@
 ((. counter2 inc))
 ((. counter1 inc))
 ((. counter1 dec))
+
+((. counter1 add) '(a a))
+((. counter2 add) '(b b))
+
 ((. counter1 inc))
 ((. counter1 inc))
 
