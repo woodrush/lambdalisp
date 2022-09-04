@@ -184,7 +184,9 @@
     nil nil nil nil t))
 
 (defun-lazy isnil-data (expr)
-  (isnil (valueof expr)))
+  (typematch expr
+    (isnil (valueof expr))
+    nil nil nil nil))
 
 
 ;;================================================================
