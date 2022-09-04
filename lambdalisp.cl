@@ -76,17 +76,25 @@
                 (cont nil))))))
         (cont nextcarry (cons curbit curlist))))))
 
-(defrec-lazy do-until-head (f* n item cont)
+(defrec-lazy remove-head-zero (n cont)
   (do
     (if-then-return (isnil n)
-      (cont item))
-    (<- (n-top n-tail) (n))
-    (if-then-return n-top
+      (cont n))
+    (<- (car-n cdr-n) (n))
+    (if-then-return car-n
       (do
-        (<- (next) (do-until-head f* n-tail item))
-        (<- (next) (f* next))
-        (cont next)))
-    (cont item)))
+        (remove-head-zero cdr-n cont)))
+    (cont n)))
+
+(defrec-lazy subtract-length (n m cont)
+  (do
+    (if-then-return (isnil n)
+      (cont m))
+    (if-then-return (isnil m)
+      (cont n))
+    (<- (_ cdr-n) (n))
+    (<- (_ cdr-m) (m))
+    (subtract-length cdr-n cdr-m cont)))
 
 (defrec-lazy div* (n m cont)
   (do
@@ -94,26 +102,20 @@
     (cons "\\n")
     (printint m)
     (cons "\\n")
-    (<- (m-head)
-      (do-until-head
-        (lambda (x cont)
-          (do
-            (cont (cons t x))))
-        m
-        nil))
-    (printint m-head)
+    (<- (n) (remove-head-zero n))
+    (<- (m) (remove-head-zero m))
+    (<- (init-shift) (subtract-length n m))
+    (printint n)
     (cons "\\n")
-    (<- (init-shift)
-      (do-until-head
-        (lambda (x cont)
-          (do
-            (if-then-return (isnil x)
-              (cont x))
-            (<- (car-x cdr-x) (x))
-            (cont cdr-x)))
-        n
-        m-head))
-    (cont (cons nil init-shift))
+    (printint m)
+    (cons "\\n")
+    (let* init-shift (cons nil init-shift))
+    (<- (ret) (append int-zero init-shift))
+    (<- (ret) (reverse-base ret))
+    (<- (_ ret) (add* t t int-zero ret))
+    (<- (ret) (reverse-base ret))
+
+    (cont ret)
     ))
 
 ;;================================================================
@@ -945,13 +947,7 @@
               (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
               (<- (ret) (div* (valueof arg1) (valueof arg2)))
-              (<- (ret) (append int-zero ret))
-              (<- (ret) (reverse-base ret))
-              ;; (let* ret (list nil nil nil t nil))
-              (<- (_ ret) (add* t t int-zero ret))
-              (<- (ret) (reverse-base ret))
-              (cont (int* ret) reg heap stdin)
-              ))
+              (cont (int* ret) reg heap stdin)))
           ;; Evaluate as a lambda
           (t
             (eval-apply head tail t reg heap stdin cont))))
