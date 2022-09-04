@@ -16,7 +16,7 @@
 
 (defmacro new (&rest args)
   `((lambda (instance)
-      ((. instance __init__) ,@(cdr args))      
+      ((. instance __init__) ,@(cdr args))
       instance)
     (,(car args))))
 
@@ -26,8 +26,10 @@
       `(if (eq a ',(car args))
           ,(car args)
           ,(helper (cdr args)))
-      nil))
-  `(lambda (a) ,(helper (cons 'setter args))))
+      '(if super
+        (super a)
+        nil)))
+  `(lambda (a) ,(helper (cons 'setter (cons 'super args)))))
 
 (defmacro build-setter (args)
   (defun helper (args)
@@ -35,7 +37,9 @@
       `(if (eq key ',(car args))
           (setq ,(car args) value)
           ,(helper (cdr args)))
-      nil))
+      '(if super
+        ((super 'setter) key value)
+        nil)))
   `(lambda (key value) ,(helper args)))
 
 (defmacro let* (binding &rest body)
@@ -45,7 +49,7 @@
       `(progn ,@body)))
   (helper binding))
 
-(defmacro defclass (name &rest body)
+(defmacro defclass (name superclass &rest body)
   (defun collect-fieldnames (args)
     (setq head (car (car args)))
     (if args
@@ -58,7 +62,7 @@
     (setq head (car (car body)))
     (if body
       (cons (if (eq head 'defmethod)
-              (progn            
+              (progn
                 (setq fieldname (car (cdr (car body))))
                 (setq arglist (car (cdr (cdr (car body)))))
                 (setq clause-rest (cdr (cdr (cdr (car body)))))
@@ -68,9 +72,11 @@
       nil))
   (setq fieldnames (collect-fieldnames body))
   `(defun ,name ()
-      (let* ((self ())
+      (let* ((super ())
+             (self ())
              (setter ())
-              ,@(parse-body body))
+             ,@(parse-body body))
+        (setq super ,superclass)
         (setq setter (build-setter ,fieldnames))
         (setq self (build-getter ,fieldnames)))))
 
@@ -82,7 +88,7 @@
       (setq fieldname (car (cdr (cdr place))))
       `((. ,instance setter) ',fieldname ,value))))
 
-(defclass counter
+(defclass counter ()
   (i ())
   (c ())
 
@@ -100,16 +106,39 @@
         (. self i))))
 
   (defmethod add (n)
-    (setf (. self i) (append n i))))
+    (setf (. self i) (append n (. self i)))))
+
+(defclass counter-sub (counter)
+  (defmethod __init__ (c)
+    (setf (. self c) c))
+
+  (defmethod sub (n)
+    (block a
+      (loop
+        (if (atom n)
+          (return-from a)
+          (quote a))
+        (setf (. self i) (cdr (. self i)))
+        (setf n (cdr n))))
+    (. self i)))
 
 
 (setf counter1 (new counter (quote a)))
-(setf counter2 (new counter (quote b)))
+(setf counter2 (new counter-sub (quote b)))
+
+(print "--")
+(. (counter) super)
+counter2
+(. counter2 add)
+((. (. counter2 super) inc))
+(print "--")
 
 ((. counter1 inc))
 ((. counter2 inc))
+((. counter2 inc))
 ((. counter1 inc))
 ((. counter1 dec))
+((. counter2 dec))
 
 ((. counter1 add) '(a a))
 ((. counter2 add) '(b b))
@@ -117,8 +146,11 @@
 ((. counter1 inc))
 ((. counter1 inc))
 
+((. counter2 sub) '(b b))
+
+
 (setf (. counter1 i) '(a a a a a a a a a a))
-(setf (. counter2 i) '(b b))
+(setf (. counter2 i) '(b b b b b))
 
 ((. counter2 inc))
 ((. counter2 inc))
