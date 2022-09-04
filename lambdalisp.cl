@@ -372,7 +372,7 @@
     (<- (expr reg heap stdin) (eval-apply func-hook (atom* nil) t reg heap cdr-stdin))
     (cont expr (cons reg heap) stdin)))
 
-(defun-lazy def-read-expr (read-expr eval reg-heap stdin cont)
+(defun-lazy def-read-expr (read-expr eval repl reg-heap stdin cont)
   (do
     (<- (c cdr-stdin) (stdin))
     (let* =-bit =-bit)
@@ -623,7 +623,7 @@
       ;; int
       (cons "." (repl reg heap stdin)))))
 
-(defun-lazy def-eval (read-expr eval expr reg heap stdin cont)
+(defun-lazy def-eval (read-expr eval repl expr reg heap stdin cont)
   (typematch expr
     ;; atom
     (do
@@ -930,7 +930,7 @@
 (def-lazy initreg nil)
 (def-lazy initheap nil)
 
-(defrec-lazy repl (reg heap stdin)
+(defrec-lazy def-repl (read-expr eval repl reg heap stdin)
   (do
     (cons ">")
     (cons " ")
@@ -1001,10 +1001,13 @@
     ;; Mutual recursion for read-expr and eval
     (let* def-read-expr def-read-expr)
     (let* def-eval def-eval)
-    (let* read-expr-hat (lambda (x y) (def-read-expr (x x y) (y x y))))
-    (let* eval-hat (lambda (x y) (def-eval (x x y) (y x y))))
-    (let* read-expr (read-expr-hat read-expr-hat eval-hat))
-    (let* eval (eval-hat read-expr-hat eval-hat))
+    (let* def-repl def-repl)
+    (let* read-expr-hat (lambda (x y z) (def-read-expr (x x y z) (y x y z) (z x y z))))
+    (let* eval-hat (lambda (x y z) (def-eval (x x y z) (y x y z) (z x y z))))
+    (let* repl-hat (lambda (x y z) (def-repl (x x y z) (y x y z) (z x y z))))
+    (let* read-expr (read-expr-hat read-expr-hat eval-hat repl-hat))
+    (let* eval (eval-hat read-expr-hat eval-hat repl-hat))
+    (let* repl (repl-hat read-expr-hat eval-hat repl-hat))
 
     (<- (_ *heap-head) (add* nil t int-zero int-zero))
     (<- (_ int-minusone) (add* t nil int-zero int-zero))
