@@ -76,28 +76,45 @@
                 (cont nil))))))
         (cont nextcarry (cons curbit curlist))))))
 
-(defrec-lazy do-until-head (f* n cont)
+(defrec-lazy do-until-head (f* n item cont)
   (do
     (if-then-return (isnil n)
-      (cont nil))
+      (cont item))
     (<- (n-top n-tail) (n))
     (if-then-return n-top
       (do
-        (<- (next) (do-until-head n-tail))
+        (<- (next) (do-until-head f* n-tail item))
         (<- (next) (f* next))
         (cont next)))
-    (cont nil)))
+    (cont item)))
 
 (defrec-lazy div* (n m cont)
   (do
-    (<- (n-head) (do-until-head (lambda (x cont) (cont (cons (lambda (x) x) x))) n))
-    (<- (init-shift) (do-until-head
-      (lambda (x cont)
-        (do
-          (<- (car-x cdr-x) (x))
-          (cont x)))
-      n))
-    (cont init-shift)))
+    (printint n)
+    (cons "\\n")
+    (printint m)
+    (cons "\\n")
+    (<- (m-head)
+      (do-until-head
+        (lambda (x cont)
+          (do
+            (cont (cons t x))))
+        m
+        nil))
+    (printint m-head)
+    (cons "\\n")
+    (<- (init-shift)
+      (do-until-head
+        (lambda (x cont)
+          (do
+            (if-then-return (isnil x)
+              (cont x))
+            (<- (car-x cdr-x) (x))
+            (cont cdr-x)))
+        n
+        m-head))
+    (cont (cons nil init-shift))
+    ))
 
 ;;================================================================
 ;; Data structure
@@ -486,6 +503,16 @@
     (<- (car-l cdr-l) (l))
     (<- (init) (f init car-l))
     (reduce-base f init cdr-l cont)))
+
+(defrec-lazy reverse* (l tail cont)
+  (do
+    (if-then-return (isnil l)
+      (cont tail))
+    (<- (car-l cdr-l) (l))
+    (reverse* cdr-l (cons car-l tail) cont)))
+
+(defun-lazy reverse-base (l cont)
+  (reverse* l nil cont))
 
 (defrec-lazy backquote (expr cont)
   (typematch expr
@@ -914,14 +941,16 @@
           ((stringeq (valueof head) kDiv)
             (do
               (<- (arg1 arg2) (d-carcdr-data tail))
-              (cons ".")
-              (cont expr reg heap stdin)
               (<- (arg2) (car-data arg2))
               (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
-              ;; (<- (ret) (div* arg1 arg2))
-              ;; (<- (_ ret) (add* t t int-zero ret))
-              (cont arg2)
+              (<- (ret) (div* (valueof arg1) (valueof arg2)))
+              (<- (ret) (append int-zero ret))
+              (<- (ret) (reverse-base ret))
+              ;; (let* ret (list nil nil nil t nil))
+              (<- (_ ret) (add* t t int-zero ret))
+              (<- (ret) (reverse-base ret))
+              (cont (int* ret) reg heap stdin)
               ))
           ;; Evaluate as a lambda
           (t
