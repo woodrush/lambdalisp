@@ -456,6 +456,14 @@
         (<- (expr-cdr reg heap stdin) (map-eval cdr-l reg heap stdin))
         (cont (cons expr-car expr-cdr) reg heap stdin)))))
 
+(defrec-lazy reduce-base (f init l cont)
+  (do
+    (if-then-return (isnil l)
+      (cont init))
+    (<- (car-l cdr-l) (l))
+    (<- (init) (f init car-l))
+    (reduce-base f init cdr-l cont)))
+
 (defrec-lazy backquote (expr cont)
   (typematch expr
     ;; atom
@@ -840,26 +848,26 @@
               (cont (atom* (valueof arg1)) reg heap stdin)))
           ((stringeq (valueof head) kPlus)
             (do
-              (<- (arg1 t1) (d-carcdr-data tail))
-              (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
-              (if-then-return (isnil-data t1)
-                (cont arg1 reg heap stdin))
-              (<- (arg2 t2) (d-carcdr-data t1))
-              (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
-              (let* sum
-                (cond
-                  ((and (isint arg1) (isint arg2))
-                    (do
-                      (<- (_ sum) (add* t t (valueof arg1) (valueof arg2)))
-                      (cont (int* sum))))
-                  ((and (isstring arg1) (isstring arg2))
-                    (do
-                      (<- (sum) (append (valueof arg1) (valueof arg2)))
-                      (cont (string* sum))))
-                  (t
-                    (cont nil))))
-              ;; (if-then-return (isnil sum)
-              ;;   (cons "@" (repl reg heap stdin)))
+              (<- (mapped-base reg heap stdin) (map-eval tail reg heap stdin))
+              (<- (car-mapped cdr-mapped) (mapped-base))
+              (<- (sum)
+                (reduce-base
+                  (lambda (arg1 arg2 cont)
+                    (cond
+                      ((and (isint arg1) (isint arg2))
+                        (do
+                          (<- (_ sum) (add* t t (valueof arg1) (valueof arg2)))
+                          (cont (int* sum))))
+                      ((and (isstring arg1) (isstring arg2))
+                        (do
+                          (<- (sum) (append (valueof arg1) (valueof arg2)))
+                          (cont (string* sum))))
+                      (t
+                        (cont nil))))
+                  car-mapped
+                  cdr-mapped))
+              (if-then-return (isnil sum)
+                (cons "@" (repl reg heap stdin)))
               (cont sum reg heap stdin)))
           ;; Evaluate as a lambda
           (t
