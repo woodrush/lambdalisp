@@ -110,28 +110,21 @@
 
 (defclass counter-sub (counter)
   (defmethod __init__ (c)
-    (setf (. self c) c))
+    ((. (. self super) __init__) c))
 
   (defmethod sub (n)
     (block a
       (loop
         (if (atom n)
           (return-from a)
-          (quote a))
-        (setf (. self i) (cdr (. self i)))
-        (setf n (cdr n))))
+          (progn
+            (setf (. self i) (cdr (. self i)))
+            (setf n (cdr n))))))
     (. self i)))
 
 
 (setf counter1 (new counter (quote a)))
 (setf counter2 (new counter-sub (quote b)))
-
-(print "--")
-(. (counter) super)
-counter2
-(. counter2 add)
-((. (. counter2 super) inc))
-(print "--")
 
 ((. counter1 inc))
 ((. counter2 inc))
@@ -147,7 +140,6 @@ counter2
 ((. counter1 inc))
 
 ((. counter2 sub) '(b b))
-
 
 (setf (. counter1 i) '(a a a a a a a a a a))
 (setf (. counter2 i) '(b b b b b))
