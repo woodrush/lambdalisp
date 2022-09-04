@@ -480,7 +480,7 @@
 (defrec-lazy eval-progn (expr reg heap stdin cont)
   (typematch expr
     ;; atom
-    (cont (atom* nil) reg heap stdin)
+    (cont expr reg heap stdin)
     ;; list
     (do
       (<- (car-e cdr-e) (d-carcdr-data expr))
@@ -489,11 +489,11 @@
         (cont expr reg heap stdin))
       (eval-progn cdr-e reg heap stdin cont))
     ;; lambda (TODO)
-    (cont (atom* nil) reg heap stdin)
+    (cont expr reg heap stdin)
     ;; string (TODO)
-    (cont (atom* nil) reg heap stdin)
+    (cont expr reg heap stdin)
     ;; int (TODO)
-    (cont (atom* nil) reg heap stdin)))
+    (cont expr reg heap stdin)))
 
 (defrec-lazy eval-letbind (*initenv expr reg heap stdin cont)
   (do
@@ -628,6 +628,8 @@
   (typematch expr
     ;; atom
     (do
+      (if-then-return (isnil-data expr)
+        (cont expr reg heap stdin))
       (<- (val _) (assoc expr reg heap))
       (cont val reg heap stdin))
     ;; list

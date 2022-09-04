@@ -117,9 +117,9 @@
       (loop
         (if (atom n)
           (return-from a)
-          (progn
-            (setf (. self i) (cdr (. self i)))
-            (setf n (cdr n))))))
+          ())
+        (setf (. self i) (cdr (. self i)))
+        (setf n (cdr n))))
     (. self i)))
 
 
