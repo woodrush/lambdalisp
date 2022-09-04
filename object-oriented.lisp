@@ -4,12 +4,17 @@
 (defmacro defun (name args &rest body)
   `(setq ,name (lambda ,args ,@body)))
 
-(defvar cond (macro (a &rest b)
+(defmacro cond (a &rest b)
   (if a
     `(if ,(car a)
       ,(car (cdr a))
       (cond ,@b))
-    nil)))
+    nil))
+
+(defmacro or (a &rest b)
+  (if b
+    `(if ,a t (or ,@b))
+    a))
 
 (defmacro . (instance accesor)
   `(,instance ',accesor))
@@ -115,7 +120,7 @@
   (defmethod sub (n)
     (block a
       (loop
-        (if (atom n)
+        (if (or (atom n) (atom (. self i)))
           (return-from a)
           ())
         (setf (. self i) (cdr (. self i)))
