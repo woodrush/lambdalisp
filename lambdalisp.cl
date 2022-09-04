@@ -732,7 +732,7 @@
                     ;; On return, restore the previous continuation, for nested blocks
                     (if-then-return (or (isnil-data return-label) (stringeq (valueof return-label) (valueof block-label)))
                       (do
-                        (<- (reg) (memory-write* reg reg-block-cont (cons prev-block-label prev-block-cont)))
+                        (<- (reg) (memory-write* reg reg-block-cont prev-cont-tuple))
                         (cont expr reg heap stdin)))
                     (prev-block-cont return-label expr reg heap stdin))))
               ;; Update the currently stored continuation
