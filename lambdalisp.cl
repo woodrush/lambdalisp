@@ -59,7 +59,7 @@
     (t
       (do
         (<- (car-n cdr-n) (n))
-        (<- (car-m cdr-m) (m))
+        (<- (car-m cdr-m) ((if (isnil m) (cons t nil) m)))
         (<- (carry curlist) (add* initcarry is-add cdr-n cdr-m))
         (let* not-carry (not carry))
         (let* car-m (if is-add car-m (not car-m)))
@@ -75,6 +75,29 @@
                 (cont t)
                 (cont nil))))))
         (cont nextcarry (cons curbit curlist))))))
+
+(defrec-lazy do-until-head (f* n cont)
+  (do
+    (if-then-return (isnil n)
+      (cont nil))
+    (<- (n-top n-tail) (n))
+    (if-then-return n-top
+      (do
+        (<- (next) (do-until-head n-tail))
+        (<- (next) (f* next))
+        (cont next)))
+    (cont nil)))
+
+(defrec-lazy div* (n m cont)
+  (do
+    (<- (n-head) (do-until-head (lambda (x cont) (cont (cons (lambda (x) x) x))) n))
+    (<- (init-shift) (do-until-head
+      (lambda (x cont)
+        (do
+          (<- (car-x cdr-x) (x))
+          (cont x)))
+      n))
+    (cont init-shift)))
 
 ;;================================================================
 ;; Data structure
@@ -224,22 +247,22 @@
     (<- (car-ed cdr-ed) (d-carcdr-data expr))
     (let* ")" ")")
     (let* " " " ")
+    (let* print-maybe-cons-cell (lambda (x)
+      (if (isnil-data x)
+        (cons ")" cont)
+        (cons " " (cons "." (cons " " (printexpr x (cons ")" cont))))))))
     (printexpr car-ed
       (typematch cdr-ed
         ;; atom
-        (if (isnil-data cdr-ed)
-          (cons ")" cont)
-          (cons " " (cons "." (cons " " (printstring (valueof cdr-ed) (cons ")" cont))))))
+        (print-maybe-cons-cell cdr-ed)
         ;; list
         (cons " " (printlist cdr-ed cont))
         ;; lambda
-        ;; (cons "l" cont)
-        nil
+        (print-maybe-cons-cell cdr-ed)
         ;; string
-        ;; (cons "\"" (printstring (valueof cdr-ed)))
-        nil
+        (print-maybe-cons-cell cdr-ed)
         ;; int
-        nil))))
+        (print-maybe-cons-cell cdr-ed)))))
 
 
 ;;================================================================
@@ -888,6 +911,18 @@
               (if-then-return (isnil sum)
                 (cons "@" (repl reg heap stdin)))
               (cont sum reg heap stdin)))
+          ((stringeq (valueof head) kDiv)
+            (do
+              (<- (arg1 arg2) (d-carcdr-data tail))
+              (cons ".")
+              (cont expr reg heap stdin)
+              (<- (arg2) (car-data arg2))
+              (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
+              (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
+              ;; (<- (ret) (div* arg1 arg2))
+              ;; (<- (_ ret) (add* t t int-zero ret))
+              (cont arg2)
+              ))
           ;; Evaluate as a lambda
           (t
             (eval-apply head tail t reg heap stdin cont))))
@@ -904,7 +939,7 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("+" "-" "&" "y" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("/" "+" "-" "&" "y" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -914,6 +949,7 @@
               ("01" (cons2 t nil))
               ("00" (cons2 t t)))
           (cont
+            (sym2 ("11") ("11"))         ;; "/"
             (sym2 ("10") ("11"))         ;; "+"
             (sym2 ("11") ("01"))         ;; "-"
             (do ("00") ("10") ("01") ("10") nil)  ;; "&"
@@ -990,6 +1026,7 @@
       (cons "i" (cons "n" (list4 "t" "e" "r" "n")))
       (list "+")
       (list "-")
+      (list "/")
       (list "i" "f")
       (cdr (list4 (lambda (x) x) "n" "i" "l"))
       (atom* (list "t")))))
@@ -1042,6 +1079,7 @@
          kIntern
          kPlus
          kMinus
+         kDiv
          kIf
          kNil
          t-atom
