@@ -688,7 +688,7 @@
             (do
               (<- (arg1) (car-data tail))
               (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
-              (printexpr arg1 (cont arg1 reg heap stdin))))
+              (printexpr arg1 (cons "\\n" (cont arg1 reg heap stdin)))))
           ((stringeq (valueof head) kPeekchar)
             (do
               (<- (c cdr-stdin) (stdin))
