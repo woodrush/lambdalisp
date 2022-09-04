@@ -676,8 +676,8 @@
               (cont (atom* nil) reg heap stdin)))
           ((stringeq (valueof head) kCons)
             (do
-              (<- (arg1) (car-data tail))
-              (<- (arg2) (-> tail cdr-data@ car-data@))
+              (<- (arg1 t1) (d-carcdr-data tail))
+              (<- (arg2) (car-data t1))
               (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
               (cont (cons-data@ arg1 arg2) reg heap stdin)))
@@ -708,6 +708,13 @@
             (do
               (<- (c stdin) (stdin))
               (cont (string* (list c)) reg heap stdin)))
+          ((stringeq (valueof head) kApply)
+            (do
+              (<- (arg1 t1) (d-carcdr-data tail))
+              (<- (arg2) (car-data t1))
+              (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
+              (<- (arg2) (datalist2baselist arg2))
+              (eval-apply arg1 arg2 nil reg heap stdin cont)))
           ((stringeq (valueof head) kSetMacroCharacter)
             (do
               (<- (arg1) (car-data tail))
@@ -839,7 +846,7 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("-" "&" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("-" "&" "y" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -851,6 +858,7 @@
           (cont
             (sym2 ("11") ("01"))         ;; "-"
             (do ("00") ("10") ("01") ("10") nil)  ;; "&"
+            (char3 ("11") ("10") ("01")) ;; "y"
             (char3 ("10") ("10") ("00")) ;; "h"
             (char3 ("10") ("10") ("11")) ;; "k"
             (char3 ("11") ("01") ("10")) ;; "v"
@@ -914,6 +922,7 @@
       (cons "p" (cons "e" (cons "e" (cons "k" (cons "-" (list4 "c" "h" "a" "r"))))))
       (list-tail "r" "e" "a" "d" "-" (list4 "c" "h" "a" "r"))
       (list-tail "s" "e" "t" "-" "m" "a" "c" "r" "o" "-" "c" "h" "a" "r" "a" (list4 "c" "t" "e" "r"))
+      (cons "a" (list4 "p" "p" "l" "y"))
       (list4 "l" "o" "o" "p")
       (list "l" "e" "t"); kLet
       (list4 "s" "e" "t" "q")
@@ -963,6 +972,7 @@
          kPeekchar
          kReadchar
          kSetMacroCharacter
+         kApply
          kLoop
          kLet
          kSetq
@@ -993,12 +1003,11 @@
     (let* Y-comb Y-comb)
     (let* int-zero (32 (cons* t) nil))
     (let* printexpr printexpr)
-    (let* isnil isnil)
     (let* stringeq stringeq)
     (let* d-carcdr-data d-carcdr-data)
     (let* add* add*)
 
-    ;; Mutual recursion for read-expr and eval
+    ;; Mutual recursion for read-expr, eval, and repl
     (let* def-read-expr def-read-expr)
     (let* def-eval def-eval)
     (let* def-repl def-repl)
