@@ -869,6 +869,25 @@
               (if-then-return (isnil sum)
                 (cons "@" (repl reg heap stdin)))
               (cont sum reg heap stdin)))
+          ((stringeq (valueof head) kMinus)
+            (do
+              (<- (mapped-base reg heap stdin) (map-eval tail reg heap stdin))
+              (<- (car-mapped cdr-mapped) (mapped-base))
+              (<- (sum)
+                (reduce-base
+                  (lambda (arg1 arg2 cont)
+                    (cond
+                      ((and (isint arg1) (isint arg2))
+                        (do
+                          (<- (_ sum) (add* nil nil (valueof arg1) (valueof arg2)))
+                          (cont (int* sum))))
+                      (t
+                        (cont nil))))
+                  car-mapped
+                  cdr-mapped))
+              (if-then-return (isnil sum)
+                (cons "@" (repl reg heap stdin)))
+              (cont sum reg heap stdin)))
           ;; Evaluate as a lambda
           (t
             (eval-apply head tail t reg heap stdin cont))))
