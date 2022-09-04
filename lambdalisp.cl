@@ -776,8 +776,9 @@
             (do
               (<- (arg1) (car-data tail))
               (<- (_ *val) (assoc arg1 reg heap))
-              (if-then-return (isnil *val)
-                (cons "." (repl reg heap stdin)))
+              ;; If *val is nil, write to the current environment (TODO: is different from Common Lisp)
+              (<- (*outerenv) (lookup-tree* reg reg-curenv))
+              (let* *val (if (isnil *val) *outerenv *val))
               (<- (valenv) (lookup-tree* heap *val))
               (<- (bind-var newenv reg heap stdin) (eval-letbind valenv (cons-data@ tail (atom* nil)) reg heap stdin))
               (<- (heap) (memory-write* heap *val newenv))
