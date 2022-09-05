@@ -501,7 +501,7 @@
     (if-then-return (isnil func-hook)
       (cont nil reg-heap stdin))
     (<- (c cdr-stdin) (stdin))
-    (<- (expr state) (eval-apply func-hook (atom* nil) t (list reg heap cdr-stdin)))
+    (<- (expr state) (eval-apply func-hook (atom* nil) t (cons3 reg heap cdr-stdin)))
     (<- (reg heap stdin) (state))
     (cont expr (cons reg heap) stdin)))
 
