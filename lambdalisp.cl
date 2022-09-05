@@ -46,6 +46,10 @@
           (cont (cons memory-rewritten memory-orig))
           (cont (cons memory-orig memory-rewritten)))))))
 
+
+;;================================================================
+;; Arithmetic
+;;================================================================
 (defmacro-lazy eval-bool (expr)
   `(lambda (cont)
     (if ,expr
@@ -76,6 +80,23 @@
                 (cont nil))))))
         (cont nextcarry (cons curbit curlist))))))
 
+(defun-lazy cmpret-eq (r1 r2 r3) r1)
+(defun-lazy cmpret-lt (r1 r2 r3) r2)
+(defun-lazy cmpret-gt (r1 r2 r3) r3)
+
+(defrec-lazy cmp* (n m)
+  (cond ((isnil n)
+          cmpret-eq)
+        (t
+          (let ((ncar (car n))
+                (mcar (car m)))
+            (cond ((and (not ncar) mcar)
+                    cmpret-gt)
+                  ((and ncar (not mcar))
+                    cmpret-lt)
+                  (t
+                    (cmp* (cdr n) (cdr m))))))))
+
 (defrec-lazy remove-head-zero (n cont)
   (do
     (if-then-return (isnil n)
@@ -86,37 +107,65 @@
         (remove-head-zero cdr-n cont)))
     (cont n)))
 
-(defrec-lazy subtract-length (n m cont)
+(defrec-lazy do-n-times-list (f* n item cont)
   (do
     (if-then-return (isnil n)
-      (cont m))
-    (if-then-return (isnil m)
-      (cont n))
+      (cont item))
     (<- (_ cdr-n) (n))
-    (<- (_ cdr-m) (m))
-    (subtract-length cdr-n cdr-m cont)))
+    (<- (item) (f* item))
+    (do-n-times-list f* cdr-n item cont)))
+
+(defrec-lazy div** (n m times cont)
+  (do
+    (if-then-return (isnil times)
+      (cont (list nil) n))
+    ((cmp* n m)
+      ;; eq
+      (cont (cons nil times) (list t))
+      ;; lt
+      (do
+        (<- (_ times) (times))
+        (<- (q r) (div** n (cons t m) times))
+        (cont (cons t q) r))
+      ;; gt
+      (do
+        (<- (_ n) (add* nil nil n m))
+        (<- (_ times) (times))
+        (<- (q r) (div** n (cons t m) times))
+        (cont (cons nil q) r)))))
 
 (defrec-lazy div* (n m cont)
-  (do
-    (printint n)
-    (cons "\\n")
-    (printint m)
-    (cons "\\n")
-    (<- (n) (remove-head-zero n))
-    (<- (m) (remove-head-zero m))
-    (<- (init-shift) (subtract-length n m))
-    (printint n)
-    (cons "\\n")
-    (printint m)
-    (cons "\\n")
-    (let* init-shift (cons nil init-shift))
-    (<- (ret) (append int-zero init-shift))
-    (<- (ret) (reverse-base ret))
-    (<- (_ ret) (add* t t int-zero ret))
-    (<- (ret) (reverse-base ret))
-
-    (cont ret)
-    ))
+  ((cmp* n m)
+    ;; eq
+    (cont (list nil) (list t))
+    ;; lt
+    (cont (list t) n)
+    ;; gt
+    (do
+      (printint n)
+      (cons "\\n")
+      (printint m)
+      (cons "\\n")
+      (<- (n) (remove-head-zero n))
+      (<- (m) (remove-head-zero m))
+      (<- (init-shift)
+        (do-n-times-list
+          (lambda (x cont)
+            (do
+              (if-then-return (isnil x)
+                (cont x))
+              (<- (_ cdr-x) (x))
+              (cont cdr-x)))
+          m n))
+      (<- (init-shift)
+        (do-n-times-list
+          (lambda (x cont)
+            (cont (cons t x)))
+          init-shift
+          nil))
+      (<- (init-m) (append m init-shift))
+      (<- (q r) (div** n init-m init-shift))
+      (cont q r))))
 
 ;;================================================================
 ;; Data structure
@@ -946,8 +995,8 @@
               (<- (arg2) (car-data arg2))
               (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
-              (<- (ret) (div* (valueof arg1) (valueof arg2)))
-              (cont (int* ret) reg heap stdin)))
+              (<- (q r) (div* (valueof arg1) (valueof arg2)))
+              (cont (int* q) reg heap stdin)))
           ;; Evaluate as a lambda
           (t
             (eval-apply head tail t reg heap stdin cont))))
