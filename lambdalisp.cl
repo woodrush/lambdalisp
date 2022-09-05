@@ -492,7 +492,8 @@
         (do
           (<- (str stdin) (read-string cdr-stdin))
           (lambda (cont) (cont (string* str) reg-heap stdin))))
-      ((or (=-bit "0" c) (=-bit "1" c))
+      ((and ((cmp* "0" c) t t nil)
+            ((cmp* c "9") t t nil))
         (do
           (<- (n stdin) (read-int stdin int-zero))
           (lambda (cont) (cont (int* n) reg-heap stdin))))
