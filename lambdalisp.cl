@@ -118,10 +118,12 @@
 (defrec-lazy div** (n m times cont)
   (do
     (if-then-return (isnil times)
-      (cont (list nil) n))
+      (cont nil n))
     ((cmp* n m)
       ;; eq
-      (cont (cons nil times) (list t))
+      (do
+        (<- (_ times) (times))
+        (cont (cons nil times) (list t)))
       ;; lt
       (do
         (<- (_ times) (times))
@@ -164,7 +166,7 @@
           init-shift
           nil))
       (<- (init-m) (append m init-shift))
-      (<- (q r) (div** n init-m init-shift))
+      (<- (q r) (div** n init-m (cons t init-shift)))
       (cont q r))))
 
 ;;================================================================
@@ -989,14 +991,29 @@
               (if-then-return (isnil sum)
                 (cons "@" (repl reg heap stdin)))
               (cont sum reg heap stdin)))
-          ((stringeq (valueof head) kDiv)
+          ((or (stringeq (valueof head) kDiv)
+               (stringeq (valueof head) kMod))
             (do
               (<- (arg1 arg2) (d-carcdr-data tail))
               (<- (arg2) (car-data arg2))
               (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
+              ;; q and r come in variable bit lengths
               (<- (q r) (div* (valueof arg1) (valueof arg2)))
-              (cont (int* q) reg heap stdin)))
+              ;; Align the bit size
+              (let* align-return
+                (lambda (n)
+                  (do
+                    (<- (n) (append int-zero n))
+                    (<- (n) (reverse n))
+                    (<- (_ n) (add* t t int-zero n))
+                    (<- (n) (reverse n))
+                    (cont (int* n) reg heap stdin))))
+              (cond
+                ((stringeq (valueof head) kDiv)
+                  (align-return q))
+                (t
+                  (align-return r)))))
           ;; Evaluate as a lambda
           (t
             (eval-apply head tail t reg heap stdin cont))))
@@ -1013,7 +1030,7 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("/" "+" "-" "&" "y" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("%" "/" "+" "-" "&" "y" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -1023,6 +1040,7 @@
               ("01" (cons2 t nil))
               ("00" (cons2 t t)))
           (cont
+            (sym2 ("01") ("01"))         ;; "%"
             (sym2 ("11") ("11"))         ;; "/"
             (sym2 ("10") ("11"))         ;; "+"
             (sym2 ("11") ("01"))         ;; "-"
@@ -1101,6 +1119,7 @@
       (list "+")
       (list "-")
       (list "/")
+      (list "%")
       (list "i" "f")
       (cdr (list4 (lambda (x) x) "n" "i" "l"))
       (atom* (list "t")))))
@@ -1154,6 +1173,7 @@
          kPlus
          kMinus
          kDiv
+         kMod
          kIf
          kNil
          t-atom
