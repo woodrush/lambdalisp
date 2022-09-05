@@ -176,6 +176,24 @@
       (<- (m) (remove-head-zero m))
       (div-helper n m cont))))
 
+(defrec-lazy mul** (n m-var cursum cont)
+  (do
+    (if-then-return (isnil m-var)
+      (cont cursum))
+    (<- (car-m cdr-m) (m-var))
+    (<- (_ nextsum) (add* t t cursum cursum))
+    (if-then-return car-m
+      (mul** n cdr-m nextsum cont))
+    (<- (_ nextsum) (add* t t nextsum n))
+    (mul** n cdr-m nextsum cont)))
+
+(defun-lazy mul* (n m cont)
+  (do
+    (<- (m) (remove-head-zero m))
+    (mul** n m int-zero cont)))
+
+
+
 ;;================================================================
 ;; Data structure
 ;;================================================================
@@ -1030,6 +1048,25 @@
               (if-then-return (isnil sum)
                 (cons "@" (repl reg heap stdin)))
               (cont sum reg heap stdin)))
+          ((stringeq (valueof head) kMul)
+            (do
+              (<- (mapped-base reg heap stdin) (map-eval tail reg heap stdin))
+              (<- (car-mapped cdr-mapped) (mapped-base))
+              (<- (sum)
+                (reduce-base
+                  (lambda (arg1 arg2 cont)
+                    (cond
+                      ((and (isint arg1) (isint arg2))
+                        (do
+                          (<- (sum) (mul* (valueof arg1) (valueof arg2)))
+                          (cont (int* sum))))
+                      (t
+                        (cont nil))))
+                  car-mapped
+                  cdr-mapped))
+              (if-then-return (isnil sum)
+                (cons "@" (repl reg heap stdin)))
+              (cont sum reg heap stdin)))
           ((or (stringeq (valueof head) kDiv)
                (stringeq (valueof head) kMod))
             (do
@@ -1066,7 +1103,7 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("%" "/" "+" "-" "&" "y" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("%" "/" "*" "+" "-" "&" "y" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -1078,6 +1115,7 @@
           (cont
             (sym2 ("01") ("01"))         ;; "%"
             (sym2 ("11") ("11"))         ;; "/"
+            (sym2 ("10") ("10"))         ;; "*"
             (sym2 ("10") ("11"))         ;; "+"
             (sym2 ("11") ("01"))         ;; "-"
             (do ("00") ("10") ("01") ("10") nil)  ;; "&"
@@ -1154,6 +1192,7 @@
       (cons "i" (cons "n" (list4 "t" "e" "r" "n")))
       (list "+")
       (list "-")
+      (list "*")
       (list "/")
       (list "%")
       (list "i" "f")
@@ -1208,6 +1247,7 @@
          kIntern
          kPlus
          kMinus
+         kMul
          kDiv
          kMod
          kIf
