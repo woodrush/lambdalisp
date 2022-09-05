@@ -66,6 +66,33 @@
 (defun stringp (x)
   (eq (type x) 'str))
 
+(defun make-hash-table* ()
+  (let ((hashtable nil)
+        (hashlist nil)
+        (setter nil))
+    (defun getter (key)
+      (setq hashlist hashtable)
+      (loop
+        (if (atom hashlist)
+          (return nil)
+          nil)
+        (if (eq key (car (car hashlist)))
+          (return (cdr (car hashlist)))
+          nil)
+        (setq hashlist (cdr hashlist))))
+    (defun setter (key value)
+      (setq hashtable (cons (cons key value) hashtable)))
+    (lambda (mode key &rest value)
+      (if (eq mode 'get)
+        (getter key)
+        (if (eq mode 'set)
+          (setter key (car value))
+          nil)))))
+
+(defmacro make-hash-table (&rest x)
+  (make-hash-table*))
+
+
 ;;==============================================================
 (defparameter profile-index-depth nil)
 
@@ -138,10 +165,21 @@
 
 
 
-(curry '(lambda (a b c) a))
+;; (curry '(lambda (a b c) a))
 
-(list 'a 'b 'c)
+;; (list 'a 'b 'c)
 
-(to-de-bruijn (curry '(lambda (a b c) a)))
+;; (to-de-bruijn (curry '(lambda (a b c) a)))
 
-(to-blc-string (to-de-bruijn (curry '(lambda (a b c) a))))
+;; (to-blc-string (to-de-bruijn (curry '(lambda (a b c) a))))
+
+(let ((hashtable (make-hash-table*)))
+  (print "set")
+  (hashtable 'set 'a '(1 2 3))
+  (hashtable 'set 'b (lambda () ()))
+  (hashtable 'set 'c '(a b c))
+  (print "get")
+  (print (hashtable 'get 'a))
+  (print (hashtable 'get 'b))
+  (print (hashtable 'get 'c))
+  (print (hashtable 'get 'd)))
