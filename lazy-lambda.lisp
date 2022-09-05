@@ -119,3 +119,10 @@
       nil)
     (setq ret (cons (f (car x)) ret))
     (setq x (cdr x))))
+
+(defun and (x &rest y)
+  (if y
+    (if x
+      (apply and y)
+      nil)
+    x))
