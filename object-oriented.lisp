@@ -95,40 +95,41 @@
 
 (defclass counter ()
   (i ())
-  (c ())
 
-  (defmethod __init__ (c)
-    (setf (. self c) c))
+  (defmethod __init__ (i)
+    (setf (. self i) i))
 
   (defmethod inc ()
-    (setf (. self i) (cons c (. self i))))
+    (setf (. self i) (+ 1 (. self i))))
 
   (defmethod dec ()
     (cond
       ((. self i)
-        (setf (. self i) (cdr i)))
+        (setf (. self i) (- (. self i) 1)))
       (t
         (. self i))))
 
   (defmethod add (n)
-    (setf (. self i) (append n (. self i)))))
+    (setf (. self i) (+ (. self i) n))))
 
 (defclass counter-sub (counter)
   (defmethod __init__ (c)
     ((. (. self super) __init__) c))
 
   (defmethod sub (n)
-    (block subloop
-      (loop
-        (if (or (atom n) (atom (. self i)))
-          (return-from subloop (. self i))
-          ())
-        (setf (. self i) (cdr (. self i)))
-        (setf n (cdr n))))))
+    (setf (. self i) (- (. self i) n))
+    ;; (block subloop
+    ;;   (loop
+    ;;     (if (or (atom n) (atom (. self i)))
+    ;;       (return-from subloop (. self i))
+    ;;       ())
+    ;;     (setf (. self i) (cdr (. self i)))
+    ;;     (setf n (cdr n))))
+        ))
 
 
-(setf counter1 (new counter (quote a)))
-(setf counter2 (new counter-sub (quote b)))
+(setf counter1 (new counter 0))
+(setf counter2 (new counter-sub 100))
 
 ((. counter1 inc))
 ((. counter2 inc))
@@ -137,16 +138,16 @@
 ((. counter1 dec))
 ((. counter2 dec))
 
-((. counter1 add) '(a a))
-((. counter2 add) '(b b))
+((. counter1 add) 2)
+((. counter2 add) 2)
 
 ((. counter1 inc))
 ((. counter1 inc))
 
-((. counter2 sub) '(b b))
+((. counter2 sub) 2)
 
-(setf (. counter1 i) '(a a a a a a a a a a))
-(setf (. counter2 i) '(b b b b b))
+(setf (. counter1 i) 5)
+(setf (. counter2 i) 100)
 
 ((. counter2 inc))
 ((. counter2 inc))

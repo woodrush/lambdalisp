@@ -1,7 +1,7 @@
-(defvar i (cons () (cons () (cons () ()))))
+(defvar i 3)
 (loop
-  (if (atom i)
+  (if (= i 0)
     (return-from)
     nil)
   (print i)
-  (setq i (cdr i)))
+  (setq i (- i 1)))
