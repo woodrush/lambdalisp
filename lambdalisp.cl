@@ -502,6 +502,7 @@
       (cont nil reg-heap stdin))
     (<- (c cdr-stdin) (stdin))
     (<- (expr state) (eval-apply func-hook (atom* nil) t (list reg heap cdr-stdin)))
+    (<- (reg heap stdin) (state))
     (cont expr (cons reg heap) stdin)))
 
 (defun-lazy def-read-expr (read-expr eval repl reg-heap stdin cont)
@@ -833,6 +834,7 @@
               (lambda (cont) (map-eval tail state cont)))
             (t
               (lambda (cont) (cont tail state))))))
+        (<- (reg heap stdin) (state))
         ;; Write the bindings to the stack's head
         (<- (newenv) (zip-data-base (cons (cons nil *outerenv) nil) argvars mappedargs))
         (<- (*stack-head) (lookup-tree* reg reg-stack-head))
@@ -844,6 +846,7 @@
         (<- (reg) (memory-write* reg reg-stack-head *stack-head))
         ;; Evaluate expression in the created environment
         (<- (expr state) (eval-progn newtail (cons3 reg heap stdin)))
+        (<- (reg heap stdin) (state))
         ;; Increment stack-head - garbage collection
         (<- (_ *stack-head) (add* nil t *stack-head int-zero))
         (<- (reg) (memory-write* reg reg-stack-head *stack-head))
@@ -1080,6 +1083,7 @@
               (<- (*outerenv) (lookup-tree* reg reg-curenv))
               ;; Write the bindings to the heap's head
               (<- (_ newenv state) (eval-letbind (cons (cons nil *outerenv) nil) arg1 state))
+              (<- (reg heap stdin) (state))
               (<- (*heap-head) (lookup-tree* reg reg-heap-head))
               (<- (heap) (memory-write* heap *heap-head newenv))
               ;; Set current environment pointer to the written *heap-head
@@ -1089,6 +1093,7 @@
               (<- (reg) (memory-write* reg reg-heap-head *heap-head))
               ;; Evaluate expression in the created environment
               (<- (expr state) (eval-progn newtail (cons3 reg heap stdin)))
+              (<- (reg heap stdin) (state))
               ;; Set the environment back to the original outer environment
               (<- (reg) (memory-write* reg reg-curenv *outerenv))
               (cont expr (cons3 reg heap stdin))))
@@ -1102,15 +1107,17 @@
               (let* *val (if (isnil *val) *outerenv *val))
               (<- (valenv) (lookup-tree* heap *val))
               (<- (bind-var newenv state) (eval-letbind valenv (cons-data@ tail (atom* nil)) state))
+              (<- (reg heap stdin) (state))
               (<- (heap) (memory-write* heap *val newenv))
-              (cont bind-var state)))
+              (cont bind-var (cons3 reg heap stdin))))
           ((stringeq (valueof head) kDefvar)
             (do
               (<- (reg heap stdin) (state))
               (<- (valenv) (lookup-tree* heap int-zero))
               (<- (bind-var newenv state) (eval-letbind valenv (cons-data@ tail (atom* nil)) state))
+              (<- (reg heap stdin) (state))
               (<- (heap) (memory-write* heap int-zero newenv))
-              (cont bind-var state)))
+              (cont bind-var (cons3 reg heap stdin))))
           ((stringeq (valueof head) kLambda)
             (do
               (<- (reg heap stdin) (state))
