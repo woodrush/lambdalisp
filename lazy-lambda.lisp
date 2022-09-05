@@ -102,5 +102,19 @@
 (defun gethash (key hashtable)
   (hashtable 'get key))
 
-(defmacro reverse (&rest args)
-  nil)
+(defmacro reverse (l)
+  (setq ret ())
+  (loop
+    (if (atom l)
+      (return ret)
+      nil)
+    (setq ret (cons (car l) ret))
+    (setq l (cdr l))))
+
+(defun mapcar (f x)
+  (setq ret ())
+  (loop
+    (if (atom x)
+      (return (reverse ret))
+      nil)
+    (setq ret (cons (f (car x)) ret))))
