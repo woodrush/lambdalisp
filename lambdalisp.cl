@@ -909,6 +909,7 @@
             (do
               (<- (arg1 t1) (d-carcdr-data tail))
               (<- (arg2) (car-data t1))
+              (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
               (<- (arg2) (datalist2baselist arg2))
               (eval-apply arg1 arg2 nil reg heap stdin cont)))
@@ -942,7 +943,8 @@
               (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
               (if-then-return (or (isatom expr) (isstring expr))
                 (cont (string* (valueof expr)) reg heap stdin))
-              (cont (string* (print-unsigned-int expr nil)) reg heap stdin)))
+              (cont (string* (print-unsigned-int expr nil)) reg heap stdin)
+              ))
           ((stringeq (valueof head) kType)
             (do
               (<- (arg1) (car-data tail))
