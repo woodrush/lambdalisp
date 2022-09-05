@@ -935,6 +935,11 @@
               (if (isnil (valueof expr))
                 (cont (string* nil) reg heap stdin)
                 (cont (string* (cdr (valueof expr))) reg heap stdin))))
+          ((stringeq (valueof head) kStr)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
+              (cont (string* (valueof expr)) reg heap stdin)))
           ((stringeq (valueof head) kType)
             (do
               (<- (arg1) (car-data tail))
@@ -948,7 +953,7 @@
                 ;; lambda
                 (return (atom* kLambda))
                 ;; string
-                (return (atom* (cdr (cdr (cdr kCarstr)))))
+                (return (atom* kStr))
                 ;; int
                 (do
                   (<- (i_ x) (kIntern))
@@ -1264,6 +1269,7 @@
       (cons "i" (cons "n" (list4 "t" "e" "r" "n")))
       (list-tail "c" "a" (list4 "r" "s" "t" "r")) ;kCarstr
       (list-tail "c" "d" (list4 "r" "s" "t" "r")) ;kCdrstr 
+      (cdr (list4 nil "s" "t" "r")) ;kStr
       (list4 "t" "y" "p" "e") ; kType
       (list "+")
       (list "-")
@@ -1322,6 +1328,7 @@
          kIntern
          kCarstr
          kCdrstr
+         kStr
          kType
          kPlus
          kMinus
