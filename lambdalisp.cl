@@ -115,6 +115,14 @@
     (<- (item) (f* item))
     (do-n-times-list f* cdr-n item cont)))
 
+(defun-lazy align-bitsize (n cont)
+  (do
+    (<- (n) (append int-zero n))
+    (<- (n) (reverse n))
+    (<- (_ n) (add* t t int-zero n))
+    (<- (n) (reverse n))
+    (cont n)))
+
 (defrec-lazy div** (n m times cont)
   (do
     (if-then-return (isnil times)
@@ -136,7 +144,28 @@
         (<- (q r) (div** n (cons t m) times))
         (cont (cons nil q) r)))))
 
-(defrec-lazy div* (n m cont)
+(defun-lazy div-helper (n m cont)
+  (do
+    (<- (n) (remove-head-zero n))
+    (<- (init-shift)
+      (do-n-times-list
+        (lambda (x cont)
+          (do
+            (if-then-return (isnil x)
+              (cont x))
+            (<- (_ cdr-x) (x))
+            (cont cdr-x)))
+        m n))
+    (<- (init-shift)
+      (do-n-times-list
+        (lambda (x cont)
+          (cont (cons t x)))
+        init-shift
+        nil))
+    (<- (init-m) (append m init-shift))
+    (div** n init-m (cons t init-shift) cont)))
+
+(defun-lazy div* (n m cont)
   ((cmp* n m)
     ;; eq
     (cont (list nil) (list t))
@@ -148,26 +177,8 @@
       (cons "\\n")
       (printint m)
       (cons "\\n")
-      (<- (n) (remove-head-zero n))
       (<- (m) (remove-head-zero m))
-      (<- (init-shift)
-        (do-n-times-list
-          (lambda (x cont)
-            (do
-              (if-then-return (isnil x)
-                (cont x))
-              (<- (_ cdr-x) (x))
-              (cont cdr-x)))
-          m n))
-      (<- (init-shift)
-        (do-n-times-list
-          (lambda (x cont)
-            (cont (cons t x)))
-          init-shift
-          nil))
-      (<- (init-m) (append m init-shift))
-      (<- (q r) (div** n init-m (cons t init-shift)))
-      (cont q r))))
+      (div-helper n m cont))))
 
 ;;================================================================
 ;; Data structure
@@ -624,14 +635,55 @@
     (<- (_ newenv reg heap stdin) (eval-letbind *initenv cdr-e reg heap stdin))
     (cont bind-expr (cons (cons (valueof bind-var) bind-expr) newenv) reg heap stdin)))
 
+;; (def-lazy bin2dec-tree
+;;   (cons
+;;     (cons
+;;       (cons (cons "0" "1") (cons "2" "3"))
+;;       (cons (cons "4" "5") (cons "6" "7")))
+;;     (lambda (f) (f
+;;       (lambda (f) (f (cons "8" "9") f))
+;;       f))))
+
 (defrec-lazy printint (n cont)
+  (do
+    (<- (10) (align-bitsize (list nil t nil t)))
+    (printint-bin 10)
+    (cons "\\n")
+    ((cmp* n 10)
+      ;; eq
+      (cons "1" (cons "0" cont))
+      ;; lt
+      (do
+        (printint-bin n)
+        (cons "\\n")
+        (<- (n) (reverse n))
+        (printint-bin n)
+        (cons "\\n")
+        (<- (n1 t1) (n))
+        (<- (n2 t2) (t1))
+        (<- (n3 t3) (t2))
+        (<- (n4 __) (t3))
+        (printint-bin (list n4 n3 n2 n1))
+        (cons "\\n")
+        (cons (list t t nil nil n4 n3 n2 n1) cont))
+      ;; gt
+      (do
+        (<- (q r) (div-helper n (list nil t nil t)))
+        (printint q (cons (list-tail t t nil nil r) cont))))))
+
+;; (defun-lazy printint (n cont)
+;;   (do
+;;     (<- (s) (bin2dec n))
+;;     (printstring s cont)))
+
+(defrec-lazy printint-bin (n cont)
   (do
     (if-then-return (isnil n)
       cont)
     (<- (car-n cdr-n) (n))
     (if car-n
-      (cons "0" (printint cdr-n cont))
-      (cons "1" (printint cdr-n cont)))))
+      (cons "0" (printint-bin cdr-n cont))
+      (cons "1" (printint-bin cdr-n cont)))))
 
 (defrec-lazy lookup-var (q-varname curenv *curenv heap cont)
   (do
@@ -1004,10 +1056,7 @@
               (let* align-return
                 (lambda (n)
                   (do
-                    (<- (n) (append int-zero n))
-                    (<- (n) (reverse n))
-                    (<- (_ n) (add* t t int-zero n))
-                    (<- (n) (reverse n))
+                    (<- (n) (align-bitsize n))
                     (cont (int* n) reg heap stdin))))
               (cond
                 ((stringeq (valueof head) kDiv)
