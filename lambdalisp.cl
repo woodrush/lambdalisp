@@ -940,7 +940,9 @@
             (do
               (<- (arg1) (car-data tail))
               (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
-              (cont (string* (valueof expr)) reg heap stdin)))
+              (if-then-return (or (isatom expr) (isstring expr))
+                (cont (string* (valueof expr)) reg heap stdin))
+              (cont (string* (print-unsigned-int expr nil)) reg heap stdin)))
           ((stringeq (valueof head) kType)
             (do
               (<- (arg1) (car-data tail))
