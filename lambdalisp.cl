@@ -1494,10 +1494,13 @@
     (let* repl (repl-hat read-expr-hat eval-hat repl-hat))
 
     ;; (<- (_ int-minusone) (add* t nil int-zero int-zero))
-    (<- (reg) (memory-write* initreg reg-heap-head int-zero))
-    (<- (reg) (memory-write* reg reg-curenv int-zero))
-    (<- (reg) (memory-write* reg reg-stack-head int-zero))
-    (<- (reg) (memory-write* reg reg-reader-hooks nil))
+    (let* reg
+      (do
+        (<- (reg) (memory-write* initreg reg-heap-head int-zero))
+        (<- (reg) (memory-write* reg reg-curenv int-zero))
+        (<- (reg) (memory-write* reg reg-stack-head int-zero))
+        (<- (reg) (memory-write* reg reg-reader-hooks nil))
+        reg))
     (<- (heap) (memory-write* initheap int-zero init-global-env))
     (repl (cons3 reg heap stdin))))
 
