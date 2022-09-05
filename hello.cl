@@ -1,9 +1,7 @@
+(def-lazy "A" (list t nil t t t t t nil))
+
 (defun-lazy main (stdin)
-  (cons (list t nil t t t t t nil) nil))
-
-(defmacro compile-to-blc-lazy (expr-lazy)
-  `(compile-to-blc (macroexpand-lazy ,expr-lazy)))
-
+  (cons "A" nil))
 
 (setq expanded (macroexpand-lazy main))
 (setq curried (curry expanded))
