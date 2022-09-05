@@ -5,7 +5,7 @@
   `(compile-to-blc (macroexpand-lazy ,expr-lazy)))
 
 
-(setq expanded (macroexpand-lazy 'main))
+(setq expanded (macroexpand-lazy main))
 (setq curried (curry expanded))
 (setq db (to-de-bruijn curried))
 (to-blc-string db)
