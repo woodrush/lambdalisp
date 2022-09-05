@@ -571,6 +571,15 @@
 (def-lazy reg-stack-head (list nil nil t))
 (def-lazy reg-block-cont (list nil nil nil))
 
+(defun-lazy malloc (state cont)
+  (do
+    (<- (reg heap stdin) (state))
+    ;; Increment heap-head
+    (<- (*heap-head) (lookup-tree* reg reg-heap-head))
+    (<- (_ *heap-head) (add* nil t *heap-head int-zero))
+    (<- (reg) (memory-write* reg reg-heap-head *heap-head))
+    (cont (cons3 reg heap stdin) *heap-head)))
+
 (defrec-lazy append-data (l1 l2 cont)
   (do
     (if-then-return (isnil-data l1)
@@ -1083,14 +1092,14 @@
               (<- (*outerenv) (lookup-tree* reg reg-curenv))
               ;; Write the bindings to the heap's head
               (<- (_ newenv state) (eval-letbind (cons (cons nil *outerenv) nil) arg1 state))
+              (<- (state *heap-head) (malloc state))
               (<- (reg heap stdin) (state))
-              (<- (*heap-head) (lookup-tree* reg reg-heap-head))
               (<- (heap) (memory-write* heap *heap-head newenv))
               ;; Set current environment pointer to the written *heap-head
               (<- (reg) (memory-write* reg reg-curenv *heap-head))
-              ;; Increment heap-head
-              (<- (_ *heap-head) (add* nil t *heap-head int-zero))
-              (<- (reg) (memory-write* reg reg-heap-head *heap-head))
+              ;; ;; Increment heap-head
+              ;; (<- (_ *heap-head) (add* nil t *heap-head int-zero))
+              ;; (<- (reg) (memory-write* reg reg-heap-head *heap-head))
               ;; Evaluate expression in the created environment
               (<- (expr state) (eval-progn newtail (cons3 reg heap stdin)))
               (<- (reg heap stdin) (state))
@@ -1484,9 +1493,9 @@
     (let* eval (eval-hat read-expr-hat eval-hat repl-hat))
     (let* repl (repl-hat read-expr-hat eval-hat repl-hat))
 
-    (<- (_ *heap-head) (add* nil t int-zero int-zero))
+    ;; (<- (_ *heap-head) (add* nil t int-zero int-zero))
     (<- (_ int-minusone) (add* t nil int-zero int-zero))
-    (<- (reg) (memory-write* initreg reg-heap-head *heap-head))
+    (<- (reg) (memory-write* initreg reg-heap-head int-zero))
     (<- (reg) (memory-write* reg reg-curenv int-zero))
     (<- (reg) (memory-write* reg reg-stack-head int-minusone))
     (<- (reg) (memory-write* reg reg-reader-hooks nil))
