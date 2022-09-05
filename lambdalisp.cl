@@ -844,15 +844,15 @@
             (t
               (lambda (cont) (cont tail state))))))
         (<- (reg heap stdin) (state))
+        ;; Decrement stack-head - allocate new stack memory
+        (<- (*stack-head) (lookup-tree* reg reg-stack-head))
+        (<- (_ *stack-head) (add* t nil *stack-head int-zero))
+        (<- (reg) (memory-write* reg reg-stack-head *stack-head))
         ;; Write the bindings to the stack's head
         (<- (newenv) (zip-data-base (cons (cons nil *outerenv) nil) argvars mappedargs))
-        (<- (*stack-head) (lookup-tree* reg reg-stack-head))
         (<- (heap) (memory-write* heap *stack-head newenv))
         ;; Set current environment pointer to the written *stack-head
         (<- (reg) (memory-write* reg reg-curenv *stack-head))
-        ;; Decrement stack-head
-        (<- (_ *stack-head) (add* t nil *stack-head int-zero))
-        (<- (reg) (memory-write* reg reg-stack-head *stack-head))
         ;; Evaluate expression in the created environment
         (<- (expr state) (eval-progn newtail (cons3 reg heap stdin)))
         (<- (reg heap stdin) (state))
@@ -1493,11 +1493,10 @@
     (let* eval (eval-hat read-expr-hat eval-hat repl-hat))
     (let* repl (repl-hat read-expr-hat eval-hat repl-hat))
 
-    ;; (<- (_ *heap-head) (add* nil t int-zero int-zero))
-    (<- (_ int-minusone) (add* t nil int-zero int-zero))
+    ;; (<- (_ int-minusone) (add* t nil int-zero int-zero))
     (<- (reg) (memory-write* initreg reg-heap-head int-zero))
     (<- (reg) (memory-write* reg reg-curenv int-zero))
-    (<- (reg) (memory-write* reg reg-stack-head int-minusone))
+    (<- (reg) (memory-write* reg reg-stack-head int-zero))
     (<- (reg) (memory-write* reg reg-reader-hooks nil))
     (<- (heap) (memory-write* initheap int-zero init-global-env))
     (repl (cons3 reg heap stdin))))
