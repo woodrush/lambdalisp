@@ -392,17 +392,23 @@
 (defrec-lazy read-int (stdin curint cont)
   (do
     (if-then-return (isnil stdin)
-      (cont stdin stdin))
+      (cont curint stdin))
     (<- (c cdr-stdin) (stdin))
     (cond
-      ((=-bit "0" c)
+      ((and ((cmp* "0" c) t t nil)
+            ((cmp* c "9") t t nil))
         (do
-          (<- (_ curint) (add* t t curint curint))
-          (read-int cdr-stdin curint cont)))
-      ((=-bit "1" c)
-        (do
-          (<- (_ curint) (add* nil t curint curint))
-          (read-int cdr-stdin curint cont)))
+          (<- (_ c) (c))
+          (<- (_ c) (c))
+          (<- (_ c) (c))
+          (<- (_ c) (c))
+          (<- (c) (align-bitsize c))
+          (<- (_ curintx2) (add* t t curint curint))
+          (<- (_ curintx4) (add* t t curintx2 curintx2))
+          (<- (_ curintx8) (add* t t curintx4 curintx4))
+          (<- (_ curintx10) (add* t t curintx2 curintx8))
+          (<- (_ nextint) (add* t t curintx10 c))
+          (read-int cdr-stdin nextint cont)))
       (t
         (cont curint stdin)))))
 
