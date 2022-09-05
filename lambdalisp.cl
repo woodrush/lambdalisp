@@ -654,34 +654,6 @@
     ;; int (TODO)
     (cont expr state)))
 
-(defrec-lazy backquote (expr cont)
-  (typematch expr
-    ;; atom
-    (if (isnil-data expr)
-      (cont expr)
-      (cont (cons-data@ (atom* kQuote) (cons-data@ expr (atom* nil)))))
-    ;; list
-    (do
-      (<- (car-e cdr-e) (d-carcdr-data expr))
-      (if-then-return (and (islist car-e) (and (isatom (car-data@ car-e)) (stringeq (valueof (car-data@ car-e)) (list "," "@"))))
-        (do
-          (let* e (-> car-e cdr-data@ car-data@))
-          (<- (cdr-e) (backquote cdr-e))
-          (cont (cons-data@ (atom* kAppend) (cons-data@ e (cons-data@ cdr-e (atom* nil)))))))
-      (if-then-return (and (isatom car-e) (stringeq (valueof car-e) (list ",")))
-        (do
-          (<- (car-cdr-e) (car-data cdr-e))
-          (cont car-cdr-e)))
-      (<- (car-e) (backquote car-e))
-      (<- (cdr-e) (backquote cdr-e))
-      (cont (cons-data@ (atom* kCons) (cons-data@ car-e (cons-data@ cdr-e (atom* nil))))))
-    ;; lambda (TODO)
-    (cont expr)
-    ;; string (TODO)
-    (cont expr)
-    ;; int (TODO)
-    (cont expr)))
-
 (defrec-lazy eval-progn (expr state cont)
   (typematch expr
     ;; atom
@@ -903,7 +875,7 @@
             (do
               (<- (arg1) (car-data tail))
               (<- (expr state) (eval arg1 state))
-              (if-then-return (isatom expr)
+              (if-then-return (not (islist expr))
                 (cont t-atom state))
               (cont (atom* nil) state)))
           ((stringeq (valueof head) kEq)
@@ -999,8 +971,7 @@
               (<- (expr state) (eval arg1 state))
               (if-then-return (or (isatom expr) (isstring expr))
                 (cont (string* (valueof expr)) state))
-              (cont (string* (print-unsigned-int expr nil)) state)
-              ))
+              (cont (string* (printexpr expr nil)) state)))
           ((stringeq (valueof head) kType)
             (do
               (<- (arg1) (car-data tail))
