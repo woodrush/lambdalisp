@@ -407,7 +407,7 @@
           (cont (cons c str) stdin))))))
 
 
-(defrec-lazy read-int (stdin curint cont)
+(defrec-lazy read-unsigned-int (stdin curint cont)
   (do
     (if-then-return (isnil stdin)
       (cont curint stdin))
@@ -426,7 +426,7 @@
               c))
           (<- (curintx10) (mul* curint (list nil t nil t)))
           (<- (_ nextint) (add* t t curintx10 c))
-          (read-int cdr-stdin nextint cont)))
+          (read-unsigned-int cdr-stdin nextint cont)))
       (t
         (cont curint stdin)))))
 
@@ -516,10 +516,18 @@
         (do
           (<- (str stdin) (read-string cdr-stdin))
           (lambda (cont) (cont (string* str) reg-heap stdin))))
+      (((and
+          (=-bit "-" c)
+          (and ((cmp* "0" (car cdr-stdin)) t t nil)
+               ((cmp* (car cdr-stdin) "9") t t nil))))
+        (do
+          (<- (n stdin) (read-unsigned-int cdr-stdin int-zero))
+          (<- (_ n) (add* nil nil int-zero n))
+          (lambda (cont) (cont (int* n) reg-heap stdin))))
       ((and ((cmp* "0" c) t t nil)
             ((cmp* c "9") t t nil))
         (do
-          (<- (n stdin) (read-int stdin int-zero))
+          (<- (n stdin) (read-unsigned-int stdin int-zero))
           (lambda (cont) (cont (int* n) reg-heap stdin))))
       ((=-bit "'" c)
         (do
@@ -656,7 +664,14 @@
     (<- (_ newenv reg heap stdin) (eval-letbind *initenv cdr-e reg heap stdin))
     (cont bind-expr (cons (cons (valueof bind-var) bind-expr) newenv) reg heap stdin)))
 
-(defrec-lazy printint (n cont)
+(defun-lazy printint (n cont)
+  (do
+    (if-then-return (car n)
+      (print-unsigned-int n cont))
+    (<- (_ n) (add* nil nil int-zero n))
+    (cons "-" (print-unsigned-int n cont))))
+
+(defrec-lazy print-unsigned-int (n cont)
   (do
     (<- (10) (align-bitsize (list nil t nil t)))
     (<- (n) (align-bitsize n))
@@ -679,7 +694,7 @@
         (<- (n2 t2) (t1))
         (<- (n3 t3) (t2))
         (<- (n4 __) (t3))
-        (printint q (cons (list t t nil nil n4 n3 n2 n1) cont))))))
+        (print-unsigned-int q (cons (list t t nil nil n4 n3 n2 n1) cont))))))
 
 (defrec-lazy printint-bin (n cont)
   (do
