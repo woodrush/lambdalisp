@@ -416,15 +416,15 @@
       ((and ((cmp* "0" c) t t nil)
             ((cmp* c "9") t t nil))
         (do
-          (<- (_ c) (c))
-          (<- (_ c) (c))
-          (<- (_ c) (c))
-          (<- (_ c) (c))
-          (<- (c) (align-bitsize c))
-          (<- (_ curintx2) (add* t t curint curint))
-          (<- (_ curintx4) (add* t t curintx2 curintx2))
-          (<- (_ curintx8) (add* t t curintx4 curintx4))
-          (<- (_ curintx10) (add* t t curintx2 curintx8))
+          (let* c
+            (do
+              (<- (_ c) (c))
+              (<- (_ c) (c))
+              (<- (_ c) (c))
+              (<- (_ c) (c))
+              (<- (c) (align-bitsize c))
+              c))
+          (<- (curintx10) (mul* curint (list nil t nil t)))
           (<- (_ nextint) (add* t t curintx10 c))
           (read-int cdr-stdin nextint cont)))
       (t
