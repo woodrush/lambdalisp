@@ -919,6 +919,7 @@
               (printexpr arg1 (cons "\\n" (cont arg1 state)))))
           ((stringeq (valueof head) kPeekchar)
             (do
+              (<- (reg heap stdin) (state))
               (<- (c cdr-stdin) (stdin))
               (cont (string* (list c)) state)))
           ((stringeq (valueof head) kReadchar)
