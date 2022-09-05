@@ -612,6 +612,40 @@
 (defun-lazy reverse-base (l cont)
   (reverse* l nil cont))
 
+(defrec-lazy eval-backquote (expr reg heap stdin cont)
+  (typematch expr
+    ;; atom
+    (cont expr reg heap stdin)
+    ;; list
+    (do
+      (<- (car-e cdr-e) (d-carcdr-data expr))
+      (if-then-return (and (islist car-e) (and (isatom (car-data@ car-e)) (stringeq (valueof (car-data@ car-e)) (list "," "@"))))
+        (do
+          (let* e (-> car-e cdr-data@ car-data@))
+          (<- (e reg heap stdin) (eval e reg heap stdin))
+          (<- (cdr-e reg heap stdin) (eval-backquote cdr-e reg heap stdin))
+          (<- (ret) (append-data e cdr-e))
+          (cont ret reg heap stdin)
+          ;; (cont (cons-data@ (atom* kAppend) (cons-data@ e (cons-data@ cdr-e (atom* nil)))))
+          ))
+      (if-then-return (and (isatom car-e) (stringeq (valueof car-e) (list ",")))
+        (do
+          (<- (car-cdr-e) (car-data cdr-e))
+          (eval car-cdr-e reg heap stdin cont)
+          ;; (cont car-cdr-e)
+          ))
+      (<- (car-e reg heap stdin) (eval-backquote car-e reg heap stdin))
+      (<- (cdr-e reg heap stdin) (eval-backquote cdr-e reg heap stdin))
+      (cont (cons-data@ car-e cdr-e) reg heap stdin)
+      ;; (cont (cons-data@ (atom* kCons) (cons-data@ car-e (cons-data@ cdr-e (atom* nil)))))
+      )
+    ;; lambda (TODO)
+    (cont expr reg heap stdin)
+    ;; string (TODO)
+    (cont expr reg heap stdin)
+    ;; int (TODO)
+    (cont expr reg heap stdin)))
+
 (defrec-lazy backquote (expr cont)
   (typematch expr
     ;; atom
@@ -973,8 +1007,9 @@
           ((stringeq (valueof head) (list "`"))
             (do
               (<- (arg1) (car-data tail))
-              (<- (expr) (backquote arg1))
-              (eval expr reg heap stdin cont)))
+              ;; (<- (expr) (backquote arg1))
+              ;; (eval expr reg heap stdin cont)
+              (eval-backquote arg1 reg heap stdin cont)))
           ((stringeq (valueof head) kProgn)
             (eval-progn tail reg heap stdin cont))
           ((or (stringeq (valueof head) kBlock)
