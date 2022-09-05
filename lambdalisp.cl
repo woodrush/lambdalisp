@@ -905,6 +905,11 @@
             (do
               (<- (c stdin) (stdin))
               (cont (string* (list c)) reg heap stdin)))
+          ((stringeq (valueof head) kEval)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
+              (eval arg1 reg heap stdin cont)))
           ((stringeq (valueof head) kApply)
             (do
               (<- (arg1 t1) (d-carcdr-data tail))
@@ -1299,6 +1304,7 @@
       (cons "p" (cons "e" (cons "e" (cons "k" (cons "-" (list4 "c" "h" "a" "r"))))))
       (list-tail "r" "e" "a" "d" "-" (list4 "c" "h" "a" "r"))
       (list-tail "s" "e" "t" "-" "m" "a" "c" "r" "o" "-" "c" "h" "a" "r" "a" (list4 "c" "t" "e" "r"))
+      (list4 "e" "v" "a" "l")
       (cons "a" (list4 "p" "p" "l" "y"))
       (list4 "l" "o" "o" "p")
       (list "l" "e" "t"); kLet
@@ -1362,6 +1368,7 @@
          kPeekchar
          kReadchar
          kSetMacroCharacter
+         kEval
          kApply
          kLoop
          kLet
