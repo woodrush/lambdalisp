@@ -7,7 +7,7 @@
 (defmacro cond (a &rest b)
   (if a
     `(if ,(car a)
-      ,(car (cdr a))
+      (progn ,@(cdr a))
       (cond ,@b))
     nil))
 
@@ -63,6 +63,9 @@
 (defun write-to-string (x)
   (str x))
 
+(defun stringp (x)
+  (eq (type x) 'str))
+
 ;;==============================================================
 (defparameter profile-index-depth nil)
 
@@ -114,9 +117,31 @@
             `(app ,@(to-de-bruijn (car body) env) ,@(to-de-bruijn (car (cdr body)) env))
             `(abs ,@(to-de-bruijn (lambdabody body) (cons (lambdaarg-top body) env)))))))
 
+(defun to-blc-string (body)
+  (labels
+    ((int2varname (n)
+        (if (> n 0) (concatenate 'string "1" (int2varname (- n 1))) "0"))
+     (token2string (token)
+        (cond ((not token) "")
+              ((eq token 'abs) "00")
+              ((eq token 'app) "01")
+              ((stringp token) token)
+              (t (int2varname token)))))
+    (let ((curstring ""))
+      (loop
+        (cond
+          ((not body)
+            (return curstring))
+          (t
+            (setq curstring (concatenate 'string curstring (token2string (car body))))
+            (setq body (cdr body))))))))
+
+
 
 (curry '(lambda (a b c) a))
 
 (list 'a 'b 'c)
 
 (to-de-bruijn (curry '(lambda (a b c) a)))
+
+(to-blc-string (to-de-bruijn (curry '(lambda (a b c) a))))
