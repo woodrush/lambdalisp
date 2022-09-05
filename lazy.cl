@@ -28,12 +28,12 @@
              expr)
           ((islambda expr)
              (curry-lambda (lambdaargs expr) (lambdabody expr)))
-          ((eq 1 (length expr))
+          ((= 1 (length expr))
              (curry (car expr)))
           (t
              (normalize-app (curry (car expr)) (cdr expr))))))
 
-(defun to-de-bruijn (body &optional (env ()))
+(defun to-de-bruijn (body env)
   (labels
     ((lookup (env var)
        (let ((i (position var env :test #'equal)))
@@ -361,7 +361,7 @@
 
 
 (defun compile-to-blc (expr)
-  (to-blc-string (to-de-bruijn (curry expr))))
+  (to-blc-string (to-de-bruijn (curry expr) nil)))
 
 (defun compile-to-ski (expr)
   (flatten-ski (t-rewrite (curry expr))))

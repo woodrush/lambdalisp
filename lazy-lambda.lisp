@@ -28,10 +28,40 @@
     ,@(helper llist)
     ,@body))
 
-(defun length (list)
-  (if (atom list)
+(defun length (l)
+  (if (atom l)
     0
-    (+ 1 (length (cdr list)))))
+    (+ 1 (length (cdr l)))))
+
+(defmacro return (x)
+  `(return-from () ,x))
+
+(defun position* (item l)
+  (setq i 0)
+  (loop
+    (if (atom l)
+      (return nil))
+    (if (eq item (car l))
+      (return i))
+    (setq i (+ 1 i))
+    (setq l (cdr l))))
+
+(defmacro position (x y &rest args)
+  `(position* ,x ,y))
+
+(defun list (&rest args)
+  (if args
+    (cons (car args) (apply list (cdr args)))
+    nil))
+
+(defun not (x)
+  (if x nil t))
+
+(defmacro concatenate (_ &rest args)
+  `(+ ,@args))
+
+(defun write-to-string (x)
+  (str x))
 
 ;;==============================================================
 (defparameter profile-index-depth nil)
@@ -69,4 +99,24 @@
           (t
              (normalize-app (curry (car expr)) (cdr expr))))))
 
+(defun to-de-bruijn (body env)
+  (labels
+    ((lookup (env var)
+       (let ((i (position var env :test #'equal)))
+         (if profile-index-depth
+          (if i (format nil "~%~d:~a~%" (+ 1 i) (write-to-string var))
+                (format nil "~%?:~a~%" (write-to-string var)))
+          (if i (+ 1 i) (decorate-varname var)))
+         )))
+    (if (atom body)
+        (list (lookup env body))
+        (if (not (islambda body))
+            `(app ,@(to-de-bruijn (car body) env) ,@(to-de-bruijn (car (cdr body)) env))
+            `(abs ,@(to-de-bruijn (lambdabody body) (cons (lambdaarg-top body) env)))))))
+
+
 (curry '(lambda (a b c) a))
+
+(list 'a 'b 'c)
+
+(to-de-bruijn (curry '(lambda (a b c) a)))
