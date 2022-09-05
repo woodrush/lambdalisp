@@ -173,10 +173,6 @@
     (cont (list t) n)
     ;; gt
     (do
-      (printint n)
-      (cons "\\n")
-      (printint m)
-      (cons "\\n")
       (<- (m) (remove-head-zero m))
       (div-helper n m cont))))
 
@@ -635,46 +631,30 @@
     (<- (_ newenv reg heap stdin) (eval-letbind *initenv cdr-e reg heap stdin))
     (cont bind-expr (cons (cons (valueof bind-var) bind-expr) newenv) reg heap stdin)))
 
-;; (def-lazy bin2dec-tree
-;;   (cons
-;;     (cons
-;;       (cons (cons "0" "1") (cons "2" "3"))
-;;       (cons (cons "4" "5") (cons "6" "7")))
-;;     (lambda (f) (f
-;;       (lambda (f) (f (cons "8" "9") f))
-;;       f))))
-
 (defrec-lazy printint (n cont)
   (do
     (<- (10) (align-bitsize (list nil t nil t)))
-    (printint-bin 10)
-    (cons "\\n")
+    (<- (n) (align-bitsize n))
     ((cmp* n 10)
       ;; eq
       (cons "1" (cons "0" cont))
       ;; lt
       (do
-        (printint-bin n)
-        (cons "\\n")
         (<- (n) (reverse n))
-        (printint-bin n)
-        (cons "\\n")
         (<- (n1 t1) (n))
         (<- (n2 t2) (t1))
         (<- (n3 t3) (t2))
         (<- (n4 __) (t3))
-        (printint-bin (list n4 n3 n2 n1))
-        (cons "\\n")
         (cons (list t t nil nil n4 n3 n2 n1) cont))
       ;; gt
       (do
         (<- (q r) (div-helper n (list nil t nil t)))
-        (printint q (cons (list-tail t t nil nil r) cont))))))
-
-;; (defun-lazy printint (n cont)
-;;   (do
-;;     (<- (s) (bin2dec n))
-;;     (printstring s cont)))
+        (<- (n) (reverse (cons t (cons t (cons t (cons t r))))))
+        (<- (n1 t1) (n))
+        (<- (n2 t2) (t1))
+        (<- (n3 t3) (t2))
+        (<- (n4 __) (t3))
+        (printint q (cons (list t t nil nil n4 n3 n2 n1) cont))))))
 
 (defrec-lazy printint-bin (n cont)
   (do
