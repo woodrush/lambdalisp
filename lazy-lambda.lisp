@@ -99,6 +99,8 @@
     ;; (gethash key hashtable)
     `(,(car (cdr (cdr place))) 'set ,(car (cdr place)) ,value)))
 
+(defun gethash (key hashtable)
+  (hashtable 'get key))
 
 ;;==============================================================
 (defparameter profile-index-depth nil)
@@ -180,13 +182,89 @@
 
 ;; (to-blc-string (to-de-bruijn (curry '(lambda (a b c) a))))
 
-(let ((hashtable (make-hash-table*)))
-  (print "set")
-  (setf (gethash 'a hashtable) '(1 2 3))
-  (setf (gethash 'b hashtable) (lambda () ()))
-  (setf (gethash 'c hashtable) '(a b c))
-  (print "get")
-  (print (hashtable 'get 'a))
-  (print (hashtable 'get 'b))
-  (print (hashtable 'get 'c))
-  (print (hashtable 'get 'd)))
+;; (let ((hashtable (make-hash-table*)))
+;;   (print "set")
+;;   (setf (gethash 'a hashtable) '(1 2 3))
+;;   (setf (gethash 'b hashtable) (lambda () ()))
+;;   (setf (gethash 'c hashtable) '(a b c))
+;;   (print "get")
+;;   (print (hashtable 'get 'a))
+;;   (print (hashtable 'get 'b))
+;;   (print (hashtable 'get 'c))
+;;   (print (hashtable 'get 'd)))
+
+
+(defparameter lazy-env (make-hash-table :test #'equal))
+(defparameter lazy-var-list ())
+(defparameter lazy-macro-list ())
+
+(defmacro lazy-error (&rest message)
+  `(error (concatenate 'string "Lazy K CL Error: " ,@message)))
+
+(defun mangle-varname (name)
+  (cond ((stringp name)
+          (intern (concatenate `string (write-to-string name) "-**LAZY-VAR-STR**")))
+        (t
+          (intern (concatenate `string (write-to-string name) "-**LAZY-VAR**")))))
+
+(defun mangle-macroname (name)
+  (cond ((stringp name)
+          (intern (concatenate `string (write-to-string name) "-**LAZY-MACRO-STR**")))
+        (t
+          (intern (concatenate `string (write-to-string name) "-**LAZY-MACRO**")))))
+
+(defmacro def-lazy (name expr)
+  `(progn
+      (setf lazy-var-list (cons ',name lazy-var-list))
+      (setf (gethash (mangle-varname ',name) lazy-env) ',expr)))
+
+(defmacro defun-lazy (name args expr)
+  `(def-lazy ,name (lambda ,args ,expr)))
+
+(defmacro defmacro-lazy (name args &rest expr)
+  (setf lazy-macro-list (cons name lazy-macro-list))
+  `(defun ,(mangle-macroname name) ,args ,@expr))
+
+(defun eval-lazy-var (name)
+  (print "evaluating")
+  (print name)
+  (print (mangle-varname name))
+  (print lazy-env)
+  (gethash (mangle-varname name) lazy-env))
+
+(defun eval-lazy-macro (name argvalues)
+  (apply (mangle-macroname name) argvalues))
+
+(defun macroexpand-lazy-raw (expr env history)
+  (cond ((atom expr)
+          (cond ((position expr env :test #'equal)
+                  expr)
+                ((position expr history :test #'equal)
+                  (lazy-error (format nil "Recursive expansion of macro/variable ~a. Expansion stack: ~a~%When writing recursive functions, please use anonymous recursion." expr (reverse (cons expr history)))))
+                ((position expr lazy-var-list :test #'equal)
+                  (macroexpand-lazy-raw (eval-lazy-var expr) env (cons expr history)))
+                (t
+                  expr)))
+        ((islambda expr)
+          `(lambda ,(lambdaargs expr)
+            ,(macroexpand-lazy-raw (lambdabody expr) (append env (lambdaargs expr)) history)))
+        ((position (car expr) lazy-macro-list :test #'equal)
+          (macroexpand-lazy-raw (eval-lazy-macro (car expr) (cdr expr)) env history))
+        (t
+          (mapcar (lambda (expr) (macroexpand-lazy-raw expr env history)) expr))))
+
+(defmacro macroexpand-lazy (expr)
+  `(macroexpand-lazy-raw ',expr nil nil))
+
+
+(defun compile-to-blc (expr)
+  (to-blc-string (to-de-bruijn (curry expr) nil)))
+
+(defmacro compile-to-blc-lazy (expr-lazy)
+  `(compile-to-blc (macroexpand-lazy ,expr-lazy)))
+
+
+
+(defun-lazy t (x y) x)
+
+(compile-to-blc-lazy t)
