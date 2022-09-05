@@ -48,44 +48,6 @@
             `(app ,@(to-de-bruijn (car body) env) ,@(to-de-bruijn (car (cdr body)) env))
             `(abs ,@(to-de-bruijn (lambdabody body) (cons (lambdaarg-top body) env)))))))
 
-(defparameter simple-lambda-env-vars (concatenate 'list (coerce "xyzabcdefghijklmnopqrstuvw" `list) "α" "β" "γ" "δ" "ε" "ζ" "η" "θ"
-;; "ι"
-"κ"
-"μ" "ν" "ξ" "ο" "π" "ρ"
-;; "σ"
-"τ" "υ" "φ" "χ" "ψ" "ω" (coerce "ABCDEFGHIJKLMNOPQRSTUVWXYZ" `list)))
-
-(defun to-simple-lambda (body &optional (env ()))
-  (labels
-    ((lookup (env var)
-       (let ((i (position var (reverse env) :test #'equal)))
-         (if i
-          (nth i simple-lambda-env-vars)
-          (decorate-varname var)))
-         ))
-    (if (atom body)
-        (lookup env body)
-        (if (not (islambda body))
-          (format nil "(~a ~a)"
-              (to-simple-lambda (car body) env)
-              (to-simple-lambda (car (cdr body)) env))
-          (format nil "λ~a.~a"
-            (lookup (cons (lambdaarg-top body) env) (lambdaarg-top body))
-            (to-simple-lambda (lambdabody body) (cons (lambdaarg-top body) env)))))))
-
-
-;; (defun to-blc-string (body)
-;;   (labels
-;;    ((int2varname (n)
-;;       (if (> n 0) (concatenate `string "1" (int2varname (- n 1))) "0"))
-;;     (token2string (token)
-;;       (cond ((not token) "")
-;;             ((eq token 'abs) "00")
-;;             ((eq token 'app) "01")
-;;             ((stringp token) token)
-;;             (t (int2varname token)))))
-;;    (if (not body) "" (concatenate `string (token2string (car body)) (to-blc-string (cdr body))))))
-
 (defun to-blc-string (body)
   (labels
     ((int2varname (n)
@@ -105,56 +67,6 @@
             (setq curstring (concatenate 'string curstring (token2string (car body))))
             (setq body (cdr body))))))))
 
-
-
-(defun count-occurrences-in (expr var)
-  (cond ((atom expr) (if (eq var expr) 1 0))
-        ((islambda expr)
-         (if (eq (lambdaarg-top expr) var)
-             0
-             (count-occurrences-in (cdr (cdr expr)) var)))
-        (t (reduce '+ (map 'list #'(lambda (x) (count-occurrences-in x var)) expr))
-        )))
-; (print (count-occurrences-in `(lambda (x) (y y y (lambda (y) y) x)) `y))
-
-(defun count-occurrences-in (expr var)
-  (cond ((atom expr) (if (eq var expr) 1 0))
-        ((islambda expr)
-         (if (eq (lambdaarg-top expr) var)
-             0
-             (count-occurrences-in (cdr (cdr expr)) var)))
-        (t (reduce '+ (map 'list #'(lambda (x) (count-occurrences-in x var)) expr))
-        )))
-
-(defun occurs-freely-in (expr var)
-  (cond ((atom expr) (eq var expr))
-        ((islambda expr)
-         (if (eq (lambdaarg-top expr) var)
-             nil
-             (occurs-freely-in (cdr (cdr expr)) var)))
-        (t (or (occurs-freely-in (car expr) var)
-               (occurs-freely-in (cdr expr) var)))))
-
-(defun t-rewrite (expr)
-  (cond ((atom expr) expr)
-        ((eq `lambda (car expr))
-         (let ((arg  (lambdaarg-top expr))
-               (body (lambdabody expr)))
-              (cond ((eq arg body) `I)
-                    ((not (occurs-freely-in body arg))
-                       `(K ,(t-rewrite body)))
-                    ((islambda body)
-                       (t-rewrite `(lambda (,arg) ,(t-rewrite body))))
-                    (t `((S ,(t-rewrite `(lambda (,arg) ,(car body))))
-                            ,(t-rewrite `(lambda (,arg) ,(car (cdr body)))))))))
-        (t (mapcar #'t-rewrite expr))))
-
-(defun flatten-ski (expr)
-  (if (atom expr)
-      (if (position expr `(S K I))
-          (string-downcase (string expr))
-          (decorate-varname expr))
-      (concatenate `string "`" (flatten-ski (car expr)) (flatten-ski (car (cdr expr))))))
 
 
 ;;================================================================
@@ -197,7 +109,7 @@
 (defun eval-lazy-macro (name argvalues)
   (apply (mangle-macroname name) argvalues))
 
-(defun macroexpand-lazy-raw (expr &optional (env ()) (history ()))
+(defun macroexpand-lazy-raw (expr env history)
   (cond ((atom expr)
           (cond ((position expr env :test #'equal)
                   expr)
@@ -213,10 +125,10 @@
         ((position (car expr) lazy-macro-list :test #'equal)
           (macroexpand-lazy-raw (eval-lazy-macro (car expr) (cdr expr)) env history))
         (t
-          (mapcar #'(lambda (expr) (macroexpand-lazy-raw expr env history)) expr))))
+          (mapcar (lambda (expr) (macroexpand-lazy-raw expr env history)) expr))))
 
 (defmacro macroexpand-lazy (expr)
-  `(macroexpand-lazy-raw ',expr))
+  `(macroexpand-lazy-raw ',expr nil nil))
 
 
 (defun-lazy t (x y) x)
@@ -304,33 +216,17 @@
 (defmacro-lazy nth (n list)
   `(-> ,list (,n cdr*) car*))
 
-;; (def-lazy "A" (succ 64))
-;; (defmacro def-alphabet-lazy ()
-;;   (let* ((alphabet (coerce "ABCDEFGHIJKLMNOPQRSTUVWXYZ" `list))
-;;         (alphazip (mapcar #'list (cdr alphabet) alphabet))
-;;         (expr (map 'list #'(lambda (z) `(def-lazy ,(string (car z)) (succ ,(string (car (cdr z)))))) alphazip)))
-;;     `(progn ,@expr)))
-;; (def-alphabet-lazy)
-;; ;; (def-lazy "B" (succ "A"))
-
-(def-lazy "a" (succ (+ 64 32)))
-(defmacro def-alphabet-lazy ()
-  (let* ((alphabet (coerce "abcdefghijklmnopqrstuvwxyz" `list))
-        (alphazip (mapcar #'list (cdr alphabet) alphabet))
-        (expr (map 'list #'(lambda (z) `(def-lazy ,(string (car z)) (succ ,(string (car (cdr z)))))) alphazip)))
-    `(progn ,@expr)))
-(def-alphabet-lazy)
-
-(def-lazy Y-comb
-  (lambda (f)
-    ((lambda (x) (f (x x)))
-     (lambda (x) (f (x x))))))
 
 (defmacro-lazy letrec-lazy (name args body)
   `(Y-comb (lambda (,name) (lambda ,args ,body))))
 
 (defmacro defrec-lazy (name args body)
   `(def-lazy ,name (letrec-lazy ,name ,args ,body)))
+
+(def-lazy Y-comb
+  (lambda (f)
+    ((lambda (x) (f (x x)))
+     (lambda (x) (f (x x))))))
 
 (defmacro-lazy -> (target &rest args)
   (if (not args)
@@ -363,17 +259,6 @@
 (defun compile-to-blc (expr)
   (to-blc-string (to-de-bruijn (curry expr) nil)))
 
-(defun compile-to-ski (expr)
-  (flatten-ski (t-rewrite (curry expr))))
-
 (defmacro compile-to-blc-lazy (expr-lazy)
   `(compile-to-blc (macroexpand-lazy ,expr-lazy)))
 
-(defmacro compile-to-ski-lazy (expr-lazy)
-  `(compile-to-ski (macroexpand-lazy ,expr-lazy)))
-
-(defun compile-to-simple-lambda (expr)
-  (to-simple-lambda (curry expr)))
-
-(defmacro compile-to-simple-lambda-lazy (expr-lazy)
-  `(compile-to-simple-lambda (macroexpand-lazy ,expr-lazy)))
