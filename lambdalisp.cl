@@ -1076,6 +1076,7 @@
           ((stringeq (valueof head) kIntern)
             (do
               (<- (arg1) (car-data tail))
+              (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (cont (atom* (valueof arg1)) reg heap stdin)))
           ((stringeq (valueof head) kPlus)
             (do
