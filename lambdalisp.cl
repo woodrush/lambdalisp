@@ -844,20 +844,12 @@
             (do
               (<- (arg1) (car-data tail))
               (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
-              (if-then-return (isstring expr)
-                (if (isnil (valueof expr))
-                  (cont (string* nil) reg heap stdin)
-                  (cont (string* (list (car (valueof expr)))) reg heap stdin)))
               (<- (expr) (car-data expr))
               (cont expr reg heap stdin)))
           ((stringeq (valueof head) kCdr)
             (do
               (<- (arg1) (car-data tail))
               (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
-              (if-then-return (isstring expr)
-                (if (isnil (valueof expr))
-                  (cont (string* nil) reg heap stdin)
-                  (cont (string* (cdr (valueof expr))) reg heap stdin)))
               (<- (expr) (cdr-data expr))
               (cont expr reg heap stdin)))
           ((stringeq (valueof head) kAtom)
@@ -929,6 +921,20 @@
               (<- (char _) ((valueof arg1)))
               (<- (reg) (memory-write* reg reg-reader-hooks (cons (cons char arg2) charstack)))
               (cont arg2 reg heap stdin)))
+          ((stringeq (valueof head) kCarstr)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
+              (if (isnil (valueof expr))
+                (cont (string* nil) reg heap stdin)
+                (cont (string* (list (car (valueof expr)))) reg heap stdin))))
+          ((stringeq (valueof head) kCdrstr)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
+              (if (isnil (valueof expr))
+                (cont (string* nil) reg heap stdin)
+                (cont (string* (cdr (valueof expr))) reg heap stdin))))
           ((stringeq (valueof head) (list "`"))
             (do
               (<- (arg1) (car-data tail))
@@ -1236,6 +1242,8 @@
       (cons "&" (list4 "r" "e" "s" "t"))
       (cons "a" (cons "p" (list4 "p" "e" "n" "d")))
       (cons "i" (cons "n" (list4 "t" "e" "r" "n")))
+      (list-tail "c" "a" (list4 "r" "s" "t" "r")) ;kCarstr
+      (list-tail "c" "d" (list4 "r" "s" "t" "r")) ;kCdrstr
       (list "+")
       (list "-")
       (list "*")
@@ -1291,6 +1299,8 @@
          kRest
          kAppend
          kIntern
+         kCarstr
+         kCdrstr
          kPlus
          kMinus
          kMul
