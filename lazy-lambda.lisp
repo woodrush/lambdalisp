@@ -117,4 +117,5 @@
     (if (atom x)
       (return (reverse ret))
       nil)
-    (setq ret (cons (f (car x)) ret))))
+    (setq ret (cons (f (car x)) ret))
+    (setq x (cdr x))))
