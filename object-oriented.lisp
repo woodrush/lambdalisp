@@ -117,42 +117,43 @@
     ((. (. self super) __init__) c))
 
   (defmethod sub (n)
-    (setf (. self i) (- (. self i) n))
-    ;; (block subloop
-    ;;   (loop
-    ;;     (if (or (atom n) (atom (. self i)))
-    ;;       (return-from subloop (. self i))
-    ;;       ())
-    ;;     (setf (. self i) (cdr (. self i)))
-    ;;     (setf n (cdr n))))
-        ))
+    (setf (. self i) (- (. self i) n))))
 
 
 (setf counter1 (new counter 0))
 (setf counter2 (new counter-sub 100))
 
+;; (print "inc")
+((. counter1 inc))
 ((. counter1 inc))
 ((. counter2 inc))
+((. counter1 inc))
 ((. counter2 inc))
 ((. counter1 inc))
+
+
+;; (print "dec")
+((. counter1 dec))
 ((. counter1 dec))
 ((. counter2 dec))
+((. counter1 dec))
 
+;; (print "add 2")
 ((. counter1 add) 2)
 ((. counter2 add) 2)
 
-((. counter1 inc))
-((. counter1 inc))
 
+;; (print "subtract 2")
 ((. counter2 sub) 2)
 
+;; (print "set values to 5 and 100")
 (setf (. counter1 i) 5)
 (setf (. counter2 i) 100)
 
-((. counter2 inc))
-((. counter2 inc))
+;; (print "inc")
 ((. counter1 inc))
-((. counter2 dec))
+((. counter2 inc))
+((. counter2 inc))
 ((. counter1 inc))
 ((. counter2 inc))
 ((. counter2 inc))
