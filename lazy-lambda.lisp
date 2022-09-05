@@ -92,6 +92,13 @@
 (defmacro make-hash-table (&rest x)
   (make-hash-table*))
 
+(defmacro setf (place value)
+  (if (atom place)
+    `(setq ,place ,value)
+    ;; Assume it is an assignment to a hash table
+    ;; (gethash key hashtable)
+    `(,(car (cdr (cdr place))) 'set ,(car (cdr place)) ,value)))
+
 
 ;;==============================================================
 (defparameter profile-index-depth nil)
@@ -175,9 +182,9 @@
 
 (let ((hashtable (make-hash-table*)))
   (print "set")
-  (hashtable 'set 'a '(1 2 3))
-  (hashtable 'set 'b (lambda () ()))
-  (hashtable 'set 'c '(a b c))
+  (setf (gethash 'a hashtable) '(1 2 3))
+  (setf (gethash 'b hashtable) (lambda () ()))
+  (setf (gethash 'c hashtable) '(a b c))
   (print "get")
   (print (hashtable 'get 'a))
   (print (hashtable 'get 'b))
