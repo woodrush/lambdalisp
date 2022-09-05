@@ -1164,6 +1164,24 @@
                   ((if (xor sgn-n sgn-m) align-negate-return align-return) q))
                 (t
                   ((if sgn-n align-return align-negate-return) r)))))
+          ((or (stringeq (valueof head) k=)
+               (stringeq (valueof head) k>)
+               (stringeq (valueof head) k<))
+            (do
+              (<- (arg1 arg2) (d-carcdr-data tail))
+              (<- (arg2) (car-data arg2))
+              (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
+              (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
+              (if-then-return (not (and (isint arg1) (isint arg2)))
+                (cons "@" (printexpr arg1 (printexpr arg2 (repl reg heap stdin)))))
+              (<- (p) ((eval-bool
+                ((cmp* (valueof arg1) (valueof arg2))
+                  (stringeq (valueof head) k=)
+                  (stringeq (valueof head) k<)
+                  (stringeq (valueof head) k>)))))
+              (if p
+                (cont t-atom reg heap stdin)
+                (cont (atom* nil) reg heap stdin))))
           ;; Evaluate as a lambda
           (t
             (eval-apply head tail t reg heap stdin cont))))
@@ -1180,7 +1198,7 @@
 ;;================================================================
 (defun-lazy string-generator (cont)
   (do
-    (<- ("%" "/" "*" "+" "-" "&" "y" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("<" ">" "=" "%" "/" "*" "+" "-" "&" "y" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -1190,6 +1208,9 @@
               ("01" (cons2 t nil))
               ("00" (cons2 t t)))
           (cont
+            (do ("00") ("11") ("11") ("00") nil)  ;; "<"
+            (do ("00") ("11") ("11") ("10") nil)  ;; ">"
+            (do ("00") ("11") ("11") ("01") nil)  ;; "="
             (sym2 ("01") ("01"))         ;; "%"
             (sym2 ("11") ("11"))         ;; "/"
             (sym2 ("10") ("10"))         ;; "*"
@@ -1276,6 +1297,9 @@
       (list "*")
       (list "/")
       (list "%")
+      (list "=")
+      (list ">")
+      (list "<")
       (list "i" "f")
       (cdr (list4 (lambda (x) x) "n" "i" "l"))
       (atom* (list "t")))))
@@ -1335,6 +1359,9 @@
          kMul
          kDiv
          kMod
+         k=
+         k>
+         k<
          kIf
          kNil
          t-atom
