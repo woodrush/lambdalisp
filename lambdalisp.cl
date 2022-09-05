@@ -935,6 +935,26 @@
               (if (isnil (valueof expr))
                 (cont (string* nil) reg heap stdin)
                 (cont (string* (cdr (valueof expr))) reg heap stdin))))
+          ((stringeq (valueof head) kType)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
+              (let* return (lambda (x) (cont x reg heap stdin)))
+              (typematch expr
+                ;; atom
+                (return (atom* kAtom))
+                ;; list
+                (return (atom* kCons))
+                ;; lambda
+                (return (atom* kLambda))
+                ;; string
+                (return (atom* (cdr (cdr (cdr kCarstr)))))
+                ;; int
+                (do
+                  (<- (i_ x) (kIntern))
+                  (<- (n_ x) (x))
+                  (<- (t_ x) (x))
+                  (return (atom* (list i_ n_ t_)))))))
           ((stringeq (valueof head) (list "`"))
             (do
               (<- (arg1) (car-data tail))
@@ -1243,7 +1263,8 @@
       (cons "a" (cons "p" (list4 "p" "e" "n" "d")))
       (cons "i" (cons "n" (list4 "t" "e" "r" "n")))
       (list-tail "c" "a" (list4 "r" "s" "t" "r")) ;kCarstr
-      (list-tail "c" "d" (list4 "r" "s" "t" "r")) ;kCdrstr
+      (list-tail "c" "d" (list4 "r" "s" "t" "r")) ;kCdrstr 
+      (list4 "t" "y" "p" "e") ; kType
       (list "+")
       (list "-")
       (list "*")
@@ -1301,6 +1322,7 @@
          kIntern
          kCarstr
          kCdrstr
+         kType
          kPlus
          kMinus
          kMul
