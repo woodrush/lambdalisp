@@ -102,7 +102,7 @@
 (defun gethash (key hashtable)
   (hashtable 'get key))
 
-(defmacro reverse (l)
+(defun reverse (l)
   (setq ret ())
   (loop
     (if (atom l)
