@@ -94,14 +94,19 @@
 (defmacro def-lazy (name expr)
   `(progn
       (setf lazy-var-list (cons ',name lazy-var-list))
-      (setf (gethash (mangle-varname ',name) lazy-env) ',expr)))
+      (setf (gethash (mangle-varname ',name) lazy-env) ',expr)
+      ',expr))
 
 (defmacro defun-lazy (name args expr)
-  `(def-lazy ,name (lambda ,args ,expr)))
+  `(progn
+    (def-lazy ,name (lambda ,args ,expr))
+    '(lambda ,args ,expr)))
 
 (defmacro defmacro-lazy (name args &rest expr)
   (setf lazy-macro-list (cons name lazy-macro-list))
-  `(defun ,(mangle-macroname name) ,args ,@expr))
+  `(progn
+    (defun ,(mangle-macroname name) ,args ,@expr)
+    '(,name ,args)))
 
 (defun eval-lazy-var (name)
   (gethash (mangle-varname name) lazy-env))
