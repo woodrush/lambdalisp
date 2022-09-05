@@ -774,12 +774,13 @@
 (defrec-lazy eval-apply (head tail eval-tail reg heap stdin cont)
   (do
     (<- (maybelambda reg heap stdin) (eval head reg heap stdin))
+    (let* error (cons "@" (printexpr head (repl reg heap stdin))))
     ;; TODO: show error message for non-lambdas
     (typematch maybelambda
       ;; atom
-      (cons "." (repl reg heap stdin))
+      error
       ;; list
-      (cons "." (repl reg heap stdin))
+      error
       ;; lambda
       (do
         (<- (*origenv) (lookup-tree* reg reg-curenv))
@@ -815,9 +816,9 @@
           (eval expr reg heap stdin cont))
         (cont expr reg heap stdin))
       ;; string
-      (cons "." (repl reg heap stdin))
+      error
       ;; int
-      (cons "." (repl reg heap stdin)))))
+      error)))
 
 (defun-lazy def-eval (read-expr eval repl expr reg heap stdin cont)
   (typematch expr
