@@ -80,6 +80,11 @@
                 (cont nil))))))
         (cont nextcarry (cons curbit curlist))))))
 
+(defun-lazy negate (n cont)
+  (do
+    (<- (_ n) (add* nil nil int-zero n))
+    (cont n)))
+
 (defun-lazy cmpret-eq (r1 r2 r3) r1)
 (defun-lazy cmpret-lt (r1 r2 r3) r2)
 (defun-lazy cmpret-gt (r1 r2 r3) r3)
@@ -522,7 +527,7 @@
                ((cmp* (car cdr-stdin) "9") t t nil))))
         (do
           (<- (n stdin) (read-unsigned-int cdr-stdin int-zero))
-          (<- (_ n) (add* nil nil int-zero n))
+          (<- (n) (negate n))
           (lambda (cont) (cont (int* n) reg-heap stdin))))
       ((and ((cmp* "0" c) t t nil)
             ((cmp* c "9") t t nil))
@@ -668,7 +673,7 @@
   (do
     (if-then-return (car n)
       (print-unsigned-int n cont))
-    (<- (_ n) (add* nil nil int-zero n))
+    (<- (n) (negate n))
     (cons "-" (print-unsigned-int n cont))))
 
 (defrec-lazy print-unsigned-int (n cont)
@@ -1089,19 +1094,37 @@
               (<- (arg2) (car-data arg2))
               (<- (arg1 reg heap stdin) (eval arg1 reg heap stdin))
               (<- (arg2 reg heap stdin) (eval arg2 reg heap stdin))
+              (let* get-abs-sign
+                ((lambda (n cont)
+                  (do
+                    (let* n (valueof n))
+                    (if-then-return (car n)
+                      (cont n t))
+                    (<- (n-minus) (negate n))
+                    (cont n-minus nil)))))
+              (<- (abs-n sgn-n) (get-abs-sign arg1))
+              (<- (abs-m sgn-m) (get-abs-sign arg2))
               ;; q and r come in variable bit lengths
-              (<- (q r) (div* (valueof arg1) (valueof arg2)))
-              ;; Align the bit size
+              (<- (q r) (div* abs-n abs-m))
+
+              ;; Align the bit size and return
               (let* align-return
                 (lambda (n)
                   (do
                     (<- (n) (align-bitsize n))
                     (cont (int* n) reg heap stdin))))
+              ;; Align, negate, and return
+              (let* align-negate-return
+                (lambda (n)
+                  (do
+                    (<- (n) (align-bitsize n))
+                    (<- (n) (negate n))
+                    (cont (int* n) reg heap stdin))))
               (cond
                 ((stringeq (valueof head) kDiv)
-                  (align-return q))
+                  ((if (xor sgn-n sgn-m) align-negate-return align-return) q))
                 (t
-                  (align-return r)))))
+                  ((if sgn-n align-return align-negate-return) r)))))
           ;; Evaluate as a lambda
           (t
             (eval-apply head tail t reg heap stdin cont))))
