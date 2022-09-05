@@ -1001,8 +1001,6 @@
                       (lambda (cont _ reg heap stdin)
                         (eval-progn tail reg heap stdin (cont cont))))
                     ((loopcont loopcont) nil reg heap stdin))))))
-          ;; ((stringeq (valueof head) kLoop)
-          ;;   )
           ((stringeq (valueof head) kReturnFrom)
             (do
               (<- (block-label tail) (d-carcdr-data tail))
@@ -1016,6 +1014,11 @@
               (<- (arg1) (car-data tail))
               (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
               (return-block-cont block-label expr reg heap stdin)))
+          ((stringeq (valueof head) kError)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (expr reg heap stdin) (eval arg1 reg heap stdin))
+              (printexpr expr (cons "\\n" (repl reg heap stdin)))))
           ((stringeq (valueof head) kLet)
             (do
               (<- (arg1 newtail) (d-carcdr-data tail))
@@ -1287,6 +1290,7 @@
       (cons "p" (list4 "r" "o" "g" "n"))
       (cons "b" (list4 "l" "o" "c" "k"))
       (cons "r" (cons "e" (cons "t" (cons "u" (cons "r" (cons "n" (cons "-" (list4 "f" "r" "o" "m"))))))))
+      (cons "e" (list4 "r" "r" "o" "r"))
       (cons "p" (cons "e" (cons "e" (cons "k" (cons "-" (list4 "c" "h" "a" "r"))))))
       (list-tail "r" "e" "a" "d" "-" (list4 "c" "h" "a" "r"))
       (list-tail "s" "e" "t" "-" "m" "a" "c" "r" "o" "-" "c" "h" "a" "r" "a" (list4 "c" "t" "e" "r"))
@@ -1349,6 +1353,7 @@
          kProgn
          kBlock
          kReturnFrom
+         kError
          kPeekchar
          kReadchar
          kSetMacroCharacter
