@@ -1,5 +1,5 @@
 (load "./lazy.cl")
-
+(load "./def-prelude.cl")
 
 
 ;;================================================================
@@ -1416,7 +1416,7 @@
     (cons (valueof t-atom) t-atom)
     (cons kNil (atom* nil))))
 
-(defun-lazy main (stdin)
+(defun-lazy main (string-generator stdin)
   (do
     (<- (prelude-str
          kPrint
@@ -1512,17 +1512,16 @@
     (repl state)))
 
 ;;================================================================
-;; The Prelude
-;;================================================================
-(load "./def-prelude.cl")
-
-;;================================================================
 ;; Compilation
 ;;================================================================
 ;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
 
 ;; ;; (format t (compile-to-ski-lazy main))
-(format t (compile-to-blc-lazy main))
+;; (format t (compile-to-blc-lazy main))
+
+;; (format t (concatenate 'string "`"  (compile-to-ski-lazy main) (compile-to-ski-lazy string-generator)))
+(format t (concatenate 'string "01"  (compile-to-blc-lazy main) (compile-to-blc-lazy string-generator)))
+
 ;; (setq *print-pretty* 'nil)
 ;; (print (compile-to-simple-lambda-lazy main))
 
