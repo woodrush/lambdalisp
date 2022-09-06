@@ -1403,13 +1403,16 @@
 
 (defrec-lazy def-repl (read-expr eval repl state)
   (do
-    (cons ">")
-    (cons " ")
     (<- (reg heap stdin) (state))
     (<- (expr reg-heap stdin) (read-expr (cons reg heap) stdin))
     (<- (reg heap) (reg-heap))
     (<- (expr state) (eval expr (cons3 reg heap stdin)))
-    (printexpr expr (cons "\\n" (repl state)))))
+    (printexpr expr
+      (do
+        (cons "\\n")
+        (cons ">")
+        (cons " ")
+        (repl state)))))
 
 (def-lazy init-global-env
   (list
@@ -1503,6 +1506,11 @@
         (<- (reg) (memory-write* reg reg-reader-hooks nil))
         reg))
     (<- (heap) (memory-write* initheap int-zero init-global-env))
+
+    ;; Show the carret prompt before evaluating the prelude.
+    ;; This will allow the evaluation of the prelude while waiting for the user's initial input!
+    (cons ">")
+    (cons " ")
 
     ;; Evaluate the prelude
     (<- (expr reg-heap stdin) (read-expr (cons reg heap) prelude-str))
