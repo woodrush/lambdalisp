@@ -1229,7 +1229,7 @@
               (<- (arg1 state) (eval arg1 state))
               (<- (arg2 state) (eval arg2 state))
               (if-then-return (not (and (isint arg1) (isint arg2)))
-                (cons "@" (printexpr arg1 (printexpr arg2 (repl state)))))
+                (cont (atom* nil) state))
               (<- (p) ((eval-bool
                 ((cmp* (valueof arg1) (valueof arg2))
                   (stringeq (valueof head) k=)
