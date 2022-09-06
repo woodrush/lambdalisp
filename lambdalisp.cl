@@ -1,5 +1,5 @@
 (load "./lazy.cl")
-(load "./def-prelude.cl")
+(load "./def-prelude-lazyk.cl")
 
 
 ;;================================================================
