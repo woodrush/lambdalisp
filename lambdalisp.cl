@@ -338,7 +338,7 @@
         (<- (ismacro ptr args body) ((valueof expr)))
         (printstring (cons "@" (if ismacro kMacro kLambda)) cont))
       ;; string
-      (printstring (valueof expr) cont)
+      (cons "\"" (printstring (valueof expr) (cons "\"" cont)))
       ;; int
       (printint (valueof expr) cont)
       ))))
@@ -921,6 +921,8 @@
               (<- (arg1 state) (eval arg1 state))
               (if-then-return (isnil-data arg2)
                 (printexpr arg1 (cons "\\n" (cont arg1 state))))
+              (if-then-return (isstring arg1)
+                (printstring (valueof arg1) (cont arg1 state)))
               (printexpr arg1 (cont arg1 state))))
           ((stringeq (valueof head) kPeekchar)
             (do
