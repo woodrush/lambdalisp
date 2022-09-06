@@ -16,26 +16,22 @@
 (defvar reader-list (lambda (char)
   (block reader-list
     (if (eq char "]")
-      (return-from reader-list '**reader-list-end**)
-      nil)
+      (return-from reader-list '**reader-list-end**))
     (setq helper (lambda (l)
       (setq helper-ret ())
       (loop
         (if (atom l)
-          (return-from () helper-ret)
-          nil)
+          (return-from () helper-ret))
         (setq helper-ret (cons 'cons (cons (car l) (cons helper-ret nil))))
         (setq l (cdr l)))))
     (setq ret ())
     (loop
       (setq token (read))
       (if (eq token '**reader-list-end**)
-        (return-from () (helper ret))
-        nil)
+        (return-from reader-list (helper ret)))
       (setq ret (cons token ret))))))
 (set-macro-character "[" reader-list)
 (set-macro-character "]" reader-list)
-
 
 (print [1 2 3 4 5])
 (print [1 [(cons 3 (cons 4 nil)) (+ 2 3) (* 2 3)] 4 [5 6 ] ])

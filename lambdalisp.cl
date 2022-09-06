@@ -901,10 +901,12 @@
             (do
               (<- (arg1 t1) (d-carcdr-data tail))
               (<- (arg2 t2) (d-carcdr-data t1))
-              (<- (arg3) (car-data t2))
+              (<- (arg3) ((if (isnil-data t2) (lambda (cont) (cont nil)) (car-data t2))))
               (<- (p state) (eval arg1 state))
               (if-then-return (isnil-data p)
-                (eval arg3 state cont))
+                (if (isnil arg3)
+                  (cont (atom* nil) state)
+                  (eval arg3 state cont)))
               (eval arg2 state cont)))
           ((stringeq (valueof head) kRead)
             (do

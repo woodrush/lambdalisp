@@ -75,11 +75,9 @@
       (setq hashlist hashtable)
       (loop
         (if (atom hashlist)
-          (return-from getter nil)
-          nil)
+          (return-from getter nil))
         (if (eq key (car (car hashlist)))
-          (return-from getter (cdr (car hashlist)))
-          nil)
+          (return-from getter (cdr (car hashlist))))
         (setq hashlist (cdr hashlist))))
     (defun setter (key value)
       (setq hashtable (cons (cons key value) hashtable)))
