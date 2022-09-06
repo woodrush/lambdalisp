@@ -507,6 +507,9 @@
 
 (defun-lazy def-read-expr (read-expr eval repl reg-heap stdin cont)
   (do
+    ;; Exit the program when EOF is reached
+    (if (isnil stdin)
+      (cons "\\n" nil))
     (<- (c cdr-stdin) (stdin))
     (let* =-bit =-bit)
     (<- (ret-reader-hook reg-heap stdin) (check-reader-hooks c reg-heap stdin))
