@@ -102,8 +102,8 @@
                   (t
                     (cmp* (cdr n) (cdr m))))))))
 
-(defmacro-lazy stringeq (s1 s2)
-  `((strcmp ,s1 ,s2)
+(defun-lazy stringeq (s1 s2)
+  ((strcmp s1 s2)
     ;; eq
     t
     ;; lt
@@ -521,13 +521,14 @@
     (<- (reg heap stdin) (state))
     (cont expr (cons reg heap) stdin)))
 
-(defun-lazy def-read-expr (read-expr eval repl reg-heap stdin cont)
+(defun-lazy def-read-expr (read-expr eval eval-apply repl reg-heap stdin cont)
   (do
     ;; Exit the program when EOF is reached
     (if (isnil stdin)
       (cons "\\n" nil))
     (<- (c cdr-stdin) (stdin))
     (let* =-bit =-bit)
+    (let* skip-comment skip-comment)
     (<- (ret-reader-hook reg-heap stdin) (check-reader-hooks c reg-heap stdin))
     (if-then-return (not (isnil ret-reader-hook))
       (cont ret-reader-hook reg-heap stdin))
@@ -804,7 +805,7 @@
     (<- (zipped) (zip-data-base *initenv cdr-ldata cdr-lbase))
     (cont (cons (cons (valueof car-ldata) car-lbase) zipped))))
 
-(defrec-lazy eval-apply (head tail eval-tail state cont)
+(defun-lazy def-eval-apply (read-expr eval eval-apply repl head tail eval-tail state cont)
   (do
     (<- (maybelambda state) (eval head state))
     (let* error (cons "@" (printexpr head (repl state))))
@@ -856,7 +857,9 @@
       ;; int
       error)))
 
-(defun-lazy def-eval (read-expr eval repl expr state cont)
+(defun-lazy def-eval (read-expr eval eval-apply repl expr state cont)
+ (do
+  (let* assoc assoc)
   (typematch expr
     ;; atom
     (do
@@ -1297,7 +1300,7 @@
       ;; string
       (cont expr state)
       ;; int
-      (cont expr state)))
+      (cont expr state))))
 
 ;;================================================================
 ;; Constants
@@ -1387,9 +1390,9 @@
             (sym2 ("10") ("00"))         ;; "("
             (sym2 ("10") ("01"))         ;; ")"
             )))))
+    (let* cont (cont **prelude**))
     (let* list4 (lambda (a b c d) (list a b c d)))
     (cont
-      **prelude**
       (cons "p" (list4 "r" "i" "n" "t"))
       (list4 "r" "e" "a" "d")
       (cons "q" (list4 "u" "o" "t" "e")) ;kQuote
@@ -1442,7 +1445,7 @@
 (def-lazy initreg nil)
 (def-lazy initheap nil)
 
-(defrec-lazy def-repl (read-expr eval repl state)
+(defrec-lazy def-repl (read-expr eval eval-apply repl state)
   (do
     (<- (reg heap stdin) (state))
     (<- (expr reg-heap stdin) (read-expr (cons reg heap) stdin))
@@ -1528,19 +1531,23 @@
     (let* int-zero (32 (cons* t) nil))
     (let* printexpr printexpr)
     (let* strcmp strcmp)
+    (let* stringeq stringeq)
     (let* d-carcdr-data d-carcdr-data)
     (let* add* add*)
 
     ;; Mutual recursion for read-expr, eval, and repl
     (let* def-read-expr def-read-expr)
     (let* def-eval def-eval)
+    (let* def-eval-apply def-eval-apply)
     (let* def-repl def-repl)
-    (let* read-expr-hat (lambda (x y z) (def-read-expr (x x y z) (y x y z) (z x y z))))
-    (let* eval-hat (lambda (x y z) (def-eval (x x y z) (y x y z) (z x y z))))
-    (let* repl-hat (lambda (x y z) (def-repl (x x y z) (y x y z) (z x y z))))
-    (let* read-expr (read-expr-hat read-expr-hat eval-hat repl-hat))
-    (let* eval (eval-hat read-expr-hat eval-hat repl-hat))
-    (let* repl (repl-hat read-expr-hat eval-hat repl-hat))
+    (let* read-expr-hat  (lambda (x y z w) (def-read-expr  (x x y z w) (y x y z w) (z x y z w) (w x y z w))))
+    (let* eval-hat       (lambda (x y z w) (def-eval       (x x y z w) (y x y z w) (z x y z w) (w x y z w))))
+    (let* eval-apply-hat (lambda (x y z w) (def-eval-apply (x x y z w) (y x y z w) (z x y z w) (w x y z w))))
+    (let* repl-hat       (lambda (x y z w) (def-repl       (x x y z w) (y x y z w) (z x y z w) (w x y z w))))
+    (let* read-expr  (read-expr-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
+    (let* eval       (eval-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
+    (let* eval-apply (eval-apply-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
+    (let* repl       (repl-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
 
     (<- (_ int-one) (add* nil t int-zero int-zero))
     (let* reg
