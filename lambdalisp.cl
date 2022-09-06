@@ -1000,11 +1000,31 @@
                   (<- (n_ x) (x))
                   (<- (t_ x) (x))
                   (return (atom* (list i_ n_ t_)))))))
+          ((stringeq (valueof head) kMalloc)
+            (do
+              (<- (state *addr) (malloc state))
+              (<- (reg heap stdin) (state))
+              (<- (heap) (memory-write* heap *addr (atom* nil)))
+              (cont (int* *addr) (cons3 reg heap stdin))))
+          ((stringeq (valueof head) kMemread)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (arg1 state) (eval arg1 state))
+              (<- (reg heap stdin) (state))
+              (<- (ret) (lookup-tree* heap (valueof arg1)))
+              (cont ret state)))
+          ((stringeq (valueof head) kMemwrite)
+            (do
+              (<- (arg1 t1) (d-carcdr-data tail))
+              (<- (arg2) (car-data t1))
+              (<- (arg1 state) (eval arg1 state))
+              (<- (arg2 state) (eval arg2 state))
+              (<- (reg heap stdin) (state))
+              (<- (heap) (memory-write* heap (valueof arg1) arg2))
+              (cont arg2 (cons3 reg heap stdin))))
           ((stringeq (valueof head) (list "`"))
             (do
               (<- (arg1) (car-data tail))
-              ;; (<- (expr) (backquote arg1))
-              ;; (eval expr state cont)
               (eval-backquote arg1 state cont)))
           ((stringeq (valueof head) kProgn)
             (eval-progn tail state cont))
@@ -1343,21 +1363,17 @@
             (sym2 ("10") ("01"))         ;; ")"
             )))))
     (let* list4 (lambda (a b c d) (list a b c d)))
-    (let* gen-CONX (lambda (x) (list4 "c" "o" "n" x)))
-    (let* gen-CXR (lambda (x) (cdr (list4 x "c" x "r"))))
     (cont
       **prelude**
       (cons "p" (list4 "r" "i" "n" "t"))
       (list4 "r" "e" "a" "d")
       (cons "q" (list4 "u" "o" "t" "e")) ;kQuote
       (list4 "a" "t" "o" "m") ;kAtom
-      (gen-CXR "a") ;kCar
-      (gen-CXR "d") ;kCdr
+      (list "c" "a" "r") ;kCar
+      (list "c" "d" "r") ;kCdr
       (list "e" "q"); kEq
-      (gen-CONX "s") ;kCons
-      ;; (gen-CONX "d") ;kCond
+      (list4 "c" "o" "n" "s") ;kCons
       ((string-concatenator nil) "r" "e" "t" "e" "m" "a" "r" "a" "p" "f" "e" "d" nil)
-      ;; (cons "d" (cons "e" (list4 "f" "v" "a" "r")))
       (cons "l" (cons "a" (list4 "m" "b" "d" "a")))
       (cons "m" (list4 "a" "c" "r" "o"))
       (cons "p" (list4 "r" "o" "g" "n"))
@@ -1380,6 +1396,9 @@
       (cdr (list4 nil "s" "t" "r")) ;kStr
       ;; ((string-generator nil) "t" "y" "p" "e" nil) ; kType
       (list4 "t" "y" "p" "e") ; kType
+      (cons "m" (cons "a" (list4 "l" "l" "o" "c")))
+      (list-tail "m" "e" "m" (list4 "r" "e" "a" "d"))
+      (list-tail "m" "e" "m" "w" (list4 "r" "i" "t" "e"))
       (list "+")
       (list "-")
       (list "*")
@@ -1450,6 +1469,9 @@
          kCdrstr
          kStr
          kType
+         kMalloc
+         kMemread
+         kMemwrite
          kPlus
          kMinus
          kMul
