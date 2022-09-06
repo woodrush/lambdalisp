@@ -1,22 +1,19 @@
 (progn
-  (defvar defmacro (macro (name args &rest body)
-    `(defvar ,name (macro ,args (block ,name ,@body)))))
+  (defparameter defmacro (macro (name args &rest body)
+    `(defparameter ,name (macro ,args (block ,name ,@body)))))
 
   (defmacro defun (name args &rest body)
-    `(defvar ,name (lambda ,args (block ,name ,@body))))
+    `(defparameter ,name (lambda ,args (block ,name ,@body))))
 
   (defmacro defun-local (name args &rest body)
     `(setq ,name (lambda ,args (block ,name ,@body))))
 
-  (defmacro defparameter (name value)
-    `(defvar ,name ,value))
-
-  (defvar list (macro (&rest *q)
+  (defparameter list (macro (&rest *q)
     (if *q
       (cons 'cons (cons (car *q) (cons (cons 'list (cdr *q)) nil)))
       nil)))
 
-  (defvar cond (macro (*a &rest *b)
+  (defparameter cond (macro (*a &rest *b)
     (if *a
       (list 'if (car *a)
         (cons 'progn (cdr *a))
@@ -133,17 +130,17 @@
           (setq ret (cons (carstr str) ret))))
       (setq str (cdrstr str)))
 
-    (setq retstr "")
+    (setq str "")
     (loop
       (if (eq ret ())
         (return-from))
-      (setq retstr (+ (car ret) retstr))
+      (setq str (+ (car ret) str))
       (setq ret (cdr ret)))
     (if option
       (progn
-        (print retstr t)
+        (print str t)
         nil)
-      retstr))
+      str))
 
   ;;================================================================
   ;; Hash table

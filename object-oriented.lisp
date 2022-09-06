@@ -28,7 +28,7 @@
 (setf counter1 (new counter 0))
 (setf counter2 (new counter-sub 100))
 
-;; (print "inc")
+(format t "inc~%")
 ((. counter1 inc))
 ((. counter1 inc))
 ((. counter2 inc))
@@ -37,25 +37,25 @@
 ((. counter1 inc))
 
 
-;; (print "dec")
+(format t "dec~%")
 ((. counter1 dec))
 ((. counter1 dec))
 ((. counter2 dec))
 ((. counter1 dec))
 
-;; (print "add 2")
+(format t "add two~%")
 ((. counter1 add) 2)
 ((. counter2 add) 2)
 
 
-;; (print "subtract 2")
+(format t "subtract two~%")
 ((. counter2 sub) 2)
 
-;; (print "set values to 5 and 100")
+(format t "set values to 5 and 100~%")
 (setf (. counter1 i) 5)
 (setf (. counter2 i) 100)
 
-;; (print "inc")
+(format t "inc~%")
 ((. counter1 inc))
 ((. counter2 inc))
 ((. counter2 inc))
