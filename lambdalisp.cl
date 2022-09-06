@@ -483,15 +483,15 @@
       (cont cdr-stdin))
     (skip-comment cdr-stdin cont)))
 
-(defrec-lazy findkey (k d cont)
+(defrec-lazy findkey (key d cont)
   (do
     (if-then-return (isnil d)
       (cont nil))
     (<- (car-d cdr-d) (d))
     (<- (k-d v-d) (car-d))
-    (if-then-return (=-bit k k-d)
+    (if-then-return (=-bit key k-d)
       (cont v-d))
-    (findkey k cdr-d cont)))
+    (findkey key cdr-d cont)))
 
 (defrec-lazy check-reader-hooks (c reg-heap stdin cont)
   (do
