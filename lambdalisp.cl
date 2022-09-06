@@ -1020,11 +1020,12 @@
               (<- (prev-cont-tuple) (lookup-tree* reg reg-block-cont))
               (<- (prev-block-label prev-block-cont) ((if (isnil prev-cont-tuple) (cons nil nil) prev-cont-tuple)))
               (let* popcont
-                (lambda (return-label expr (cons3 reg heap stdin))
+                (lambda (return-label expr state)
                   (do
                     ;; On return, restore the previous continuation, for nested blocks
                     (if-then-return (or (isnil-data return-label) (stringeq (valueof return-label) (valueof block-label)))
                       (do
+                        (<- (reg heap stdin) (state))
                         (<- (reg) (memory-write* reg reg-block-cont prev-cont-tuple))
                         (cont expr (cons3 reg heap stdin))))
                     (prev-block-cont return-label expr (cons3 reg heap stdin)))))
