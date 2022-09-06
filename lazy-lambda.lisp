@@ -127,7 +127,11 @@
   (or (eq x y) (= x y)))
 
 (defun string-downcase (x)
-  x)
+  (cond
+    ((eq x "S") "s")
+    ((eq x "K") "k")
+    ((eq x "I") "i")
+    (t x)))
 
 (defun string (x)
   (str x))
