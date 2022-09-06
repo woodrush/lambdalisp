@@ -1028,7 +1028,7 @@
                         (<- (reg heap stdin) (state))
                         (<- (reg) (memory-write* reg reg-block-cont prev-cont-tuple))
                         (cont expr (cons3 reg heap stdin))))
-                    (prev-block-cont return-label expr (cons3 reg heap stdin)))))
+                    (prev-block-cont return-label expr state))))
               ;; Update the currently stored continuation
               (<- (reg) (memory-write* reg reg-block-cont (cons block-label popcont)))
               (cond
