@@ -102,6 +102,41 @@
                   (t
                     (cmp* (cdr n) (cdr m))))))))
 
+(defmacro-lazy stringeq (s1 s2)
+  `((strcmp ,s1 ,s2)
+    ;; eq
+    t
+    ;; lt
+    nil
+    ;; gt
+    nil))
+
+(defrec-lazy strcmp (s1 s2)
+  (do
+    (let* isnil-s1 (isnil s1))
+    (let* isnil-s2 (isnil s2))
+    (cond
+      (isnil-s1
+        (if isnil-s2
+          cmpret-eq
+          cmpret-lt))
+      (isnil-s2
+        (if isnil-s1
+          cmpret-eq
+          cmpret-gt))
+      (t
+        (do
+          (<- (car-s1 cdr-s1) (s1))
+          (<- (car-s2 cdr-s2) (s2))
+          ((cmp* car-s1 car-s2)
+            ;; eq
+            (strcmp cdr-s1 cdr-s2)
+            ;; lt
+            cmpret-lt
+            ;; gt
+            cmpret-gt))))))
+
+
 (defrec-lazy remove-head-zero (n cont)
   (do
     (if-then-return (isnil n)
@@ -435,23 +470,6 @@
           (read-unsigned-int cdr-stdin nextint cont)))
       (t
         (cont curint stdin)))))
-
-(defrec-lazy stringeq (s1 s2)
-  (do
-    (let* isnil-s1 (isnil s1))
-    (let* isnil-s2 (isnil s2))
-    (cond
-      (isnil-s1
-        isnil-s2)
-      (isnil-s2
-        isnil-s1)
-      (t
-        (do
-          (<- (car-s1 cdr-s1) (s1))
-          (<- (car-s2 cdr-s2) (s2))
-          (if-then-return (=-bit car-s1 car-s2)
-            (stringeq cdr-s1 cdr-s2))
-          nil)))))
 
 (defrec-lazy read-list (reg-heap stdin cont)
   (do
@@ -1253,13 +1271,20 @@
               (<- (arg2) (car-data arg2))
               (<- (arg1 state) (eval arg1 state))
               (<- (arg2 state) (eval arg2 state))
-              (if-then-return (not (and (isint arg1) (isint arg2)))
+              (if-then-return (not (or (and (isint arg1) (isint arg2))
+                                       (and (isstring arg1) (isstring arg2))))
                 (cont (atom* nil) state))
-              (<- (p) ((eval-bool
-                ((cmp* (valueof arg1) (valueof arg2))
+              (<- (p) ((if (isint arg1)
+                (eval-bool
+                  ((cmp* (valueof arg1) (valueof arg2))
+                    (stringeq (valueof head) k=)
+                    (stringeq (valueof head) k<)
+                    (stringeq (valueof head) k>)))
+                (eval-bool
+                ((strcmp (valueof arg1) (valueof arg2))
                   (stringeq (valueof head) k=)
                   (stringeq (valueof head) k<)
-                  (stringeq (valueof head) k>)))))
+                  (stringeq (valueof head) k>))))))
               (if p
                 (cont t-atom state)
                 (cont (atom* nil) state))))
@@ -1394,7 +1419,6 @@
       (list-tail "c" "a" (list4 "r" "s" "t" "r")) ;kCarstr
       (list-tail "c" "d" (list4 "r" "s" "t" "r")) ;kCdrstr 
       (cdr (list4 nil "s" "t" "r")) ;kStr
-      ;; ((string-generator nil) "t" "y" "p" "e" nil) ; kType
       (list4 "t" "y" "p" "e") ; kType
       (cons "m" (cons "a" (list4 "l" "l" "o" "c")))
       (list-tail "m" "e" "m" (list4 "r" "e" "a" "d"))
@@ -1503,7 +1527,7 @@
     (let* Y-comb Y-comb)
     (let* int-zero (32 (cons* t) nil))
     (let* printexpr printexpr)
-    (let* stringeq stringeq)
+    (let* strcmp strcmp)
     (let* d-carcdr-data d-carcdr-data)
     (let* add* add*)
 
