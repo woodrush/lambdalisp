@@ -743,8 +743,8 @@
 (defrec-lazy assoc (expr reg heap cont)
   (do
     ;; First look up global variables
-    (<- (curenv) (lookup-tree* heap int-zero))
-    (<- (var *var) (lookup-var (valueof expr) curenv int-zero heap))
+    (<- (globalenv) (lookup-tree* heap int-zero))
+    (<- (var *var) (lookup-var (valueof expr) globalenv int-zero heap))
     (if-then-return (not (isnil *var))
       (cont var *var))
     ;; If it's not in the global environment, look up the lexical environment
@@ -1074,9 +1074,6 @@
               (<- (heap) (memory-write* heap *heap-head newenv))
               ;; Set current environment pointer to the written *heap-head
               (<- (reg) (memory-write* reg reg-curenv *heap-head))
-              ;; ;; Increment heap-head
-              ;; (<- (_ *heap-head) (add* nil t *heap-head int-zero))
-              ;; (<- (reg) (memory-write* reg reg-heap-head *heap-head))
               ;; Evaluate expression in the created environment
               (<- (expr state) (eval-progn newtail (cons3 reg heap stdin)))
               (<- (reg heap stdin) (state))
@@ -1498,14 +1495,16 @@
     (let* eval (eval-hat read-expr-hat eval-hat repl-hat))
     (let* repl (repl-hat read-expr-hat eval-hat repl-hat))
 
+    (<- (_ int-one) (add* nil t int-zero int-zero))
     (let* reg
       (do
-        (<- (reg) (memory-write* initreg reg-heap-head int-zero))
-        (<- (reg) (memory-write* reg reg-curenv int-zero))
+        (<- (reg) (memory-write* initreg reg-heap-head int-one))
+        (<- (reg) (memory-write* reg reg-curenv int-one))
         (<- (reg) (memory-write* reg reg-stack-head int-zero))
         (<- (reg) (memory-write* reg reg-reader-hooks nil))
         reg))
     (<- (heap) (memory-write* initheap int-zero init-global-env))
+    (<- (heap) (memory-write* heap int-one init-global-env))
 
     ;; Show the carret prompt before evaluating the prelude.
     ;; This will allow the evaluation of the prelude while waiting for the user's initial input!
