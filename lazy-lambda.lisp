@@ -1,8 +1,8 @@
 (defvar defmacro (macro (name args &rest body)
-  `(defvar ,name (macro ,args ,@body))))
+  `(defvar ,name (macro ,args (block ,name ,@body)))))
 
 (defmacro defun (name args &rest body)
-  `(setq ,name (lambda ,args ,@body)))
+  `(setq ,name (lambda ,args (block ,name ,@body))))
 
 (defmacro defparameter (name value)
   `(defvar ,name ,value))
@@ -51,9 +51,9 @@
   (setq i 0)
   (loop
     (if (atom l)
-      (return nil))
+      (return-from position* nil))
     (if (test-f item (car l))
-      (return i))
+      (return-from position* i))
     (setq i (+ 1 i))
     (setq l (cdr l))))
 
@@ -75,10 +75,10 @@
       (setq hashlist hashtable)
       (loop
         (if (atom hashlist)
-          (return nil)
+          (return-from getter nil)
           nil)
         (if (eq key (car (car hashlist)))
-          (return (cdr (car hashlist)))
+          (return-from getter (cdr (car hashlist)))
           nil)
         (setq hashlist (cdr hashlist))))
     (defun setter (key value)
