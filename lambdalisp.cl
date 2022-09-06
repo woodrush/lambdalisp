@@ -914,9 +914,16 @@
               (cont expr (cons3 reg heap stdin))))
           ((stringeq (valueof head) kPrint)
             (do
-              (<- (arg1) (car-data tail))
+              (<- (arg1 arg2) (d-carcdr-data tail))
+              (<- (arg2 arg3) ((if (isnil-data arg2) (cons arg2 arg2) (d-carcdr-data arg2))))
               (<- (arg1 state) (eval arg1 state))
-              (printexpr arg1 (cons "\\n" (cont arg1 state)))))
+              (if-then-return (isnil-data arg2)
+                (printexpr arg1 (cons "\\n" (cont arg1 state))))
+              (if-then-return (isnil-data arg3)
+                (printexpr arg1 (cont arg1 state)))
+              (if-then-return (or (isatom arg1) (isstring arg1))
+                (printstring (valueof arg1) (cont arg1 state)))
+              (printexpr arg1 (cont arg1 state))))
           ((stringeq (valueof head) kPeekchar)
             (do
               (<- (reg heap stdin) (state))
