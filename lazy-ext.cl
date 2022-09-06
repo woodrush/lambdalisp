@@ -45,7 +45,7 @@
 
 (defun t-rewrite (expr)
   (cond ((atom expr) expr)
-        ((eq 'lambda (car expr))
+        ((equal 'lambda (car expr))
          (let ((arg  (lambdaarg-top expr))
                (body (lambdabody expr)))
               (cond ((equal arg body) 'I)
