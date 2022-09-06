@@ -1,4 +1,5 @@
 (defun format (option str &rest args)
+  ;; Supports ~a and ~%
   (setq ret ())
   (setq newline "
 ")
@@ -34,8 +35,13 @@
       nil)
     retstr))
 
-(format t "abc")
-(format t "abc~ad" "hello")
-(format t "abc~ad~aefg" 1 (cons 1 2))
-(format t "abc~a~%d~aefg~%" 1 (cons 1 2))
-(format nil "abc~a~%d~aefg~%" 1 (cons 1 2))
+(format t "Hello, world!~%")
+
+(setq x "world")
+(format t "Hello, ~a!~%" x)
+
+(format t "Line 1~%Line 2~%Line 3~%")
+
+(format t "Variable 1: ~a~%Variable 2: ~a~%Variable 3: ~a~%Variable 4: ~a~%" 1 (cons 1 2) '(a b c) (lambda () ()))
+
+(format t "Created string: ~a~%" (format nil "Create a string: ~a ~a" 1 (cons 1 2)))
