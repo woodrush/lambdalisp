@@ -1,7 +1,6 @@
-(defvar i 3)
+(setq i 3)
 (loop
   (if (= i 0)
-    (return-from)
-    nil)
+    (return))
   (print i)
   (setq i (- i 1)))

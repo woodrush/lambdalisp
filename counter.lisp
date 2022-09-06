@@ -1,9 +1,9 @@
-(defvar new-counter
+(setq new-counter
     (lambda (a)
         (let ((a a))
             (lambda () (setq a (+ 1 a))))))
-(defvar counter1 (new-counter 0))
-(defvar counter2 (new-counter 10))
+(setq counter1 (new-counter 0))
+(setq counter2 (new-counter 10))
 (counter1)
 (counter1)
 (counter1)
