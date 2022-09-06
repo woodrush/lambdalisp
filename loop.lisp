@@ -1,6 +1,6 @@
-(setq i 3)
+(setq i 0)
 (loop
-  (if (= i 0)
+  (if (= i 10)
     (return))
   (print i)
-  (setq i (- i 1)))
+  (setq i (+ i 1)))
