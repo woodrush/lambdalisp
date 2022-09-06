@@ -30,7 +30,7 @@
     (setq ret (cdr ret)))
   (if option
     (progn
-      (print retstr)
+      (print retstr t)
       nil)
     retstr))
 
