@@ -111,3 +111,16 @@
       (apply and y)
       nil)
     x))
+
+(defmacro reduce (f l)
+  `(eval (cons ,f ,l)))
+
+(defun sharp-reader (char)
+  (if (eq "'" (peek-char))
+    (progn
+      (read-char)
+      (read))
+    (read)))
+(set-macro-character "#" sharp-reader)
+
+"loaded lazy-lambda.lisp"
