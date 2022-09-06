@@ -19,9 +19,16 @@
       (cons 'cond b))
     nil)))
 
-(defmacro or (a &rest b)
+(defun and (x &rest y)
+  (if y
+    (if x
+      (apply and y)
+      nil)
+    x))
+
+(defun or (a &rest b)
   (if b
-    `(if ,a t (or ,@b))
+    (if a t (apply or b))
     a))
 
 (defun not (x)
@@ -29,6 +36,9 @@
 
 (defun equal (x y)
   (or (eq x y) (= x y)))
+
+(defun stringp (x)
+  (eq (type x) 'str))
 
 (defmacro labels (llist &rest body)
   (defun helper (items)
@@ -65,9 +75,6 @@
 
 (defun write-to-string (x)
   (str x))
-
-(defun stringp (x)
-  (eq (type x) 'str))
 
 (defun make-hash-table* ()
   (let ((hashtable nil))
@@ -106,13 +113,6 @@
     (cons (f (car x)) (mapcar f (cdr x)))
     nil))
 
-(defun and (x &rest y)
-  (if y
-    (if x
-      (apply and y)
-      nil)
-    x))
-
 (defmacro reduce (f l)
   `(eval (cons ,f ,l)))
 
@@ -123,13 +123,6 @@
       (read))
     (read)))
 (set-macro-character "#" sharp-reader)
-
-(defun string-downcase (x)
-  (cond
-    ((eq x "S") "s")
-    ((eq x "K") "k")
-    ((eq x "I") "i")
-    (t x)))
 
 (defun string (x)
   (str x))
