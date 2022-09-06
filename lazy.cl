@@ -68,6 +68,50 @@
             (setq body (cdr body))))))))
 
 
+(defun count-occurrences-in (expr var)
+  (cond ((atom expr) (if (equal var expr) 1 0))
+        ((islambda expr)
+         (if (equal (lambdaarg-top expr) var)
+             0
+             (count-occurrences-in (cdr (cdr expr)) var)))
+        (t (reduce '+ (mapcar (lambda (x) (count-occurrences-in x var)) expr)))))
+
+(defun occurs-freely-in (expr var)
+  (cond ((atom expr) (equal var expr))
+        ((islambda expr)
+         (if (equal (lambdaarg-top expr) var)
+             nil
+             (occurs-freely-in (cdr (cdr expr)) var)))
+        (t (or (occurs-freely-in (car expr) var)
+               (occurs-freely-in (cdr expr) var)))))
+
+(defun t-rewrite (expr)
+  (cond ((atom expr) expr)
+        ((equal 'lambda (car expr))
+         (let ((arg  (lambdaarg-top expr))
+               (body (lambdabody expr)))
+              (cond ((equal arg body) 'I)
+                    ((not (occurs-freely-in body arg))
+                       `(K ,(t-rewrite body)))
+                    ((islambda body)
+                       (t-rewrite `(lambda (,arg) ,(t-rewrite body))))
+                    (t `((S ,(t-rewrite `(lambda (,arg) ,(car body))))
+                            ,(t-rewrite `(lambda (,arg) ,(car (cdr body)))))))))
+        (t (mapcar #'t-rewrite expr))))
+
+(defun flatten-ski (expr)
+  (if (atom expr)
+      (if (position expr `(S K I))
+          (string-downcase (string expr))
+          (decorate-varname expr))
+      (concatenate `string "`" (flatten-ski (car expr)) (flatten-ski (car (cdr expr))))))
+
+(defun compile-to-ski (expr)
+  (flatten-ski (t-rewrite (curry expr))))
+
+(defmacro compile-to-ski-lazy (expr-lazy)
+  `(compile-to-ski (macroexpand-lazy ,expr-lazy)))
+
 
 ;;================================================================
 ;; The macro system
@@ -267,3 +311,4 @@
 (defmacro compile-to-blc-lazy (expr-lazy)
   `(compile-to-blc (macroexpand-lazy ,expr-lazy)))
 
+"loaded lazy.cl"

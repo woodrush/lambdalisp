@@ -41,7 +41,7 @@
   (loop
     (if (atom l)
       (return nil))
-    (if (eq item (car l))
+    (if (equal item (car l))
       (return i))
     (setq i (+ 1 i))
     (setq l (cdr l))))
@@ -122,5 +122,14 @@
       (read))
     (read)))
 (set-macro-character "#" sharp-reader)
+
+(defun equal (x y)
+  (or (eq x y) (= x y)))
+
+(defun string-downcase (x)
+  x)
+
+(defun string (x)
+  (str x))
 
 "loaded lazy-lambda.lisp"
