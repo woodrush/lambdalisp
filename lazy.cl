@@ -1,7 +1,7 @@
 (defparameter profile-index-depth nil)
 
 (defun islambda (expr)
-  (eq `lambda (car expr)))
+  (and (atom (car expr)) (eq 'lambda (car expr))))
 
 (defun lambdaargs (expr)
   (car (cdr expr)))
@@ -13,7 +13,7 @@
   (car (cdr (cdr expr))))
 
 (defun decorate-varname (var)
-  (concatenate `string "[" (write-to-string var) "]"))
+  (concatenate 'string "[" (write-to-string var) "]"))
 
 (defun curry (expr)
   (labels

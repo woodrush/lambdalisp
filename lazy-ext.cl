@@ -26,27 +26,18 @@
             (to-simple-lambda (lambdabody body) (cons (lambdaarg-top body) env)))))))
 
 (defun count-occurrences-in (expr var)
-  (cond ((atom expr) (if (eq var expr) 1 0))
+  (cond ((atom expr) (if (equal var expr) 1 0))
         ((islambda expr)
-         (if (eq (lambdaarg-top expr) var)
+         (if (equal (lambdaarg-top expr) var)
              0
              (count-occurrences-in (cdr (cdr expr)) var)))
-        (t (reduce '+ (map 'list #'(lambda (x) (count-occurrences-in x var)) expr))
-        )))
-
-(defun count-occurrences-in (expr var)
-  (cond ((atom expr) (if (eq var expr) 1 0))
-        ((islambda expr)
-         (if (eq (lambdaarg-top expr) var)
-             0
-             (count-occurrences-in (cdr (cdr expr)) var)))
-        (t (reduce '+ (map 'list #'(lambda (x) (count-occurrences-in x var)) expr))
+        (t (reduce '+ (mapcar (lambda (x) (count-occurrences-in x var)) expr))
         )))
 
 (defun occurs-freely-in (expr var)
-  (cond ((atom expr) (eq var expr))
+  (cond ((atom expr) (equal var expr))
         ((islambda expr)
-         (if (eq (lambdaarg-top expr) var)
+         (if (equal (lambdaarg-top expr) var)
              nil
              (occurs-freely-in (cdr (cdr expr)) var)))
         (t (or (occurs-freely-in (car expr) var)
@@ -54,10 +45,10 @@
 
 (defun t-rewrite (expr)
   (cond ((atom expr) expr)
-        ((eq `lambda (car expr))
+        ((eq 'lambda (car expr))
          (let ((arg  (lambdaarg-top expr))
                (body (lambdabody expr)))
-              (cond ((eq arg body) `I)
+              (cond ((equal arg body) 'I)
                     ((not (occurs-freely-in body arg))
                        `(K ,(t-rewrite body)))
                     ((islambda body)
