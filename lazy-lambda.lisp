@@ -67,9 +67,7 @@
   (eq (type x) 'str))
 
 (defun make-hash-table* ()
-  (let ((hashtable nil)
-        (hashlist nil)
-        (setter nil))
+  (let ((hashtable nil))
     (defun getter (key)
       (setq hashlist hashtable)
       (loop
@@ -102,23 +100,10 @@
 (defun gethash (key hashtable)
   (hashtable 'get key))
 
-(defun reverse (l)
-  (setq ret ())
-  (loop
-    (if (atom l)
-      (return ret)
-      nil)
-    (setq ret (cons (car l) ret))
-    (setq l (cdr l))))
-
 (defun mapcar (f x)
-  (setq ret ())
-  (loop
-    (if (atom x)
-      (return (reverse ret))
-      nil)
-    (setq ret (cons (f (car x)) ret))
-    (setq x (cdr x))))
+  (if x
+    (cons (f (car x)) (mapcar f (cdr x)))
+    nil))
 
 (defun and (x &rest y)
   (if y
