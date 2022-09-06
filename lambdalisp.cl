@@ -1476,30 +1476,6 @@
 ;;================================================================
 ;; Constants and macros
 ;;================================================================
-(defmacro-lazy if-then-return (condition then else)
-  `(if ,condition ,then ,else))
-
-(defmacro-lazy let* (name value body)
-  `(let ((,name ,value)) ,body))
-
-(defmacro-lazy do* (top &rest proc)
-  (cond ((not proc)
-          top)
-        ((eq '<- (car (car proc)))
-          (let* ((topproc (car proc))
-                 (arglist (car (cdr topproc)))
-                 (body (car (cdr (cdr topproc)))))
-            `(do*
-                ,(append body `((lambda ,arglist ,top)))
-                ,@(cdr proc))))
-        (t
-          `(do*
-              ,(append (car proc) `(,top))
-              ,@(cdr proc)))))
-
-(defmacro-lazy do (&rest proc)
-  `(do* ,@(reverse proc)))
-
 
 
 ;;================================================================
