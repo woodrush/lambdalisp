@@ -329,21 +329,19 @@
     (typematch expr
       ;; atom
       (if (isnil-data expr)
-        (lambda (cont) (cons "(" (cons ")" cont)))
-        (printstring (valueof expr)))
+        (cons "(" (cons ")" cont))
+        (printstring (valueof expr) cont))
       ;; list
-      (lambda (cont) (cons "(" (printlist expr cont)))
+      (cons "(" (printlist expr cont))
       ;; lambda
       (do
         (<- (ismacro ptr args body) ((valueof expr)))
-        (printstring (cons "@" (if ismacro kMacro kLambda))))
+        (printstring (cons "@" (if ismacro kMacro kLambda)) cont))
       ;; string
-      (lambda (cont) (cons "\"" (printstring (valueof expr) (cons "\"" cont))))
+      (printstring (valueof expr) cont)
       ;; int
-      (lambda (cont) (printint (valueof expr) cont))
-      ))
-   ;; Factored out
-   cont))
+      (printint (valueof expr) cont)
+      ))))
 
 (defrec-lazy printlist (expr cont)
   (do
@@ -920,14 +918,9 @@
           ((stringeq (valueof head) kPrint)
             (do
               (<- (arg1 arg2) (d-carcdr-data tail))
-              (<- (arg2 arg3) ((if (isnil-data arg2) (cons arg2 arg2) (d-carcdr-data arg2))))
               (<- (arg1 state) (eval arg1 state))
               (if-then-return (isnil-data arg2)
                 (printexpr arg1 (cons "\\n" (cont arg1 state))))
-              (if-then-return (isnil-data arg3)
-                (printexpr arg1 (cont arg1 state)))
-              (if-then-return (or (isatom arg1) (isstring arg1))
-                (printstring (valueof arg1) (cont arg1 state)))
               (printexpr arg1 (cont arg1 state))))
           ((stringeq (valueof head) kPeekchar)
             (do
