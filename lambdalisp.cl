@@ -501,7 +501,7 @@
     (if-then-return (isnil func-hook)
       (cont nil reg-heap stdin))
     (<- (c cdr-stdin) (stdin))
-    (<- (expr state) (eval-apply func-hook (atom* nil) t (cons3 reg heap cdr-stdin)))
+    (<- (expr state) (eval-apply func-hook (cons-data@ (string* (list c)) (atom* nil)) t (cons3 reg heap cdr-stdin)))
     (<- (reg heap stdin) (state))
     (cont expr (cons reg heap) stdin)))
 
@@ -1462,7 +1462,6 @@
     (let* eval (eval-hat read-expr-hat eval-hat repl-hat))
     (let* repl (repl-hat read-expr-hat eval-hat repl-hat))
 
-    ;; (<- (_ int-minusone) (add* t nil int-zero int-zero))
     (let* reg
       (do
         (<- (reg) (memory-write* initreg reg-heap-head int-zero))
