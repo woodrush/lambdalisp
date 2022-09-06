@@ -1093,7 +1093,7 @@
               (<- (reg heap stdin) (state))
               (<- (heap) (memory-write* heap *val newenv))
               (cont bind-var (cons3 reg heap stdin))))
-          ((stringeq (valueof head) kDefvar)
+          ((stringeq (valueof head) kDefparameter)
             (do
               (<- (reg heap stdin) (state))
               (<- (valenv) (lookup-tree* heap int-zero))
@@ -1356,7 +1356,8 @@
       (list "e" "q"); kEq
       (gen-CONX "s") ;kCons
       ;; (gen-CONX "d") ;kCond
-      (cons "d" (cons "e" (list4 "f" "v" "a" "r")))
+      ((string-concatenator nil) "r" "e" "t" "e" "m" "a" "r" "a" "p" "f" "e" "d" nil)
+      ;; (cons "d" (cons "e" (list4 "f" "v" "a" "r")))
       (cons "l" (cons "a" (list4 "m" "b" "d" "a")))
       (cons "m" (list4 "a" "c" "r" "o"))
       (cons "p" (list4 "r" "o" "g" "n"))
@@ -1378,7 +1379,7 @@
       (list-tail "c" "d" (list4 "r" "s" "t" "r")) ;kCdrstr 
       (cdr (list4 nil "s" "t" "r")) ;kStr
       ;; ((string-generator nil) "t" "y" "p" "e" nil) ; kType
-      ((string-concatenator nil) "e" "p" "y" "t" nil) ; kType
+      (list4 "t" "y" "p" "e") ; kType
       (list "+")
       (list "-")
       (list "*")
@@ -1427,7 +1428,7 @@
          kCdr
          kEq
          kCons
-         kDefvar
+         kDefparameter
          kLambda
          kMacro
          kProgn
