@@ -1260,9 +1260,16 @@
 ;;================================================================
 ;; Constants
 ;;================================================================
-(defun-lazy string-generator (cont)
+(defrec-lazy string-concatenator (curstr x)
+  (cond
+    ((isnil x)
+      curstr)
+    (t
+      (string-concatenator (cons x curstr)))))
+
+(defun-lazy string-generator (stdin cont)
   (do
-    (<- ("<" ">" "=" "%" "/" "*" "+" "-" "&" "y" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t")
+    (<- ("<" ">" "=" "%" "/" "*" "+" "-" "&" "y" "h" "k" "v" "f" "b" "g" "l" "m" "p" "s" "u" "c" "i" "q" "a" "d" "e" "n" "o" "r" "t" "1" " " "(" ")")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -1303,6 +1310,10 @@
             (char3 ("10") ("11") ("11")) ;; "o"
             (char3 ("11") ("00") ("10")) ;; "r"
             (char3 ("11") ("01") ("00")) ;; "t"
+            (do ("00") ("11") ("00") ("01") nil)  ;; "1"
+            (sym2 ("00") ("00"))         ;; " "
+            (sym2 ("10") ("00"))         ;; "("
+            (sym2 ("10") ("01"))         ;; ")"
             ;; Delayed application to the outermost `cont`
             (char3 ("10") ("11") ("00")) ;; "l"
             (char3 ("01") ("11") ("00")) ;; "\\"
@@ -1327,6 +1338,7 @@
     (let* gen-CONX (lambda (x) (list4 "c" "o" "n" x)))
     (let* gen-CXR (lambda (x) (cdr (list4 x "c" x "r"))))
     (cont
+      **prelude**
       (cons "p" (list4 "r" "i" "n" "t"))
       (list4 "r" "e" "a" "d")
       (cons "q" (list4 "u" "o" "t" "e")) ;kQuote
@@ -1357,7 +1369,8 @@
       (list-tail "c" "a" (list4 "r" "s" "t" "r")) ;kCarstr
       (list-tail "c" "d" (list4 "r" "s" "t" "r")) ;kCdrstr 
       (cdr (list4 nil "s" "t" "r")) ;kStr
-      (list4 "t" "y" "p" "e") ; kType
+      ;; ((string-generator nil) "t" "y" "p" "e" nil) ; kType
+      ((string-concatenator nil) "e" "p" "y" "t" nil) ; kType
       (list "+")
       (list "-")
       (list "*")
@@ -1369,6 +1382,7 @@
       (list "i" "f")
       (cdr (list4 (lambda (x) x) "n" "i" "l"))
       (atom* (list "t")))))
+
 
 ;;================================================================
 ;; User interface
@@ -1393,7 +1407,8 @@
 
 (defun-lazy main (stdin)
   (do
-    (<- (kPrint
+    (<- (prelude-str
+         kPrint
          kRead
          kQuote
          kAtom
@@ -1451,7 +1466,7 @@
          " "
          "\\n"
          "("
-         ")") (string-generator))
+         ")") (string-generator stdin))
     (let* Y-comb Y-comb)
     (let* int-zero (32 (cons* t) nil))
     (let* printexpr printexpr)
@@ -1478,12 +1493,18 @@
         (<- (reg) (memory-write* reg reg-reader-hooks nil))
         reg))
     (<- (heap) (memory-write* initheap int-zero init-global-env))
-    (repl (cons3 reg heap stdin))))
+
+    ;; Evaluate the prelude
+    (<- (expr reg-heap stdin) (read-expr (cons reg heap) prelude-str))
+    (<- (reg heap) (reg-heap))
+    (<- (expr state) (eval expr (cons3 reg heap stdin)))
+    (repl state)))
 
 ;;================================================================
-;; Constants and macros
+;; The Prelude
 ;;================================================================
-
+(def-lazy **prelude**
+  ((string-concatenator stdin) ")" "1" " " "a" " " "r" "a" "v" "f" "e" "d" "(" nil))
 
 ;;================================================================
 ;; Compilation
