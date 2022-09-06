@@ -4,20 +4,31 @@
 (defmacro defun (name args &rest body)
   `(setq ,name (lambda ,args ,@body)))
 
-(defmacro cond (a &rest b)
+(defmacro defparameter (name value)
+  `(defvar ,name ,value))
+
+(defvar list (macro (&rest y)
+  (if y
+    (cons 'cons (cons (car y) (cons (cons 'list (cdr y)) nil)))
+    nil)))
+
+(defvar cond (macro (a &rest b)
   (if a
-    `(if ,(car a)
-      (progn ,@(cdr a))
-      (cond ,@b))
-    nil))
+    (list 'if (car a)
+      (cons 'progn (cdr a))
+      (cons 'cond b))
+    nil)))
 
 (defmacro or (a &rest b)
   (if b
     `(if ,a t (or ,@b))
     a))
 
-(defmacro defparameter (name value)
-  `(defvar ,name ,value))
+(defun not (x)
+  (if x nil t))
+
+(defun equal (x y)
+  (or (eq x y) (= x y)))
 
 (defmacro labels (llist &rest body)
   (defun helper (items)
@@ -36,26 +47,18 @@
 (defmacro return (x)
   `(return-from () ,x))
 
-(defun position* (item l)
+(defun position* (item l test-f)
   (setq i 0)
   (loop
     (if (atom l)
       (return nil))
-    (if (equal item (car l))
+    (if (test-f item (car l))
       (return i))
     (setq i (+ 1 i))
     (setq l (cdr l))))
 
-(defmacro position (x y &rest args)
-  `(position* ,x ,y))
-
-(defun list (&rest args)
-  (if args
-    (cons (car args) (apply list (cdr args)))
-    nil))
-
-(defun not (x)
-  (if x nil t))
+(defmacro position (item l test test-f)
+  `(position* ,item ,l ,test-f))
 
 (defmacro concatenate (_ &rest args)
   `(+ ,@args))
@@ -123,9 +126,6 @@
     (read)))
 (set-macro-character "#" sharp-reader)
 
-(defun equal (x y)
-  (or (eq x y) (= x y)))
-
 (defun string-downcase (x)
   (cond
     ((eq x "S") "s")
@@ -136,4 +136,5 @@
 (defun string (x)
   (str x))
 
+;; Message for LambdaLisp
 "loaded lazy-lambda.lisp"

@@ -67,50 +67,8 @@
             (setq curstring (concatenate 'string curstring (token2string (car body))))
             (setq body (cdr body))))))))
 
-
-(defun count-occurrences-in (expr var)
-  (cond ((atom expr) (if (equal var expr) 1 0))
-        ((islambda expr)
-         (if (equal (lambdaarg-top expr) var)
-             0
-             (count-occurrences-in (cdr (cdr expr)) var)))
-        (t (reduce '+ (mapcar (lambda (x) (count-occurrences-in x var)) expr)))))
-
-(defun occurs-freely-in (expr var)
-  (cond ((atom expr) (equal var expr))
-        ((islambda expr)
-         (if (equal (lambdaarg-top expr) var)
-             nil
-             (occurs-freely-in (cdr (cdr expr)) var)))
-        (t (or (occurs-freely-in (car expr) var)
-               (occurs-freely-in (cdr expr) var)))))
-
-(defun t-rewrite (expr)
-  (cond ((atom expr) expr)
-        ((equal 'lambda (car expr))
-         (let ((arg  (lambdaarg-top expr))
-               (body (lambdabody expr)))
-              (cond ((equal arg body) 'I)
-                    ((not (occurs-freely-in body arg))
-                       `(K ,(t-rewrite body)))
-                    ((islambda body)
-                       (t-rewrite `(lambda (,arg) ,(t-rewrite body))))
-                    (t `((S ,(t-rewrite `(lambda (,arg) ,(car body))))
-                            ,(t-rewrite `(lambda (,arg) ,(car (cdr body)))))))))
-        (t (mapcar #'t-rewrite expr))))
-
-(defun flatten-ski (expr)
-  (if (atom expr)
-      (if (position expr `(S K I))
-          (string-downcase (string expr))
-          (decorate-varname expr))
-      (concatenate `string "`" (flatten-ski (car expr)) (flatten-ski (car (cdr expr))))))
-
-(defun compile-to-ski (expr)
-  (flatten-ski (t-rewrite (curry expr))))
-
-(defmacro compile-to-ski-lazy (expr-lazy)
-  `(compile-to-ski (macroexpand-lazy ,expr-lazy)))
+(defun compile-to-blc (expr)
+  (to-blc-string (to-de-bruijn (curry expr) nil)))
 
 
 ;;================================================================
@@ -187,8 +145,6 @@
 (defun-lazy cdr* (l) (l nil))
 (defmacro-lazy car (l) `(,l t))
 (defmacro-lazy cdr (l) `(,l nil))
-;; (defun-lazy car (l) (l t))
-;; (defun-lazy cdr (l) (l nil))
 (defmacro-lazy cons (x y) `(lambda (f) (f ,x ,y)))
 
 (defun-lazy isnil (l) ((lambda (a) (a (lambda (v n x) nil) t)) l))
@@ -199,12 +155,9 @@
 
 (defmacro-lazy not (x) `(,x nil t))
 (defmacro-lazy and (x y) `(,x ,y nil))
-;; (defun-lazy or (x y) (x t y))
 (defmacro-lazy or (x &rest r)
   (if (not r) x `(,x t (or ,@r))))
 
-
-;; (defun-lazy xor (x y) (if x (not y) y))
 (defmacro-lazy xor (x y) `(if ,x (not ,y) ,y))
 (defun-lazy xnor (x y) (if x y (not y)))
 
@@ -282,7 +235,6 @@
     target
     `(-> (,(car args) ,target) ,@(cdr args))))
 
-
 (defun-lazy take (n l)
   ((letrec-lazy take (n l ret)
       (cond
@@ -304,11 +256,82 @@
 (defun-lazy reverse (l)
   (reverse* l nil))
 
+(defmacro-lazy if-then-return (condition then else)
+  `(if ,condition ,then ,else))
 
-(defun compile-to-blc (expr)
-  (to-blc-string (to-de-bruijn (curry expr) nil)))
+(defmacro-lazy let* (name value body)
+  `(let ((,name ,value)) ,body))
+
+(defmacro-lazy do* (top &rest proc)
+  (cond ((not proc)
+          top)
+        ((eq '<- (car (car proc)))
+          (let* ((topproc (car proc))
+                 (arglist (car (cdr topproc)))
+                 (body (car (cdr (cdr topproc)))))
+            `(do*
+                ,(append body `((lambda ,arglist ,top)))
+                ,@(cdr proc))))
+        (t
+          `(do*
+              ,(append (car proc) `(,top))
+              ,@(cdr proc)))))
+
+(defmacro-lazy do (&rest proc)
+  `(do* ,@(reverse proc)))
+
 
 (defmacro compile-to-blc-lazy (expr-lazy)
   `(compile-to-blc (macroexpand-lazy ,expr-lazy)))
 
+
+;;================================================================
+;; Lazy K support (compilation to SKI combinator calculus)
+;;================================================================
+(defun count-occurrences-in (expr var)
+  (cond ((atom expr) (if (equal var expr) 1 0))
+        ((islambda expr)
+         (if (equal (lambdaarg-top expr) var)
+             0
+             (count-occurrences-in (cdr (cdr expr)) var)))
+        (t (reduce '+ (mapcar (lambda (x) (count-occurrences-in x var)) expr)))))
+
+(defun occurs-freely-in (expr var)
+  (cond ((atom expr) (equal var expr))
+        ((islambda expr)
+         (if (equal (lambdaarg-top expr) var)
+             nil
+             (occurs-freely-in (cdr (cdr expr)) var)))
+        (t (or (occurs-freely-in (car expr) var)
+               (occurs-freely-in (cdr expr) var)))))
+
+(defun t-rewrite (expr)
+  (cond ((atom expr) expr)
+        ((equal 'lambda (car expr))
+         (let ((arg  (lambdaarg-top expr))
+               (body (lambdabody expr)))
+              (cond ((equal arg body) 'I)
+                    ((not (occurs-freely-in body arg))
+                       `(K ,(t-rewrite body)))
+                    ((islambda body)
+                       (t-rewrite `(lambda (,arg) ,(t-rewrite body))))
+                    (t `((S ,(t-rewrite `(lambda (,arg) ,(car body))))
+                            ,(t-rewrite `(lambda (,arg) ,(car (cdr body)))))))))
+        (t (mapcar #'t-rewrite expr))))
+
+(defun flatten-ski (expr)
+  (if (atom expr)
+      (if (position expr `(S K I) :test #'equal)
+          (string-downcase (string expr))
+          (decorate-varname expr))
+      (concatenate `string "`" (flatten-ski (car expr)) (flatten-ski (car (cdr expr))))))
+
+(defun compile-to-ski (expr)
+  (flatten-ski (t-rewrite (curry expr))))
+
+(defmacro compile-to-ski-lazy (expr-lazy)
+  `(compile-to-ski (macroexpand-lazy ,expr-lazy)))
+
+
+;; Message for LambdaLisp
 "loaded lazy.cl"
