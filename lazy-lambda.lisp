@@ -42,17 +42,17 @@
     (eq (type *p) 'str))
 
   (defmacro labels (llist &rest *b)
-    `(progn
-      (let (,@(mapcar (lambda (item) `(,(car item) (lambda ,@(cdr item)))) llist))
-        ,@*b)))
+    `(let (,@(mapcar (lambda (item) `(,(car item) ()))))
+      ,@(mapcar (lambda (item) `(setq ,(car item) (lambda ,@(cdr item)))) llist)
+      ,@*b))
 
   (defun length (l)
     (if (atom l)
       0
       (+ 1 (length (cdr l)))))
 
-  (defmacro return (*p)
-    `(return-from () ,*p))
+  (defmacro return (&rest *p)
+    `(return-from () ,(if atom *p *p (car *p))))
 
   (defun position* (item l test-f)
     (let ((i 0))
@@ -75,15 +75,13 @@
 
   (defun mapcar (f *p)
     (if *p
-      (cons (f (car *p)) (mapcar f (cdr *p)))
-      ()))
+      (cons (f (car *p)) (mapcar f (cdr *p)))))
 
   (defun reverse (l)
     (let ((ret ()))
       (loop
         (if (atom l)
-          (return ret)
-          ())
+          (return ret))
         (setq ret (cons (car l) ret))
         (setq l (cdr l)))))
 
@@ -103,40 +101,39 @@
 
   (defun format (option str &rest args)
     ;; Supports ~*a and ~%
-    (setq ret ())
-    ;; `?` gets compiled to *a newline in compile-prelude.sh
-    (setq newline "?")
-    (loop
-      (cond
-        ((eq str "")
-          (return ()))
-        ((eq (carstr str) "~")
-          (setq str (cdrstr str))
-          (cond
-            ((eq (carstr str) "%")
-              (setq ret (cons newline ret)))
-            ((eq (carstr str) "a")
-              (if args
-                (progn
-                  (setq item (car args))
-                  (setq args (cdr args)))
-                (setq item ()))
-              (setq ret (cons (str item) ret)))))
-        (t
-          (setq ret (cons (carstr str) ret))))
-      (setq str (cdrstr str)))
+    (let ((ret ()))
+      (loop
+        (cond
+          ((eq str "")
+            (return ()))
+          ((eq (carstr str) "~")
+            (setq str (cdrstr str))
+            (cond
+              ((eq (carstr str) "%")
+                ;; `?` gets compiled to *a newline in compile-prelude.sh
+                (setq ret (cons "?" ret)))
+              ((eq (carstr str) "a")
+                (if args
+                  (progn
+                    (setq item (car args))
+                    (setq args (cdr args)))
+                  (setq item ()))
+                (setq ret (cons (str item) ret)))))
+          (t
+            (setq ret (cons (carstr str) ret))))
+        (setq str (cdrstr str)))
 
-    (setq str "")
-    (loop
-      (if (eq ret ())
-        (return ()))
-      (setq str (+ (car ret) str))
-      (setq ret (cdr ret)))
-    (if option
-      (progn
-        (print str t)
-        ())
-      str))
+      (setq str "")
+      (loop
+        (if (eq ret ())
+          (return ()))
+        (setq str (+ (car ret) str))
+        (setq ret (cdr ret)))
+      (if option
+        (progn
+          (print str t)
+          ())
+        str)))
 
   ;;================================================================
   ;; Hash table
@@ -188,56 +185,56 @@
     (helper binding))
 
   (defmacro defclass (name superclass &rest *b)
-    (defun-local collect-fieldnames (args)
-      (setq head (car (car args)))
-      (if args
-        (cons (if (eq head 'defmethod)
-                (car (cdr (car args)))
-                head)
-              (collect-fieldnames (cdr args)))
-        ()))
-    (defun-local *parse-*b (*b)
-      (setq *head (car (car *b)))
-      (if *b
-        (cons (if (eq *head 'defmethod)
-                (let ((fieldname (car (cdr (car *b))))
-                      (*a (car (cdr (cdr (car *b)))))
-                      (*rest (cdr (cdr (cdr (car *b))))))
-                  `(,fieldname (lambda ,*a ,@*rest)))
-                (car *b))
-              (*parse-*b (cdr *b)))
-        ()))
-    (defun-local *build-getter (args)
-      (defun-local helper (args)
+    (labels
+      ((collect-fieldnames (args)
+        (setq head (car (car args)))
         (if args
-          `(if (eq a ',(car args))
-              ,(car args)
-              ,(helper (cdr args)))
-          '(if super
-            (super a)
-            ())))
-      `(lambda (a) ,(helper (cons 'setter (cons 'super args)))))
+          (cons (if (eq head 'defmethod)
+                  (car (cdr (car args)))
+                  head)
+                (collect-fieldnames (cdr args)))
+          ()))
+      (*parse-*b (*b)
+        (setq *head (car (car *b)))
+        (if *b
+          (cons (if (eq *head 'defmethod)
+                  (let ((fieldname (car (cdr (car *b))))
+                        (*a (car (cdr (cdr (car *b)))))
+                        (*rest (cdr (cdr (cdr (car *b))))))
+                    `(,fieldname (lambda ,*a ,@*rest)))
+                  (car *b))
+                (*parse-*b (cdr *b)))
+          ()))
+      (*build-getter (args)
+        (defun-local helper (args)
+          (if args
+            `(if (eq a ',(car args))
+                ,(car args)
+                ,(helper (cdr args)))
+            '(if super
+              (super a)
+              ())))
+        `(lambda (a) ,(helper (cons 'setter (cons 'super args)))))
 
-    (defun-local *build-setter (args)
-      (defun-local helper (args)
-        (if args
-          `(if (eq key ',(car args))
-              (setq ,(car args) value)
-              ,(helper (cdr args)))
-          '(if super
-            ((super 'setter) key value)
-            ())))
-      `(lambda (key value) ,(helper args)))
-
-    (setq fieldnames (collect-fieldnames *b))
-    `(defun-local ,name ()
+      (*build-setter (args)
+        (defun-local helper (args)
+          (if args
+            `(if (eq key ',(car args))
+                (setq ,(car args) value)
+                ,(helper (cdr args)))
+            '(if super
+              ((super 'setter) key value)
+              ())))
+        `(lambda (key value) ,(helper args))))
+    (let ((fieldnames (collect-fieldnames *b)))
+      `(defun-local ,name ()
         (let* ((super ())
               (self ())
               (setter ())
               ,@(*parse-*b *b))
           (setq super ,superclass)
           (setq setter ,(*build-setter fieldnames))
-          (setq self ,(*build-getter fieldnames)))))
+          (setq self ,(*build-getter fieldnames)))))))
 
   (defmacro setf* (place value)
     (if (atom place)
@@ -256,6 +253,5 @@
   (defmacro setf (place value)
     `(setf* ,place ,value))
 
-  ;; ;; Message for LambdaLisp
-  ;; "loaded lazy-lambda.lisp"
+  ;; "loaded prelude.lisp"
 )
