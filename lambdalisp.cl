@@ -1702,8 +1702,8 @@
     (<- (expr state) (eval expr (cons3 reg heap stdin)))
     (repl state)))
 
-(defun-lazy main (stdin)
-  (init string-generator stdin))
+(defun-lazy main (stdin*)
+  (init string-generator stdin*))
 
 ;;================================================================
 ;; Compilation
@@ -1711,7 +1711,10 @@
 ;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
 
 ;; ;; (format t (compile-to-ski-lazy main))
-(format t (compile-to-blc-lazy main))
+(if (boundp lambdalisp-compile-latex)
+  (format t (compile-to-simple-lambda-lazy main))
+  (format t (compile-to-blc-lazy main)))
+
 
 ;; (format t (concatenate 'string "`"  (compile-to-ski-lazy main) (compile-to-ski-lazy string-generator)))
 ;; (format t (concatenate 'string "01" (compile-to-blc-lazy main) (compile-to-blc-lazy string-generator)))
