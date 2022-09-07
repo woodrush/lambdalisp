@@ -1,4 +1,4 @@
-(defparameter suppress-repl t) ;; Enters script mode and suppresses `> ` from the REPL
+(defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
 
 (defun BACKQUOTE-FUNCTION (expr depth)
   (cond

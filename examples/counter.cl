@@ -1,4 +1,4 @@
-(defparameter suppress-repl t) ;; Enters script mode and suppresses `> ` from the REPL
+(defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
 
 (defun new-counter (a)
   ;; Returns a closure with the persistent variable a

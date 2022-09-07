@@ -1548,7 +1548,7 @@
       (cons "m" (cons "a" (list4 "l" "l" "o" "c")))
       (list-tail "m" "e" "m" (list4 "r" "e" "a" "d"))
       (list-tail "m" "e" "m" "w" (list4 "r" "i" "t" "e"))
-      (list-tail "s" "u" "p" "p" "r" "e" "s" "s" "-" (list4 "r" "e" "p" "l"))
+      (list-tail "*" "*" "l" "a" "m" "b" "d" "a" "l" "i" "s" "p" "-" "s" "u" "p" "p" "r" "e" "s" "s" "-" "r" "e" (list4 "p" "l" "*" "*"))
       (list "+")
       (list "-")
       (list "*")
