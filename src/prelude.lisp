@@ -14,6 +14,12 @@
   (defmacro funcall (f &rest args)
     `(,f ,@args))
 
+  (defmacro floor (a b)
+    `(/ ,a ,b))
+
+  (defmacro mod (a b)
+    `(% ,a ,b))
+
   (defglobal list (macro (&rest *q)
     (if *q
       (cons 'cons (cons (car *q) (cons (cons 'list (cdr *q)) ())))
