@@ -597,7 +597,20 @@
 (def-lazy reg-curenv (list nil t t))
 (def-lazy reg-heap-head (list nil t nil))
 (def-lazy reg-stack-head (list nil nil t))
-(def-lazy reg-block-cont (list nil nil nil))
+(def-lazy reg-block-cont (list nil nil nil nil))
+(def-lazy reg-stack-trace (list nil nil nil t))
+
+(defrec-lazy print-stack-trace (stack-trace cont)
+  (do
+    (cons "\\n")
+    (if-then-return (isnil stack-trace)
+      cont)
+    (cons ".")
+    (cons ".")
+    (cons " ")
+    (<- (expr cdr-stack-trace) (stack-trace))
+    (printexpr expr)
+    (print-stack-trace cdr-stack-trace cont)))
 
 (defun-lazy error (message state)
   (do
@@ -606,10 +619,13 @@
     (cons "-")
     (cons " ")
     (printstring message)
-    (cons "\\n")
+    (<- (reg heap stdin) (state))
+    (<- (stack-trace) (lookup-tree* reg reg-stack-trace))
+    (print-stack-trace stack-trace)
+    (<- (reg) (memory-write* reg reg-stack-trace nil))
     (cons ">")
     (cons " ")
-    (repl state)))
+    (repl (cons3 reg heap stdin))))
 
 (defun-lazy malloc (state cont)
   (do
@@ -845,7 +861,11 @@
 
 (defun-lazy def-eval-apply (read-expr eval eval-apply repl head tail eval-tail state cont)
   (do
-    (<- (maybelambda state) (eval head state))
+    ;; Push to stack trace
+    (<- (reg heap stdin) (state))
+    (<- (cur-stack-trace) (lookup-tree* reg reg-stack-trace))
+    (<- (reg) (memory-write* reg reg-stack-trace (cons (cons-data@ head tail) cur-stack-trace)))
+    (<- (maybelambda state) (eval head (cons3 reg heap stdin)))
     (let* error (error (printexpr head nil) state))
     ;; TODO: show error message for non-lambdas
     (typematch maybelambda
@@ -884,7 +904,10 @@
         (<- (reg) (memory-write* reg reg-curenv *newenv))
         ;; Evaluate expression in the created environment
         (<- (expr state) (eval-progn newtail (cons3 reg heap stdin)))
+        ;; Pop the stack trace
         (<- (reg heap stdin) (state))
+        (<- (cur-stack-trace) (lookup-tree* reg reg-stack-trace))
+        (<- (reg) (memory-write* reg reg-stack-trace (cdr cur-stack-trace)))
         ;; Set the environment back to the original outer environment
         (<- (reg) (memory-write* reg reg-curenv *origenv))
         (cond
@@ -892,7 +915,7 @@
           (ismacro
             (do
               ;; Pop the stack memory for macros
-              (<- (state) (popstack state))
+              (<- (state) (popstack (cons3 reg heap stdin)))
               (eval expr state cont)))
           ;; If it is a lambda, return the evaluated result
           (t
@@ -1604,6 +1627,7 @@
         (<- (reg) (memory-write* reg reg-curenv int-zero))
         (<- (reg) (memory-write* reg reg-stack-head int-zero))
         (<- (reg) (memory-write* reg reg-reader-hooks nil))
+        (<- (reg) (memory-write* reg reg-stack-trace nil))
         reg))
     (<- (heap) (memory-write* initheap int-zero init-global-env))
     (<- (heap) (memory-write* heap int-zero init-global-env))
