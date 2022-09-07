@@ -1,12 +1,12 @@
 (progn
-  (defparameter defmacro (macro (name args &rest body)
-    `(defparameter ,name (macro ,args (block ,name ,@body)))))
+  (defparameter defmacro (macro (name args &rest *b)
+    `(defparameter ,name (macro ,args (block ,name ,@*b)))))
 
-  (defmacro defun (name args &rest body)
-    `(defparameter ,name (lambda ,args (block ,name ,@body))))
+  (defmacro defun (name args &rest *b)
+    `(defparameter ,name (lambda ,args (block ,name ,@*b))))
 
-  (defmacro defun-local (name args &rest body)
-    `(setq ,name (lambda ,args (block ,name ,@body))))
+  (defmacro defun-local (name args &rest *b)
+    `(setq ,name (lambda ,args (block ,name ,@*b))))
 
   (defparameter list (macro (&rest *q)
     (if *q
@@ -41,14 +41,14 @@
   (defun stringp (*p)
     (eq (type *p) 'str))
 
-  (defmacro labels (llist &rest body)
+  (defmacro labels (llist &rest *b)
     (defun-local helper (items)
       (if items
         (cons (cons 'defun-local (car items)) (helper (cdr items)))
         nil))
     `(progn
       ,@(helper llist)
-      ,@body))
+      ,@*b))
 
   (defun length (l)
     (if (atom l)
@@ -184,36 +184,14 @@
         instance)
       (,(car args))))
 
-  (defmacro *build-getter (args)
-    (defun-local helper (args)
-      (if args
-        `(if (eq a ',(car args))
-            ,(car args)
-            ,(helper (cdr args)))
-        '(if super
-          (super a)
-          nil)))
-    `(lambda (a) ,(helper (cons 'setter (cons 'super args)))))
-
-  (defmacro *build-setter (args)
-    (defun-local helper (args)
-      (if args
-        `(if (eq key ',(car args))
-            (setq ,(car args) value)
-            ,(helper (cdr args)))
-        '(if super
-          ((super 'setter) key value)
-          nil)))
-    `(lambda (key value) ,(helper args)))
-
-  (defmacro let* (binding &rest body)
+  (defmacro let* (binding &rest *b)
     (defun-local helper (args)
       (if args
         `(let (,(car args)) ,(helper (cdr args)))
-        `(progn ,@body)))
+        `(progn ,@*b)))
     (helper binding))
 
-  (defmacro defclass (name superclass &rest body)
+  (defmacro defclass (name superclass &rest *b)
     (defun-local collect-fieldnames (args)
       (setq head (car (car args)))
       (if args
@@ -222,29 +200,50 @@
                 head)
               (collect-fieldnames (cdr args)))
         nil))
-    (defun-local *parse-body (body)
-      (setq head (car (car body)))
-      (if body
-        (cons (if (eq head 'defmethod)
-                (progn
-                  (setq fieldname (car (cdr (car body))))
-                  (setq arglist (car (cdr (cdr (car body)))))
-                  (setq clause-rest (cdr (cdr (cdr (car body)))))
-                  `(,fieldname (lambda ,arglist ,@clause-rest)))
-                (car body))
-              (*parse-body (cdr body)))
+    (defun-local *parse-*b (*b)
+      (setq *head (car (car *b)))
+      (if *b
+        (cons (if (eq *head 'defmethod)
+                (let ((fieldname (car (cdr (car *b))))
+                      (*a (car (cdr (cdr (car *b)))))
+                      (*rest (cdr (cdr (cdr (car *b))))))
+                  `(,fieldname (lambda ,*a ,@*rest)))
+                (car *b))
+              (*parse-*b (cdr *b)))
         nil))
-    (setq fieldnames (collect-fieldnames body))
+    (defun-local *build-getter (args)
+      (defun-local helper (args)
+        (if args
+          `(if (eq a ',(car args))
+              ,(car args)
+              ,(helper (cdr args)))
+          '(if super
+            (super a)
+            nil)))
+      `(lambda (a) ,(helper (cons 'setter (cons 'super args)))))
+
+    (defun-local *build-setter (args)
+      (defun-local helper (args)
+        (if args
+          `(if (eq key ',(car args))
+              (setq ,(car args) value)
+              ,(helper (cdr args)))
+          '(if super
+            ((super 'setter) key value)
+            nil)))
+      `(lambda (key value) ,(helper args)))
+
+    (setq fieldnames (collect-fieldnames *b))
     `(defun-local ,name ()
         (let* ((super ())
               (self ())
               (setter ())
-              ,@(*parse-body body))
+              ,@(*parse-*b *b))
           (setq super ,superclass)
-          (setq setter (*build-setter ,fieldnames))
-          (setq self (*build-getter ,fieldnames)))))
+          (setq setter ,(*build-setter fieldnames))
+          (setq self ,(*build-getter fieldnames)))))
 
-  (defmacro setf (place value)
+  (defmacro setf* (place value)
     (if (atom place)
       `(setq ,place ,value)
       ;; Hash table
@@ -257,6 +256,9 @@
             (setq fieldname (car (cdr (cdr place))))
             `((. ,instance setter) ',fieldname ,value))
           (error "unknown setf pattern")))))
+
+  (defmacro setf (place value)
+    `(setf* ,place ,value))
 
   ;; ;; Message for LambdaLisp
   ;; "loaded lazy-lambda.lisp"
