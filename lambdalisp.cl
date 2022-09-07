@@ -620,6 +620,24 @@
     (<- (reg) (memory-write* reg reg-heap-head *heap-head))
     (cont (cons3 reg heap stdin) *heap-head)))
 
+(defun-lazy stackalloc (state cont)
+  (do
+    (<- (reg heap stdin) (state))
+    ;; Decrement stack-head - allocate new stack memory
+    (<- (*stack-head) (lookup-tree* reg reg-stack-head))
+    (<- (_ *stack-head) (add* t nil *stack-head int-zero))
+    (<- (reg) (memory-write* reg reg-stack-head *stack-head))
+    (cont (cons3 reg heap stdin) *stack-head)))
+
+(defun-lazy popstack (state cont)
+  (do
+    (<- (reg heap stdin) (state))
+    ;; Increment stack-head - garbage collection
+    (<- (*stack-head) (lookup-tree* reg reg-stack-head))
+    (<- (_ *stack-head) (add* nil t *stack-head int-zero))
+    (<- (reg) (memory-write* reg reg-stack-head *stack-head))
+    (cont (cons3 reg heap stdin))))
+
 (defrec-lazy append-data (l1 l2 cont)
   (do
     (if-then-return (isnil-data l1)
@@ -850,28 +868,35 @@
               (lambda (cont) (map-eval tail state cont)))
             (t
               (lambda (cont) (cont tail state))))))
+        ;; Allocate new memory
+        (<- (state *newenv)
+          ((if ismacro
+            ;; For macros, allocate new stack memory
+            stackalloc
+            ;; For lambdas, create a new persistent environment
+            malloc)
+           state))
         (<- (reg heap stdin) (state))
-        ;; Decrement stack-head - allocate new stack memory
-        (<- (*stack-head) (lookup-tree* reg reg-stack-head))
-        (<- (_ *stack-head) (add* t nil *stack-head int-zero))
-        (<- (reg) (memory-write* reg reg-stack-head *stack-head))
         ;; Write the bindings to the stack's head
         (<- (newenv) (zip-data-base (cons (cons nil *outerenv) nil) argvars mappedargs))
-        (<- (heap) (memory-write* heap *stack-head newenv))
-        ;; Set current environment pointer to the written *stack-head
-        (<- (reg) (memory-write* reg reg-curenv *stack-head))
+        (<- (heap) (memory-write* heap *newenv newenv))
+        ;; Set current environment pointer to the written *newenv
+        (<- (reg) (memory-write* reg reg-curenv *newenv))
         ;; Evaluate expression in the created environment
         (<- (expr state) (eval-progn newtail (cons3 reg heap stdin)))
         (<- (reg heap stdin) (state))
-        ;; Increment stack-head - garbage collection
-        (<- (_ *stack-head) (add* nil t *stack-head int-zero))
-        (<- (reg) (memory-write* reg reg-stack-head *stack-head))
         ;; Set the environment back to the original outer environment
         (<- (reg) (memory-write* reg reg-curenv *origenv))
-        ;; If it is a macro, evaluate the resulting expression again in the original outer environment
-        (if-then-return ismacro
-          (eval expr (cons3 reg heap stdin) cont))
-        (cont expr (cons3 reg heap stdin)))
+        (cond
+          ;; If it is a macro, evaluate the resulting expression again in the original outer environment
+          (ismacro
+            (do
+              ;; Pop the stack memory for macros
+              (<- (state) (popstack state))
+              (eval expr state cont)))
+          ;; If it is a lambda, return the evaluated result
+          (t
+            (cont expr (cons3 reg heap stdin)))))
       ;; string
       error
       ;; int
@@ -1572,17 +1597,16 @@
     (let* eval       (eval-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
 
 
-
-    (<- (_ int-one) (add* nil t int-zero int-zero))
+    ;; (<- (_ int-one) (add* nil t int-zero int-zero))
     (let* reg
       (do
-        (<- (reg) (memory-write* initreg reg-heap-head int-one))
-        (<- (reg) (memory-write* reg reg-curenv int-one))
+        (<- (reg) (memory-write* initreg reg-heap-head int-zero))
+        (<- (reg) (memory-write* reg reg-curenv int-zero))
         (<- (reg) (memory-write* reg reg-stack-head int-zero))
         (<- (reg) (memory-write* reg reg-reader-hooks nil))
         reg))
     (<- (heap) (memory-write* initheap int-zero init-global-env))
-    (<- (heap) (memory-write* heap int-one init-global-env))
+    (<- (heap) (memory-write* heap int-zero init-global-env))
 
     ;; Show the carret prompt before evaluating the prelude.
     ;; This will allow the evaluation of the prelude while waiting for the user's initial input!
