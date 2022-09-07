@@ -1548,12 +1548,14 @@
          "("
          ")") (string-generator stdin))
     (let* Y-comb Y-comb)
-    (let* int-zero (32 (cons* t) nil))
-    (let* printexpr printexpr)
-    (let* strcmp strcmp)
-    (let* stringeq stringeq)
     (let* d-carcdr-data d-carcdr-data)
     (let* add* add*)
+    (let* int-zero (32 (cons* t) nil))
+    (let* printexpr printexpr)
+    (let* lookup-tree* lookup-tree*)
+    (let* memory-write* memory-write*)
+
+    (let* stringeq stringeq)
 
     ;; Mutual recursion for read-expr, eval, and repl
     (let* def-read-expr def-read-expr)
@@ -1564,10 +1566,12 @@
     (let* eval-hat       (lambda (x y z w) (def-eval       (x x y z w) (y x y z w) (z x y z w) (w x y z w))))
     (let* eval-apply-hat (lambda (x y z w) (def-eval-apply (x x y z w) (y x y z w) (z x y z w) (w x y z w))))
     (let* repl-hat       (lambda (x y z w) (def-repl       (x x y z w) (y x y z w) (z x y z w) (w x y z w))))
+    (let* repl       (repl-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
+    (let* eval-apply (eval-apply-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
     (let* read-expr  (read-expr-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
     (let* eval       (eval-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
-    (let* eval-apply (eval-apply-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
-    (let* repl       (repl-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
+
+
 
     (<- (_ int-one) (add* nil t int-zero int-zero))
     (let* reg
