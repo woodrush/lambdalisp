@@ -9,6 +9,9 @@ compile_prelude=./tools/compile-prelude.sh
 all:
 	$(MAKE) $(target_blc)
 
+test:
+	./tools/run-test.sh
+
 $(target_blc): $(def_prelude) $(lambdalisp_cl) $(lambdacraft_cl)
 	sbcl --script $(lambdalisp_cl) > $(target_blc)
 
