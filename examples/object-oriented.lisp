@@ -1,3 +1,7 @@
+;;============================================================================
+;; The following program is LambdaLisp-exclusive.
+;; A Common Lisp compatible version is available as `object-oriented.cl`.
+;;============================================================================
 (defclass counter ()
   (i 0)
 
