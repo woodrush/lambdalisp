@@ -1,3 +1,5 @@
+(defparameter suppress-repl t) ;; Enters script mode and suppresses `> ` from the REPL
+
 (defun new-counter (a)
   ;; Returns a closure with the persistent variable a
   (lambda () (setq a (+ 1 a))))

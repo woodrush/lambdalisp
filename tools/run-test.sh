@@ -33,5 +33,5 @@ for filename in $(ls $EXAMPLES | grep -e ".cl$"); do
     filepath="${EXAMPLES}/$filename"
     echo "Comparing $filepath..."
     compare_blc_sbcl $filepath
-    echo "Test passed."
+    echo "The outputs match."
 done

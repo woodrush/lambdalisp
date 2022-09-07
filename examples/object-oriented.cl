@@ -1,3 +1,5 @@
+(defparameter suppress-repl t) ;; Enters script mode and suppresses `> ` from the REPL
+
 ;;================================================================
 ;; Macro definitions for Common Lisp compatibility
 ;;================================================================

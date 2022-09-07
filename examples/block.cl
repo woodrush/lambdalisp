@@ -1,35 +1,37 @@
+(defparameter suppress-repl t) ;; Enters script mode and suppresses `> ` from the REPL
+
 (block block-a
-  (print 'a)
+  (print 'A)
   (return-from block-a 'b)
-  (print 'c))
+  (print 'C))
 
 (block block-b
-  (print 'a)
+  (print 'A)
   (block block-c
-    (print 'b)
-    (return-from block-c (print 'c))
-    (print 'd))
-  (print 'e)
-  (return-from block-b (print 'f))
-  (print 'g))
+    (print 'B)
+    (return-from block-c (print 'C))
+    (print 'D))
+  (print 'E)
+  (return-from block-b (print 'F))
+  (print 'G))
 
 
 (block block-b
-  (print 'a)
+  (print 'A)
   (block block-c
-    (print 'b)
-    (return-from block-b (print 'c))
-    (print 'd))
-  (print 'e)
-  (return-from block-b (print 'f))
-  (print 'g))
+    (print 'B)
+    (return-from block-b (print 'C))
+    (print 'D))
+  (print 'E)
+  (return-from block-b (print 'F))
+  (print 'G))
 
 (block block-b
-  (print 'a)
+  (print 'A)
   (block nil
-    (print 'b)
-    (return (print 'c))
-    (print 'd))
-  (print 'e)
+    (print 'B)
+    (return (print 'C))
+    (print 'D))
+  (print 'E)
   (return-from block-b)
-  (print 'g))
+  (print 'G))

@@ -1,16 +1,18 @@
+(defparameter suppress-repl t) ;; Enters script mode and suppresses `> ` from the REPL
+
 (defparameter macro-my-quote (lambda (stream char)
   `',(read stream t nil t)))
 (set-macro-character #\$ macro-my-quote)
 
-(print (append $(a b c) $(d e f)))
-(print $(a b $(c d) e))
+(print (append $(A B C) $(D E F)))
+(print $(A B $(C D) E))
 
 
 (defparameter macro-cdr-quote (lambda (stream char)
   `',(cdr (read stream t nil t))))
 (set-macro-character #\! macro-cdr-quote)
 
-(print (append !(a b c) !(d e f)))
+(print (append !(A B C) !(D E F)))
 
 
 (defparameter reader-list (lambda (stream char)

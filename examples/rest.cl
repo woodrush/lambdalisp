@@ -1,9 +1,4 @@
-(defglobal cond (macro (a &rest b)
-  (if a
-    `(if ,(car a)
-      ,(car (cdr a))
-      (cond ,@b))
-    nil)))
+(defparameter suppress-repl t) ;; Enters script mode and suppresses `> ` from the REPL
 
 (cond
   ((quote d) (quote a))

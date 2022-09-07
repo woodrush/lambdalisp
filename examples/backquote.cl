@@ -1,3 +1,5 @@
+(defparameter suppress-repl t) ;; Enters script mode and suppresses `> ` from the REPL
+
 (defun backquote-function (expr depth)
   (cond
     ((atom expr)
