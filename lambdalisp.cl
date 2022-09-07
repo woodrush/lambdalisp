@@ -102,14 +102,22 @@
                   (t
                     (cmp* (cdr n) (cdr m))))))))
 
-(defun-lazy stringeq (s1 s2)
-  ((strcmp s1 s2)
-    ;; eq
-    t
-    ;; lt
-    nil
-    ;; gt
-    nil))
+(defrec-lazy stringeq (s1 s2)
+  (do
+    (let* isnil-s1 (isnil s1))
+    (let* isnil-s2 (isnil s2))
+    (cond
+      (isnil-s1
+        isnil-s2)
+      (isnil-s2
+        isnil-s1)
+      (t
+        (do
+          (<- (car-s1 cdr-s1) (s1))
+          (<- (car-s2 cdr-s2) (s2))
+          (if-then-return (=-bit car-s1 car-s2)
+            (stringeq cdr-s1 cdr-s2))
+          nil)))))
 
 (defrec-lazy strcmp (s1 s2)
   (do
