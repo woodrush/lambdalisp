@@ -13,7 +13,8 @@ function show_error () {
     echo $1
     echo "SBCL:"
     echo $2
-    # exit 1
+    echo "The test has failed on $filepath."
+    exit 1
 }
 
 function compare_blc_sbcl () {
@@ -27,9 +28,6 @@ function compare_blc_sbcl () {
 
 
 for filename in $(ls $EXAMPLES | grep -e ".cl$"); do
-    if [[ "$filename" == 'backquote.cl' ]]; then
-        continue 1
-    fi
     filepath="${EXAMPLES}/$filename"
     echo "Comparing $filepath..."
     compare_blc_sbcl $filepath

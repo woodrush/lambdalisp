@@ -10,6 +10,7 @@ all:
 	$(MAKE) $(target_blc)
 
 test:
+	$(MAKE) $(target_blc)
 	./tools/run-test.sh
 
 $(target_blc): $(def_prelude) $(lambdalisp_cl) $(lambdacraft_cl)
