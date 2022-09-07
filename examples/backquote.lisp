@@ -1,4 +1,4 @@
-(defun backquote-function (expr)
+(defun backquote-function (expr depth)
   (cond
     ((atom expr)
       expr)
@@ -7,15 +7,22 @@
         ((and (not (atom expr))
               (not (atom (car expr)))
               (eq 'comma-splice (car (car expr))))
-          (append (eval (car (cdr (car expr)))) (backquote-function (cdr expr))))
+          (if (= depth 0)
+            (append (eval (car (cdr (car expr)))) (backquote-function (cdr expr) depth))
+            (list 'comma-splice (backquote-function (car (cdr (car expr))) (- depth 1))))
+          )
         ((eq (car expr) 'comma)
-          (eval (car (cdr expr))))
+          (if (= depth 0)
+            (eval (car (cdr expr)))
+            (list 'comma (backquote-function (car (cdr expr)) (- depth 1)))))
+        ((eq (car expr) 'backquote-function)
+          (list 'backquote-function (backquote-function (car (cdr expr)) (+ 1 depth))))
         (t
-          (cons (backquote-function (car expr)) (backquote-function (cdr expr))))))))
+          (cons (backquote-function (car expr) depth) (backquote-function (cdr expr) depth)))))))
 
 (defun backquote-macro (stream char)
   (let ((expr (read stream t nil t)))
-    (list 'backquote-function (list 'quote expr))))
+    (list 'backquote-function (list 'quote expr) 0)))
 (set-macro-character #\$ #'backquote-macro)
 
 (defun comma-macro (stream char)
@@ -33,5 +40,17 @@
 (defparameter bbb '(b b b))
 (defparameter xyz '(x y z))
 
+(print $a)
+(print `a)
+
+(print $(a (b c) d))
+(print `(a (b c) d))
+
 (print $(a ~Sbbb ~xyz c))
-;; (print $(a b c))
+(print `(a ,@bbb ,xyz c))
+
+(print $(a $(~Sbbb) ~xyz c))
+(print `(a `(,@bbb) ,xyz c))
+
+(print $(a ~$(p ~Sbbb q r) $(p ~xyz q r) c))
+(print `(a ,`(p ,@bbb q r) `(p ,xyz q r) c))
