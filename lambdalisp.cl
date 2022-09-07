@@ -744,9 +744,12 @@
               (cont ret state)))
           (<- (_ cdr-depth) (depth))
           (<- (expr state) (eval-backquote e state cdr-depth))
+          (<- (expr-cdr state) (eval-backquote cdr-e state cdr-depth))
           (cont
-            (cons-data@ (atom* (list "," "@"))
-              (cons-data@ expr (atom* nil)))
+            (cons-data@
+              (cons-data@ (atom* (list "," "@"))
+                (cons-data@ expr (atom* nil)))
+              expr-cdr)
             state)))
       (if-then-return (and (isatom car-e) (stringeq (valueof car-e) (list ",")))
         (do

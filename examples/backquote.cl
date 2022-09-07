@@ -11,7 +11,9 @@
               (eq 'COMMA-SPLICE (car (car expr))))
           (if (= depth 0)
             (append (eval (car (cdr (car expr)))) (BACKQUOTE-FUNCTION (cdr expr) depth))
-            (list 'COMMA-SPLICE (BACKQUOTE-FUNCTION (car (cdr (car expr))) (- depth 1))))
+            (cons
+              (list 'COMMA-SPLICE (BACKQUOTE-FUNCTION (car (cdr (car expr))) (- depth 1)))
+              (BACKQUOTE-FUNCTION (cdr expr) (- depth 1))))
           )
         ((eq (car expr) 'COMMA)
           (if (= depth 0)
@@ -51,8 +53,8 @@
 (print $(A ~SBBB ~XYZ C))
 (print `(A ,@BBB ,XYZ C))
 
-(print $(A $(~SBBB) ~XYZ C))
-(print `(A `(,@BBB) ,XYZ C))
+(print $(A $(P ~SBBB R) ~XYZ C))
+(print `(A `(P ,@BBB R) ,XYZ C))
 
 (print $(A ~$(P ~SBBB Q R) $(P ~XYZ Q R) C))
 (print `(A ,`(P ,@BBB Q R) `(P ,XYZ Q R) C))
