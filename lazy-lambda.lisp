@@ -42,13 +42,9 @@
     (eq (type *p) 'str))
 
   (defmacro labels (llist &rest *b)
-    (defun-local helper (items)
-      (if items
-        (cons (cons 'defun-local (car items)) (helper (cdr items)))
-        ()))
     `(progn
-      ,@(helper llist)
-      ,@*b))
+      (let (,@(mapcar (lambda (item) `(,(car item) (lambda ,@(cdr item)))) llist))
+        ,@*b)))
 
   (defun length (l)
     (if (atom l)
