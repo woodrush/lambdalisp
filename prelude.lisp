@@ -1,19 +1,22 @@
 (progn
-  (defparameter defmacro (macro (name args &rest *b)
-    `(defparameter ,name (macro ,args (block ,name ,@*b)))))
+  (defglobal defmacro (macro (name args &rest *b)
+    `(defglobal ,name (macro ,args (block ,name ,@*b)))))
 
   (defmacro defun (name args &rest *b)
-    `(defparameter ,name (lambda ,args (block ,name ,@*b))))
+    `(defglobal ,name (lambda ,args (block ,name ,@*b))))
 
   (defmacro defun-local (name args &rest *b)
     `(setq ,name (lambda ,args (block ,name ,@*b))))
 
-  (defparameter list (macro (&rest *q)
+  (defmacro defparameter (*a *b)
+    `(defglobal ,*a ,*b))
+
+  (defglobal list (macro (&rest *q)
     (if *q
       (cons 'cons (cons (car *q) (cons (cons 'list (cdr *q)) ())))
       ())))
 
-  (defparameter cond (macro (*a &rest *b)
+  (defglobal cond (macro (*a &rest *b)
     (if *a
       (list 'if (car *a)
         (cons 'progn (cdr *a))

@@ -815,12 +815,6 @@
 
 (defrec-lazy assoc (expr reg heap cont)
   (do
-    ;; First look up global variables
-    (<- (globalenv) (lookup-tree* heap int-zero))
-    (<- (var *var) (lookup-var (valueof expr) globalenv int-zero heap))
-    (if-then-return (not (isnil *var))
-      (cont var *var))
-    ;; If it's not in the global environment, look up the lexical environment
     (<- (*curenv) (lookup-tree* reg reg-curenv))
     (<- (curenv) (lookup-tree* heap *curenv))
     (lookup-var (valueof expr) curenv *curenv heap cont)))
@@ -1202,7 +1196,7 @@
               (<- (reg heap stdin) (state))
               (<- (heap) (memory-write* heap *val newenv))
               (cont bind-var (cons3 reg heap stdin))))
-          ((stringeq (valueof head) kDefparameter)
+          ((stringeq (valueof head) kDefglobal)
             (do
               (<- (reg heap stdin) (state))
               (<- (valenv) (lookup-tree* heap int-zero))
@@ -1469,7 +1463,7 @@
       (list "c" "d" "r") ;kCdr
       (list "e" "q"); kEq
       (list4 "c" "o" "n" "s") ;kCons
-      ((string-concatenator nil) "r" "e" "t" "e" "m" "a" "r" "a" "p" "f" "e" "d" nil)
+      (list-tail "d" "e" "f" "g" "l" (list4 "o" "b" "a" "l"))
       (cons "l" (cons "a" (list4 "m" "b" "d" "a")))
       (cons "m" (list4 "a" "c" "r" "o"))
       (cons "p" (list4 "r" "o" "g" "n"))
@@ -1542,7 +1536,7 @@
          kCdr
          kEq
          kCons
-         kDefparameter
+         kDefglobal
          kLambda
          kMacro
          kProgn
