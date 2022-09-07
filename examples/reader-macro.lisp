@@ -1,37 +1,38 @@
-(defglobal macro-my-quote (lambda (char)
-  `',(read)))
-(set-macro-character "#" macro-my-quote)
+(defparameter macro-my-quote (lambda (stream char)
+  `',(read stream t nil t)))
+(set-macro-character #\$ macro-my-quote)
 
-(print (append #(a b c) #(d e f)))
-(print #(a b #(c d) e))
+(print (append $(a b c) $(d e f)))
+(print $(a b $(c d) e))
 
 
-(defglobal macro-cdr-quote (lambda (char)
-  `',(cdr (read))))
-(set-macro-character "!" macro-cdr-quote)
+(defparameter macro-cdr-quote (lambda (stream char)
+  `',(cdr (read stream t nil t))))
+(set-macro-character #\! macro-cdr-quote)
 
 (print (append !(a b c) !(d e f)))
 
 
-(defglobal reader-list (lambda (char)
-  (block reader-list
-    (if (eq char "]")
-      (return-from reader-list '**reader-list-end**))
-    (setq helper (lambda (l)
-      (setq helper-ret ())
-      (loop
-        (if (atom l)
-          (return-from () helper-ret))
-        (setq helper-ret (cons 'cons (cons (car l) (cons helper-ret nil))))
-        (setq l (cdr l)))))
-    (setq ret ())
-    (loop
-      (setq token (read))
-      (if (eq token '**reader-list-end**)
-        (return-from reader-list (helper ret)))
-      (setq ret (cons token ret))))))
-(set-macro-character "[" reader-list)
-(set-macro-character "]" reader-list)
+(defparameter reader-list (lambda (stream char)
+  (labels
+    ((helper (l)
+      (let ((helper-ret ()))
+        (loop
+          (if (atom l)
+            (return-from () helper-ret))
+          (setq helper-ret (cons 'cons (cons (car l) (cons helper-ret nil))))
+          (setq l (cdr l))))))
+    (let ((ret ()) (token ()))
+      (block reader-list
+        (if (eq char #\])
+          (return-from reader-list '**reader-list-end**))
+        (loop
+          (setq token (read stream t nil t))
+          (if (eq token '**reader-list-end**)
+            (return-from reader-list (helper ret)))
+          (setq ret (cons token ret))))))))
+(set-macro-character #\[ reader-list)
+(set-macro-character #\] reader-list)
 
 (print [1 2 3 4 5])
 (print [1 [(cons 3 (cons 4 nil)) (+ 2 3) (* 2 3)] 4 [5 6 ] ])
