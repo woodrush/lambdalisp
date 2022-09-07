@@ -1,4 +1,4 @@
-(defvar cond (macro (a &rest b)
+(defglobal cond (macro (a &rest b)
   (if a
     `(if ,(car a)
       ,(car (cdr a))

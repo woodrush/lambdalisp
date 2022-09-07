@@ -1,4 +1,4 @@
-(defvar macro-my-quote (lambda (char)
+(defglobal macro-my-quote (lambda (char)
   `',(read)))
 (set-macro-character "#" macro-my-quote)
 
@@ -6,14 +6,14 @@
 (print #(a b #(c d) e))
 
 
-(defvar macro-cdr-quote (lambda (char)
+(defglobal macro-cdr-quote (lambda (char)
   `',(cdr (read))))
 (set-macro-character "!" macro-cdr-quote)
 
 (print (append !(a b c) !(d e f)))
 
 
-(defvar reader-list (lambda (char)
+(defglobal reader-list (lambda (char)
   (block reader-list
     (if (eq char "]")
       (return-from reader-list '**reader-list-end**))

@@ -1613,8 +1613,6 @@
     (let* read-expr  (read-expr-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
     (let* eval       (eval-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
 
-
-    ;; (<- (_ int-one) (add* nil t int-zero int-zero))
     (let* reg
       (do
         (<- (reg) (memory-write* initreg reg-heap-head int-zero))
@@ -1646,7 +1644,7 @@
 ;; (format t (compile-to-blc-lazy main))
 
 ;; (format t (concatenate 'string "`"  (compile-to-ski-lazy main) (compile-to-ski-lazy string-generator)))
-(format t (concatenate 'string "01"  (compile-to-blc-lazy main) (compile-to-blc-lazy string-generator)))
+(format t (concatenate 'string "01" (compile-to-blc-lazy main) (compile-to-blc-lazy string-generator)))
 
 ;; (format t (compile-to-blc-lazy string-generator))
 

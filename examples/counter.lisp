@@ -1,7 +1,7 @@
 (setq new-counter
-    (lambda (a)
-        (let ((a a))
-            (lambda () (setq a (+ 1 a))))))
+  (lambda (a)
+    (let ((a a))
+      (lambda () (setq a (+ 1 a))))))
 (setq counter1 (new-counter 0))
 (setq counter2 (new-counter 10))
 (counter1)

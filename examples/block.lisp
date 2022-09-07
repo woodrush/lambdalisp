@@ -1,35 +1,35 @@
-(block a
-  (print (quote a))
-  (return-from a (quote b))
-  (print (quote c)))
+(block block-a
+  (print 'a)
+  (return-from block-a 'b)
+  (print 'c))
 
-(block b
-  (print (quote a))
-  (block c
-    (print (quote b))
-    (return-from c (print (quote c)))
-    (print (quote d)))
-  (print (quote e))
-  (return-from b (print (quote f)))
-  (print (quote g)))
+(block block-b
+  (print 'a)
+  (block block-c
+    (print 'b)
+    (return-from block-c (print 'c))
+    (print 'd))
+  (print 'e)
+  (return-from block-b (print 'f))
+  (print 'g))
 
 
-(block b
-  (print (quote a))
-  (block c
-    (print (quote b))
-    (return-from b (print (quote c)))
-    (print (quote d)))
-  (print (quote e))
-  (return-from b (print (quote f)))
-  (print (quote g)))
+(block block-b
+  (print 'a)
+  (block block-c
+    (print 'b)
+    (return-from block-b (print 'c))
+    (print 'd))
+  (print 'e)
+  (return-from block-b (print 'f))
+  (print 'g))
 
-(block b
-  (print (quote a))
-  (block c
-    (print (quote b))
-    (return-from () (print (quote c)))
-    (print (quote d)))
-  (print (quote e))
-  (return-from b)
-  (print (quote g)))
+(block block-b
+  (print 'a)
+  (block block-c
+    (print 'b)
+    (return-from block-() (print 'c))
+    (print 'd))
+  (print 'e)
+  (return-from block-b)
+  (print 'g))
