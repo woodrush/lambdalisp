@@ -599,6 +599,16 @@
 (def-lazy reg-stack-head (list nil nil t))
 (def-lazy reg-block-cont (list nil nil nil))
 
+(defun-lazy error (message state)
+  (do
+    (printstring kError)
+    (cons " ")
+    (cons "-")
+    (cons " ")    
+    (printstring message)
+    (cons "\\n")
+    (repl state)))
+
 (defun-lazy malloc (state cont)
   (do
     (<- (reg heap stdin) (state))
@@ -816,7 +826,7 @@
 (defun-lazy def-eval-apply (read-expr eval eval-apply repl head tail eval-tail state cont)
   (do
     (<- (maybelambda state) (eval head state))
-    (let* error (cons "@" (printexpr head (repl state))))
+    (let* error (error (printexpr head nil) state))
     ;; TODO: show error message for non-lambdas
     (typematch maybelambda
       ;; atom
@@ -878,7 +888,7 @@
       ;; If the variable is unbound, interrupt with an error
       (if-then-return (isnil val*)
         ;; TODO: refine error message
-        (cons "@" (printexpr expr (repl state))))
+        (error (printexpr expr nil) state))
       (cont val state))
     ;; list
     (do
@@ -1110,7 +1120,7 @@
             (do
               (<- (arg1) (car-data tail))
               (<- (expr state) (eval arg1 state))
-              (printexpr expr (cons "\\n" (repl state)))))
+              (error (printexpr expr nil) state)))
           ((stringeq (valueof head) kLet)
             (do
               (<- (reg heap stdin) (state))
@@ -1196,7 +1206,7 @@
                   car-mapped
                   cdr-mapped))
               (if-then-return (isnil sum)
-                (cons "@" (repl state)))
+                (error kPlus state))
               (cont sum state)))
           ((stringeq (valueof head) kMinus)
             (do
@@ -1215,7 +1225,7 @@
                   car-mapped
                   cdr-mapped))
               (if-then-return (isnil sum)
-                (cons "@" (repl state)))
+                (error kMinus state))
               (cont sum state)))
           ((stringeq (valueof head) kMul)
             (do
@@ -1234,7 +1244,7 @@
                   car-mapped
                   cdr-mapped))
               (if-then-return (isnil sum)
-                (cons "@" (repl state)))
+                (error kMul state))
               (cont sum state)))
           ((or (stringeq (valueof head) kDiv)
                (stringeq (valueof head) kMod))
