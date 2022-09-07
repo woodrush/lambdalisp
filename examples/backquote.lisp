@@ -1,10 +1,11 @@
 (defun backquote-function (expr)
   (cond
-    ((eq (type expr) 'atom)
+    ((atom expr)
       expr)
-    ((eq (type expr) 'cons)
+    (t
       (cond
-        ((and (eq 'cons (type (car expr)))
+        ((and (not (atom expr))
+              (not (atom (car expr)))
               (eq 'comma-splice (car (car expr))))
           (append (eval (car (cdr (car expr)))) (backquote-function (cdr expr))))
         ((eq (car expr) 'comma)
@@ -12,23 +13,25 @@
         (t
           (cons (backquote-function (car expr)) (backquote-function (cdr expr))))))))
 
-(defun backquote-macro (char)
-  (setq expr (read))
-  (cons 'backquote-function (cons (cons 'quote (cons expr nil)) nil)))
-(set-macro-character "`" backquote-macro)
+(defun backquote-macro (stream char)
+  (let ((expr (read stream t nil t)))
+    (list 'backquote-function (list 'quote expr))))
+(set-macro-character #\$ #'backquote-macro)
 
-(defun comma-macro (char)
-  (if (eq (peek-char) "@")
+(defun comma-macro (stream char)
+  (if (eq (peek-char t stream) #\S)
     (progn
-      (read-char)
-      (setq expr (read))
-      (cons 'comma-splice (cons expr nil)))
+      (read-char stream t nil t)
+      (let ((expr (read stream t nil t)))
+        (cons 'comma-splice (cons expr nil))))
     (progn
-      (setq expr (read))
-      (cons 'comma (cons expr nil)))))
-(set-macro-character "," comma-macro)
+      (let ((expr (read stream t nil t)))
+        (cons 'comma (cons expr nil))))))
+(set-macro-character #\~ #'comma-macro)
 
 
-(setq bbb '(b b b))
-(setq xyz '(x y z))
-`(a ,@bbb ,xyz c)
+(defparameter bbb '(b b b))
+(defparameter xyz '(x y z))
+
+(print $(a ~Sbbb ~xyz c))
+;; (print $(a b c))

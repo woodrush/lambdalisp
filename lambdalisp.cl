@@ -1376,7 +1376,7 @@
 
 (defun-lazy string-generator (stdin cont)
   (do
-    (<- ("\\n" "tilde" "0" "1" "." "<" ">" "=" "%" "/" "*" "+" "-" "&" "y" "h" "k" "v" "b" "g" "m" "p" "u" "q" "#" "@" "," "`" "'" "w" "\"" "f" "i" "o" "l" "d" "n" "c" "s" "t" "a" "r" "e" "(" ")" " ")
+    (<- ("\\" "\\n" "tilde" "0" "1" "." "<" ">" "=" "%" "/" "*" "+" "-" "&" "y" "h" "k" "v" "b" "g" "m" "p" "u" "q" "#" "@" "," "`" "'" "w" "\"" "f" "i" "o" "l" "d" "n" "c" "s" "t" "a" "r" "e" "(" ")" " ")
       ((lambda (cont)
         (let ((cons2 (lambda (x y z) (cons x (cons y z))))
               (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
@@ -1386,6 +1386,7 @@
               ("01" (cons2 t nil))
               ("00" (cons2 t t)))
           (cont
+            (do ("01") ("01") ("11") ("00") nil)  ;; "\\"
             (do ("00") ("00") ("10") ("10") nil)  ;; "\\n"
             (do ("01") ("11") ("11") ("10") nil)  ;; "tilde"
             (do ("00") ("11") ("00") ("00") nil)  ;; "0"
