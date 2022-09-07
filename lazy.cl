@@ -281,9 +281,6 @@
   `(do* ,@(reverse proc)))
 
 
-(defmacro compile-to-blc-lazy (expr-lazy)
-  `(compile-to-blc (macroexpand-lazy ,expr-lazy)))
-
 
 ;;================================================================
 ;; Lazy K support (compilation to SKI combinator calculus)
@@ -331,8 +328,96 @@
 (defun compile-to-ski (expr)
   (flatten-ski (t-rewrite (curry expr))))
 
+
+;;================================================================
+;; Additional compilers
+;;================================================================
+(defparameter simple-lambda-env-vars
+  (list
+    "x" "y" "z" "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w"
+    "α" "β" "γ" "δ" "ε" "ζ" "η" "θ" "κ" "μ" "ν" "ξ" "π" "ρ" "σ" "τ" "υ" "φ" "χ" "ψ" "ω"
+    "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z"))
+
+(defun int-to-alphabet (i)
+  (if (< i (length simple-lambda-env-vars))
+    (nth i simple-lambda-env-vars)
+    (format nil "~a_~a"
+      (nth (mod i (length simple-lambda-env-vars)) simple-lambda-env-vars)
+      (floor i (length simple-lambda-env-vars)))))
+
+(defun lambda-compiler-builder (app-format-var app-format-app abs-format)
+  (let ((compiler ())
+        (app-format-var app-format-var)
+        (app-format-app app-format-app)
+        (abs-format abs-format))
+    (setq compiler
+      (lambda (body &optional (env ()))
+        (labels
+          ((lookup (env var)
+            (let ((i (position var (reverse env) :test #'equal)))
+              (if i
+                (int-to-alphabet i)
+                (decorate-varname var)))))
+          (if (atom body)
+              (lookup env body)
+              (if (not (islambda body))
+                (format nil (if (atom (car body)) app-format-var app-format-app)
+                    (funcall compiler (car body) env)
+                    (funcall compiler (car (cdr body)) env))
+                (format nil abs-format
+                  (lookup (cons (lambdaarg-top body) env) (lambdaarg-top body))
+                  (funcall compiler (lambdabody body) (cons (lambdaarg-top body) env))))))))))
+
+(defparameter to-simple-lambda* (lambda-compiler-builder "(~a ~a)" "(~a ~a)" "λ~a.~a"))
+(defun to-simple-lambda (&rest args)
+  (apply to-simple-lambda* args))
+
+(defparameter to-js-arrow* (lambda-compiler-builder "~a(~a)" "(~a)(~a)" "(~a) => ~a"))
+(defun to-js-arrow (&rest args)
+  (apply to-js-arrow* args))
+
+(defparameter to-js* (lambda-compiler-builder "~a(~a)" "(~a)(~a)" "function (~a) { return ~a; }"))
+(defun to-js (&rest args)
+  (apply to-js* args))
+
+(defparameter to-python* (lambda-compiler-builder "~a(~a)" "(~a)(~a)" "lambda ~a: ~a"))
+(defun to-python (&rest args)
+  (apply to-python* args))
+
+(defun compile-to-js (expr)
+  (to-js (curry expr)))
+
+(defun compile-to-js-arrow (expr)
+  (to-js-arrow (curry expr)))
+
+(defun compile-to-python (expr)
+  (to-python (curry expr)))
+
+(defun compile-to-simple-lambda (expr)
+  (to-simple-lambda (curry expr)))
+
+
+
+;;================================================================
+;; Utilities
+;;================================================================
+(defmacro compile-to-blc-lazy (expr-lazy)
+  `(compile-to-blc (macroexpand-lazy ,expr-lazy)))
+
 (defmacro compile-to-ski-lazy (expr-lazy)
   `(compile-to-ski (macroexpand-lazy ,expr-lazy)))
+
+(defmacro compile-to-js-lazy (expr-lazy)
+  `(compile-to-js (macroexpand-lazy ,expr-lazy)))
+
+(defmacro compile-to-js-arrow-lazy (expr-lazy)
+  `(compile-to-js-arrow (macroexpand-lazy ,expr-lazy)))
+
+(defmacro compile-to-python-lazy (expr-lazy)
+  `(compile-to-python (macroexpand-lazy ,expr-lazy)))
+
+(defmacro compile-to-simple-lambda-lazy (expr-lazy)
+  `(compile-to-simple-lambda (macroexpand-lazy ,expr-lazy)))
 
 
 ;; Message for LambdaLisp
