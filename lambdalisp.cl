@@ -525,7 +525,15 @@
     (if-then-return (isnil func-hook)
       (cont nil reg-heap stdin))
     (<- (c cdr-stdin) (stdin))
-    (<- (expr state) (eval-apply func-hook (cons-data@ (string* (list c)) (atom* nil)) t (cons3 reg heap cdr-stdin)))
+    (<- (expr state)
+      (eval-apply
+        func-hook
+        (cons-data@
+          (string* stdin)
+          (cons-data@
+            (string* (list c))
+            (atom* nil)))
+        t (cons3 reg heap cdr-stdin)))
     (<- (reg heap stdin) (state))
     (cont expr (cons reg heap) stdin)))
 
@@ -597,8 +605,11 @@
 (def-lazy reg-curenv (list nil t t))
 (def-lazy reg-heap-head (list nil t nil))
 (def-lazy reg-stack-head (list nil nil t))
-(def-lazy reg-block-cont (list nil nil nil nil))
 (def-lazy reg-stack-trace (list nil nil nil t))
+(def-lazy reg-block-cont (list nil nil nil nil nil))
+(def-lazy reg-suppress-repl (list nil nil nil nil t))
+
+
 
 (defrec-lazy print-stack-trace (stack-trace cont)
   (do
@@ -1202,6 +1213,13 @@
               (<- (valenv) (lookup-tree* heap int-zero))
               (<- (bind-var newenv state) (eval-letbind valenv (cons-data@ tail (atom* nil)) state))
               (<- (reg heap stdin) (state))
+              (<- (arg1) (car-data tail))
+              (<- (reg)
+                ((if (stringeq (valueof arg1) kSuppressRepl)
+                  (do
+                    (<- (result) ((eval-bool (not (isnil-data bind-var)))))
+                    (memory-write* reg reg-suppress-repl result))
+                  (lambda (cont) (cont reg)))))
               (<- (heap) (memory-write* heap int-zero newenv))
               (cont bind-var (cons3 reg heap stdin))))
           ((stringeq (valueof head) kLambda)
@@ -1483,12 +1501,13 @@
       (cons "a" (cons "p" (list4 "p" "e" "n" "d")))
       (cons "i" (cons "n" (list4 "t" "e" "r" "n")))
       (list-tail "c" "a" (list4 "r" "s" "t" "r")) ;kCarstr
-      (list-tail "c" "d" (list4 "r" "s" "t" "r")) ;kCdrstr 
+      (list-tail "c" "d" (list4 "r" "s" "t" "r")) ;kCdrstr
       (cdr (list4 nil "s" "t" "r")) ;kStr
       (list4 "t" "y" "p" "e") ; kType
       (cons "m" (cons "a" (list4 "l" "l" "o" "c")))
       (list-tail "m" "e" "m" (list4 "r" "e" "a" "d"))
       (list-tail "m" "e" "m" "w" (list4 "r" "i" "t" "e"))
+      (list-tail "s" "u" "p" "p" "r" "e" "s" "s" "-" (list4 "r" "e" "p" "l"))
       (list "+")
       (list "-")
       (list "*")
@@ -1514,6 +1533,10 @@
     (<- (expr reg-heap stdin) (read-expr (cons reg heap) stdin))
     (<- (reg heap) (reg-heap))
     (<- (expr state) (eval expr (cons3 reg heap stdin)))
+    (<- (reg heap stdin) (state))
+    (<- (suppress-repl) (lookup-tree* reg reg-suppress-repl))
+    (if-then-return suppress-repl
+      (repl state))
     (printexpr expr
       (do
         (cons "\\n")
@@ -1562,6 +1585,7 @@
          kMalloc
          kMemread
          kMemwrite
+         kSuppressRepl
          kPlus
          kMinus
          kMul
@@ -1621,6 +1645,7 @@
         (<- (reg) (memory-write* reg reg-stack-head int-zero))
         (<- (reg) (memory-write* reg reg-reader-hooks nil))
         (<- (reg) (memory-write* reg reg-stack-trace nil))
+        (<- (reg) (memory-write* reg reg-suppress-repl nil))
         reg))
     (<- (heap) (memory-write* initheap int-zero init-global-env))
     (<- (heap) (memory-write* heap int-zero init-global-env))
