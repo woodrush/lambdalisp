@@ -91,14 +91,6 @@
   (defmacro reduce (f l)
     `(eval (cons ,f ,l)))
 
-  (defun sharp-reader (char)
-    (if (eq "'" (peek-char))
-      (progn
-        (read-char)
-        (read))
-      (read)))
-  (set-macro-character "#" sharp-reader)
-
   (defun string (*p)
     (str *p))
 
@@ -255,6 +247,18 @@
 
   (defmacro setf (place value)
     `(setf* ,place ,value))
+
+  (set-macro-character "#"
+    (lambda (char)
+      (if (eq "\\" (peek-char))
+        (progn
+          (read-char)
+          (read-char))
+        (if (eq "'" (peek-char))
+          (progn
+            (read-char)
+            (read))
+          (read)))))
 
   ;; "loaded prelude.lisp"
 )
