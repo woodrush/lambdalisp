@@ -375,7 +375,22 @@
         (cons "(" (cons ")" cont))
         (printstring (valueof expr) cont))
       ;; list
-      (cons "(" (printlist expr cont))
+      (do
+        (<- (car-expr cdr-expr) (d-carcdr-data expr))
+        (<- (car-cdr-expr) (car-data cdr-expr))
+        (if-then-return (isatom car-expr)
+          (cond
+            ((stringeq (valueof car-expr) kQuote)
+              (cons "'" (printexpr car-cdr-expr cont)))
+            ((stringeq (valueof car-expr) (list "`"))
+              (cons "`" (printexpr car-cdr-expr cont)))
+            ((stringeq (valueof car-expr) (list ","))
+              (cons "," (printexpr car-cdr-expr cont)))
+            ((stringeq (valueof car-expr) (list "," "@"))
+              (cons "," (cons "@" (printexpr car-cdr-expr cont))))
+            (t
+              (cons "(" (printlist expr cont)))))
+        (cons "(" (printlist expr cont)))
       ;; lambda
       (do
         (<- (ismacro ptr args body) ((valueof expr)))
@@ -1014,7 +1029,7 @@
               (<- (arg1 arg2) (d-carcdr-data tail))
               (<- (arg1 state) (eval arg1 state))
               (if-then-return (isnil-data arg2)
-                (printexpr arg1 (cons "\\n" (cont arg1 state))))
+                (cons "\\n" (printexpr arg1 (cons " " (cont arg1 state)))))
               (if-then-return (isstring arg1)
                 (printstring (valueof arg1) (cont arg1 state)))
               (printexpr arg1 (cont arg1 state))))
