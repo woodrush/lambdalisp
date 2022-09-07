@@ -10,21 +10,21 @@
 
   (defparameter list (macro (&rest *q)
     (if *q
-      (cons 'cons (cons (car *q) (cons (cons 'list (cdr *q)) nil)))
-      nil)))
+      (cons 'cons (cons (car *q) (cons (cons 'list (cdr *q)) ())))
+      ())))
 
   (defparameter cond (macro (*a &rest *b)
     (if *a
       (list 'if (car *a)
         (cons 'progn (cdr *a))
         (cons 'cond *b))
-      nil)))
+      ())))
 
   (defun and (*p &rest *q)
     (if *q
       (if *p
         (apply and *q)
-        nil)
+        ())
       *p))
 
   (defun or (*a &rest *b)
@@ -33,7 +33,7 @@
       *a))
 
   (defun not (*p)
-    (if *p nil t))
+    (if *p () t))
 
   (defun equal (*p *q)
     (or (eq *p *q) (= *p *q)))
@@ -45,7 +45,7 @@
     (defun-local helper (items)
       (if items
         (cons (cons 'defun-local (car items)) (helper (cdr items)))
-        nil))
+        ()))
     `(progn
       ,@(helper llist)
       ,@*b))
@@ -59,14 +59,14 @@
     `(return-from () ,*p))
 
   (defun position* (item l test-f)
-    (setq i 0)
-    (loop
-      (if (atom l)
-        (return-from position* nil))
-      (if (test-f item (car l))
-        (return-from position* i))
-      (setq i (+ 1 i))
-      (setq l (cdr l))))
+    (let ((i 0))
+      (loop
+        (if (atom l)
+          (return ()))
+        (if (test-f item (car l))
+          (return i))
+        (setq i (+ 1 i))
+        (setq l (cdr l)))))
 
   (defmacro position (item l test test-f)
     `(position* ,item ,l ,test-f))
@@ -80,16 +80,16 @@
   (defun mapcar (f *p)
     (if *p
       (cons (f (car *p)) (mapcar f (cdr *p)))
-      nil))
+      ()))
 
   (defun reverse (l)
-    (setq ret ())
-    (loop
-      (if (atom l)
-        (return ret)
-        nil)
-      (setq ret (cons (car l) ret))
-      (setq l (cdr l))))
+    (let ((ret ()))
+      (loop
+        (if (atom l)
+          (return ret)
+          ())
+        (setq ret (cons (car l) ret))
+        (setq l (cdr l)))))
 
   (defmacro reduce (f l)
     `(eval (cons ,f ,l)))
@@ -113,7 +113,7 @@
     (loop
       (cond
         ((eq str "")
-          (return-from))
+          (return ()))
         ((eq (carstr str) "~")
           (setq str (cdrstr str))
           (cond
@@ -124,7 +124,7 @@
                 (progn
                   (setq item (car args))
                   (setq args (cdr args)))
-                (setq item nil))
+                (setq item ()))
               (setq ret (cons (str item) ret)))))
         (t
           (setq ret (cons (carstr str) ret))))
@@ -133,28 +133,28 @@
     (setq str "")
     (loop
       (if (eq ret ())
-        (return-from))
+        (return ()))
       (setq str (+ (car ret) str))
       (setq ret (cdr ret)))
     (if option
       (progn
         (print str t)
-        nil)
+        ())
       str))
 
   ;;================================================================
   ;; Hash table
   ;;================================================================
   (defun make-hash-table* ()
-    (let ((hashtable nil))
+    (let ((hashtable ()))
       (defun-local getter (key)
-        (setq hashlist hashtable)
-        (loop
-          (if (atom hashlist)
-            (return-from getter nil))
-          (if (eq key (car (car hashlist)))
-            (return-from getter (cdr (car hashlist))))
-          (setq hashlist (cdr hashlist))))
+        (let ((hashlist hashtable))
+          (loop
+            (if (atom hashlist)
+              (return ()))
+            (if (eq key (car (car hashlist)))
+              (return (cdr (car hashlist))))
+            (setq hashlist (cdr hashlist)))))
       (defun-local setter (key value)
         (setq hashtable (cons (cons key value) hashtable)))
       (lambda (mode key &rest value)
@@ -162,7 +162,7 @@
           (getter key)
           (if (eq mode 'set)
             (setter key (car value))
-            nil)))))
+            ())))))
 
   (defmacro make-hash-table (&rest *p)
     (make-hash-table*))
@@ -199,7 +199,7 @@
                 (car (cdr (car args)))
                 head)
               (collect-fieldnames (cdr args)))
-        nil))
+        ()))
     (defun-local *parse-*b (*b)
       (setq *head (car (car *b)))
       (if *b
@@ -210,7 +210,7 @@
                   `(,fieldname (lambda ,*a ,@*rest)))
                 (car *b))
               (*parse-*b (cdr *b)))
-        nil))
+        ()))
     (defun-local *build-getter (args)
       (defun-local helper (args)
         (if args
@@ -219,7 +219,7 @@
               ,(helper (cdr args)))
           '(if super
             (super a)
-            nil)))
+            ())))
       `(lambda (a) ,(helper (cons 'setter (cons 'super args)))))
 
     (defun-local *build-setter (args)
@@ -230,7 +230,7 @@
               ,(helper (cdr args)))
           '(if super
             ((super 'setter) key value)
-            nil)))
+            ())))
       `(lambda (key value) ,(helper args)))
 
     (setq fieldnames (collect-fieldnames *b))
