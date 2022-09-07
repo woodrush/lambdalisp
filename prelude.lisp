@@ -42,7 +42,7 @@
     (eq (type *p) 'str))
 
   (defmacro labels (llist &rest *b)
-    `(let (,@(mapcar (lambda (item) `(,(car item) ()))))
+    `(let (,@(mapcar (lambda (item) `(,(car item) ())) llist))
       ,@(mapcar (lambda (item) `(setq ,(car item) (lambda ,@(cdr item)))) llist)
       ,@*b))
 
@@ -52,7 +52,7 @@
       (+ 1 (length (cdr l)))))
 
   (defmacro return (&rest *p)
-    `(return-from () ,(if atom *p *p (car *p))))
+    `(return-from () ,(if (atom *p) *p (car *p))))
 
   (defun position* (item l test-f)
     (let ((i 0))
