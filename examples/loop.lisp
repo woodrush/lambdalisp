@@ -1,4 +1,4 @@
-(setq i 0)
+(defparameter i 0)
 (loop
   (if (= i 10)
     (return))

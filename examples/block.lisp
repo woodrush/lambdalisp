@@ -26,9 +26,9 @@
 
 (block block-b
   (print 'a)
-  (block block-c
+  (block nil
     (print 'b)
-    (return-from block-() (print 'c))
+    (return (print 'c))
     (print 'd))
   (print 'e)
   (return-from block-b)
