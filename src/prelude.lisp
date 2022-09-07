@@ -12,7 +12,7 @@
     `(defglobal ,*a ,*b))
 
   (defmacro funcall (f &rest args)
-    `(apply ,f ,args))
+    `(,f ,@args))
 
   (defglobal list (macro (&rest *q)
     (if *q
