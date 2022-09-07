@@ -604,9 +604,11 @@
     (printstring kError)
     (cons " ")
     (cons "-")
-    (cons " ")    
+    (cons " ")
     (printstring message)
     (cons "\\n")
+    (cons ">")
+    (cons " ")
     (repl state)))
 
 (defun-lazy malloc (state cont)
