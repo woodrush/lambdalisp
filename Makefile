@@ -1,7 +1,7 @@
 target_blc=lambdalisp.blc
 
 lambdalisp_cl=./lambdalisp.cl
-lambdacraft_cl=./lazy.cl
+lambdacraft_cl=./lambdacraft.cl
 def_prelude=./src/def-prelude.cl
 prelude_lisp=./src/prelude.lisp
 compile_prelude=./tools/compile-prelude.sh

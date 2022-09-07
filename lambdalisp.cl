@@ -1,4 +1,4 @@
-(load "./lazy.cl")
+(load "./lambdacraft.cl")
 (load "./src/def-prelude.cl")
 
 
@@ -1590,7 +1590,7 @@
     (cons (valueof t-atom) t-atom)
     (cons kNil (atom* nil))))
 
-(defun-lazy main (string-generator stdin)
+(defun-lazy init (string-generator stdin)
   (do
     (<- (prelude-str
          kPrint
@@ -1702,16 +1702,24 @@
     (<- (expr state) (eval expr (cons3 reg heap stdin)))
     (repl state)))
 
+(defun-lazy main (stdin)
+  (init string-generator stdin))
+
 ;;================================================================
 ;; Compilation
 ;;================================================================
 ;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
 
 ;; ;; (format t (compile-to-ski-lazy main))
-;; (format t (compile-to-blc-lazy main))
+(format t (compile-to-blc-lazy main))
 
 ;; (format t (concatenate 'string "`"  (compile-to-ski-lazy main) (compile-to-ski-lazy string-generator)))
-(format t (concatenate 'string "01" (compile-to-blc-lazy main) (compile-to-blc-lazy string-generator)))
+;; (format t (concatenate 'string "01" (compile-to-blc-lazy main) (compile-to-blc-lazy string-generator)))
+
+;; (print (compile-to-simple-lambda main))
+
+;; (format t (compile-to-js-arrow-lazy main))
+;; (format t (compile-to-simple-lambda-lazy main))
 
 ;; (format t (compile-to-blc-lazy string-generator))
 
