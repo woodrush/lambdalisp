@@ -1,6 +1,6 @@
 (defparameter suppress-repl t) ;; Enters script mode and suppresses `> ` from the REPL
 
-(defun backquote-function (expr depth)
+(defun BACKQUOTE-FUNCTION (expr depth)
   (cond
     ((atom expr)
       expr)
@@ -10,21 +10,21 @@
               (not (atom (car expr)))
               (eq 'comma-splice (car (car expr))))
           (if (= depth 0)
-            (append (eval (car (cdr (car expr)))) (backquote-function (cdr expr) depth))
-            (list 'comma-splice (backquote-function (car (cdr (car expr))) (- depth 1))))
+            (append (eval (car (cdr (car expr)))) (BACKQUOTE-FUNCTION (cdr expr) depth))
+            (list 'comma-splice (BACKQUOTE-FUNCTION (car (cdr (car expr))) (- depth 1))))
           )
         ((eq (car expr) 'comma)
           (if (= depth 0)
             (eval (car (cdr expr)))
-            (list 'comma (backquote-function (car (cdr expr)) (- depth 1)))))
-        ((eq (car expr) 'backquote-function)
-          (list 'backquote-function (backquote-function (car (cdr expr)) (+ 1 depth))))
+            (list 'comma (BACKQUOTE-FUNCTION (car (cdr expr)) (- depth 1)))))
+        ((eq (car expr) 'BACKQUOTE-FUNCTION)
+          (list 'BACKQUOTE-FUNCTION (BACKQUOTE-FUNCTION (car (cdr expr)) (+ 1 depth))))
         (t
-          (cons (backquote-function (car expr) depth) (backquote-function (cdr expr) depth)))))))
+          (cons (BACKQUOTE-FUNCTION (car expr) depth) (BACKQUOTE-FUNCTION (cdr expr) depth)))))))
 
 (defun backquote-macro (stream char)
   (let ((expr (read stream t nil t)))
-    (list 'backquote-function (list 'quote expr) 0)))
+    (list 'BACKQUOTE-FUNCTION (list 'quote expr) 0)))
 (set-macro-character #\$ #'backquote-macro)
 
 (defun comma-macro (stream char)
@@ -32,27 +32,27 @@
     (progn
       (read-char stream t nil t)
       (let ((expr (read stream t nil t)))
-        (cons 'comma-splice (cons expr nil))))
+        (cons 'COMMA-SPLICE (cons expr nil))))
     (progn
       (let ((expr (read stream t nil t)))
-        (cons 'comma (cons expr nil))))))
+        (cons 'COMMA (cons expr nil))))))
 (set-macro-character #\~ #'comma-macro)
 
 
-(defparameter bbb '(b b b))
-(defparameter xyz '(x y z))
+(defparameter BBB '(B B B))
+(defparameter XYZ '(X Y Z))
 
-(print $a)
-(print `a)
+(print $A)
+(print `A)
 
-(print $(a (b c) d))
-(print `(a (b c) d))
+(print $(A (B C) D))
+(print `(A (B C) D))
 
-(print $(a ~Sbbb ~xyz c))
-(print `(a ,@bbb ,xyz c))
+(print $(A ~SBBB ~XYZ C))
+(print `(A ,@BBB ,XYZ C))
 
-(print $(a $(~Sbbb) ~xyz c))
-(print `(a `(,@bbb) ,xyz c))
+(print $(A $(~SBBB) ~XYZ C))
+(print `(A `(,@BBB) ,XYZ C))
 
-(print $(a ~$(p ~Sbbb q r) $(p ~xyz q r) c))
-(print `(a ,`(p ,@bbb q r) `(p ,xyz q r) c))
+(print $(A ~$(P ~SBBB Q R) $(P ~XYZ Q R) C))
+(print `(A ,`(P ,@BBB Q R) `(P ,XYZ Q R) C))
