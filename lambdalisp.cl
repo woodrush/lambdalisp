@@ -725,7 +725,7 @@
 (defun-lazy reverse-base (l cont)
   (reverse* l nil cont))
 
-(defrec-lazy eval-backquote (expr state cont)
+(defrec-lazy eval-backquote (expr state depth cont)
   (typematch expr
     ;; atom
     (cont expr state)
@@ -736,16 +736,39 @@
         (do
           (<- (e) (cdr-data car-e))
           (<- (e) (car-data e))
-          (<- (e state) (eval e state))
-          (<- (cdr-e state) (eval-backquote cdr-e state))
-          (<- (ret) (append-data e cdr-e))
-          (cont ret state)))
+          (if-then-return (isnil depth)
+            (do
+              (<- (e state) (eval e state))
+              (<- (cdr-e state) (eval-backquote cdr-e state depth))
+              (<- (ret) (append-data e cdr-e))
+              (cont ret state)))
+          (<- (_ cdr-depth) (depth))
+          (<- (expr state) (eval-backquote e state cdr-depth))
+          (cont
+            (cons-data@ (atom* (list "," "@"))
+              (cons-data@ expr (atom* nil)))
+            state)))
       (if-then-return (and (isatom car-e) (stringeq (valueof car-e) (list ",")))
         (do
           (<- (car-cdr-e) (car-data cdr-e))
-          (eval car-cdr-e state cont)))
-      (<- (car-e state) (eval-backquote car-e state))
-      (<- (cdr-e state) (eval-backquote cdr-e state))
+          (if-then-return (isnil depth)
+            (eval car-cdr-e state cont))
+          (<- (_ cdr-depth) (depth))
+          (<- (expr state) (eval-backquote car-cdr-e state cdr-depth))
+          (cont
+            (cons-data@ (atom* (list ","))
+              (cons-data@ expr (atom* nil)))
+            state)))
+      (if-then-return (and (isatom car-e) (stringeq (valueof car-e) (list "`")))
+        (do
+          (<- (car-cdr-e) (car-data cdr-e))
+          (<- (expr state) (eval-backquote car-cdr-e state (cons (lambda (x) x) depth)))
+          (cont
+            (cons-data@ (atom* (list "`"))
+              (cons-data@ expr (atom* nil)))
+            state)))
+      (<- (car-e state) (eval-backquote car-e state depth))
+      (<- (cdr-e state) (eval-backquote cdr-e state depth))
       (cont (cons-data@ car-e cdr-e) state))
     ;; lambda (TODO)
     (cont expr state)
@@ -1134,7 +1157,7 @@
           ((stringeq (valueof head) (list "`"))
             (do
               (<- (arg1) (car-data tail))
-              (eval-backquote arg1 state cont)))
+              (eval-backquote arg1 state nil cont)))
           ((stringeq (valueof head) kProgn)
             (eval-progn tail state cont))
           ((or (stringeq (valueof head) kBlock)
