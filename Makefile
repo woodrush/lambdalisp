@@ -12,4 +12,4 @@ $(target_blc): $(def_prelude) $(lambdalisp_cl) $(lambdacraft_cl)
 	sbcl --script $(lambdalisp_cl) > $(target_blc)
 
 $(def_prelude): $(prelude_lisp)
-	./compile-prelude.sh > $(def_prelude)
+	./tools/compile-prelude.sh > $(def_prelude)
