@@ -19,8 +19,10 @@ function show_error () {
     echo "SBCL:"
     echo $2
     echo "The test has failed on $filepath."
-    echo "If the interpreter uni or Blc exits with a segmentation fault, the interpreter may be compiled with the defualt memory usage configurations."
-    echo "Compiling uni/Blc with an extended memory usage setting may avoid the segmentation fault."
+    if [[ "$3" == "blc" ]]; then
+        echo "If the interpreter uni or Blc exits with a segmentation fault, the interpreter may be compiled with the defualt memory usage configurations."
+        echo "Compiling uni/Blc with an extended memory usage setting may avoid the segmentation fault."
+    fi
     exit 1
 }
 
@@ -30,7 +32,7 @@ function compare_blc_sbcl () {
     blc_result=$( ( cat $LAMBDALISP_BLC | $ASC2BIN; cat $filepath ) | $BLC | sed -e '1s/> //')
     echo "Running SBCL..."
     sbcl_result=$(sbcl --script $filepath)
-    cmp <(echo "$blc_result") <(echo "$sbcl_result") || show_error "$blc_result" "$sbcl_result"
+    cmp <(echo "$blc_result") <(echo "$sbcl_result") || show_error "$blc_result" "$sbcl_result" blc
 }
 
 function compare_ulamb_sbcl () {
@@ -39,7 +41,7 @@ function compare_ulamb_sbcl () {
     blc_result=$( ( cat $LAMBDALISP_ULAMB | $ASC2BIN; cat $filepath ) | $ULAMB | sed -e '1s/> //')
     echo "Running SBCL..."
     sbcl_result=$(sbcl --script $filepath)
-    cmp <(echo "$blc_result") <(echo "$sbcl_result") || show_error "$blc_result" "$sbcl_result"
+    cmp <(echo "$blc_result") <(echo "$sbcl_result") || show_error "$ulamb_result" "$sbcl_result"
 }
 
 function compare_lazyk_sbcl () {
@@ -48,7 +50,7 @@ function compare_lazyk_sbcl () {
     blc_result=$( cat $filepath | $LAZYK $LAMBDALISP_LAZYK -u | sed -e '1s/> //')
     echo "Running SBCL..."
     sbcl_result=$(sbcl --script $filepath)
-    cmp <(echo "$blc_result") <(echo "$sbcl_result") || show_error "$blc_result" "$sbcl_result"
+    cmp <(echo "$blc_result") <(echo "$sbcl_result") || show_error "$lazyk_result" "$sbcl_result"
 }
 
 

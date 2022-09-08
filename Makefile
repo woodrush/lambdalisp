@@ -25,6 +25,9 @@ test-lazyk:
 	$(MAKE) $(target_blc)
 	./tools/run-test.sh lazyk
 
+test-all:
+	$(MAKE) test test-ulamb test-lazyk
+
 
 # Compile the prelude
 $(def_prelude): ./src/prelude.lisp ./tools/compile-prelude.sh
