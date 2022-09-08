@@ -1407,17 +1407,34 @@
               (if-then-return (not (or (and (isint arg1) (isint arg2))
                                        (and (isstring arg1) (isstring arg2))))
                 (cont (atom* nil) state))
-              (<- (p) ((if (isint arg1)
-                (eval-bool
-                  ((cmp* (valueof arg1) (valueof arg2))
-                    (stringeq (valueof head) k=)
-                    (stringeq (valueof head) k<)
-                    (stringeq (valueof head) k>)))
-                (eval-bool
-                ((strcmp (valueof arg1) (valueof arg2))
-                  (stringeq (valueof head) k=)
-                  (stringeq (valueof head) k<)
-                  (stringeq (valueof head) k>))))))
+              (<- (p) ((eval-bool
+                        (((if (isint arg1) cmp* strcmp) (valueof arg1) (valueof arg2))
+                          (stringeq (valueof head) k=)
+                          (stringeq (valueof head) k<)
+                          (stringeq (valueof head) k>)))))
+              (if-then-return (isstring arg1)
+                (if p
+                  (cont t-atom state)
+                  (cont (atom* nil) state)))
+              ;; Negative numbers
+              (if-then-return (and (not (car (valueof arg1))) (car (valueof arg2)))
+                (do
+                  (if-then-return (stringeq (valueof head) k<)
+                    (cont t-atom state))
+                  (if-then-return (stringeq (valueof head) k>)
+                    (cont (atom* nil) state))
+                  (if p
+                    (cont t-atom state)
+                    (cont (atom* nil) state))))
+              (if-then-return (and (car (valueof arg1)) (not (car (valueof arg2))))
+                (do
+                  (if-then-return (stringeq (valueof head) k<)
+                    (cont (atom* nil) state))
+                  (if-then-return (stringeq (valueof head) k>)
+                    (cont t-atom state))
+                  (if p
+                    (cont t-atom state)
+                    (cont (atom* nil) state))))
               (if p
                 (cont t-atom state)
                 (cont (atom* nil) state))))
