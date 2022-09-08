@@ -52,10 +52,10 @@ test-lazyk : $(addprefix test/, $(addsuffix .lazy.out, $(notdir $(wildcard examp
 
 
 test-compiler-blc: test/lambdacraft.cl.blc.out $(target_blc)
-	cat test/lambdacraft.cl.blc.out | sed 's/[^0-9]*//g' | tr -d "\n" | 
-	mkdir -p ./test
-	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) | sed 's/[^0-9]*//g' | tr -d "\n" > ./test/lambdacraft.cl.blc
-
+	cat test/lambdacraft.cl.blc.out | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(BLC) | tee test/lambdacraft.cl.blc.out.blc.out
+	printf 'A' > test/lambdacraft.cl.blc.out.blc.out.expected
+	cmp test/lambdacraft.cl.blc.out.blc.out test/lambdacraft.cl.blc.out.blc.out.expected || (echo "Output does not match with 'A'" && exit 1)
+	@echo "LambdaCraft compilation test passed."
 
 
 # Compile the prelude
