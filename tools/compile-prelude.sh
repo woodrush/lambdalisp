@@ -3,6 +3,7 @@ set -e
 
 prelude_lisp="./src/prelude.lisp"
 
+# Compile the prelude
 if [ $# -eq 0 ]; then
     printf '(def-lazy **prelude** ((string-concatenator stdin) ';
     ( cat $prelude_lisp \
@@ -21,6 +22,8 @@ if [ $# -eq 0 ]; then
         | sed -e 's/~/tilde/g'; printf "nil"; )
 
     echo '))';
+
+# If an extra argument is supplied, count the number of occurrences of each character instead
 else
     cat $prelude_lisp \
         | sed -e 's/;.*$//g' \
