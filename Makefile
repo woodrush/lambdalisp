@@ -30,8 +30,8 @@ $(target_latex): ./src/lambdalisp.cl ./src/lambdacraft.cl ./src/prelude.lisp ./s
 	./tools/make-latex.sh
 
 lazyk: $(target_lazy)
-$(target_lazy): ./src/lambdalisp.cl ./src/lambdacraft.cl ./src/prelude.lisp ./src/def-prelude-lazyk.cl ./src/def-prelude-chars-lazyk.cl ./src/targets/main-lazyk.cl
-	cd src; sbcl --script main-lazy.cl > ../$(target_lazy)
+$(target_lazy): ./src/lambdalisp.cl ./src/lambdacraft.cl ./src/prelude.lisp ./src/targets/def-prelude-lazyk.cl ./src/targets/def-prelude-chars-lazyk.cl ./src/targets/main-lazyk.cl
+	cd src; sbcl --script ./targets/main-lazyk.cl > ../$(target_lazy)
 
 blc: $(target_blc)
 $(target_blc): ./src/lambdalisp.cl ./src/lambdacraft.cl ./src/prelude.lisp ./src/def-prelude.cl ./src/main.cl
