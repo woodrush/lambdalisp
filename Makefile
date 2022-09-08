@@ -1,4 +1,5 @@
 BLC=./bin/Blc
+UNI=./bin/uni
 TROMP=./bin/tromp
 ULAMB=./bin/clamb
 LAZYK=./bin/lazyk
@@ -20,12 +21,14 @@ all:
 	$(MAKE) $(target_blc)
 	$(MAKE) $(target_ulamb)
 
-test: test-blc test-compiler-hosting-blc test-compiler-hosting-blc-tromp
-test-all: test-blc test-blc-tromp test-ulamb test-lazyk test-compiler-hosting-blc test-compiler-hosting-blc-tromp
+test: test-blc test-tromp test-compiler-hosting-blc test-compiler-hosting-blc-tromp
+test-all: test-blc test-blc-tromp test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc test-compiler-hosting-blc-tromp
 
 # For non-x86-64-Linux targets, which does not run the interpreter 'Blc'
 test-nonlinux: test-blc-tromp test-compiler-hosting-blc-tromp
-test-all-nonlinux: test-blc-tromp test-ulamb test-lazyk test-compiler-hosting-blc-tromp
+test-all-nonlinux: test-blc-tromp test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-tromp
+
+interpreters: $(TROMP) $(UNI) $(ULAMB) $(LAZYK) $(BLC)
 
 
 #================================================================
@@ -44,10 +47,16 @@ out/%.cl.blc-out: examples/%.cl $(target_blc) $(BLC) $(ASC2BIN)
 	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: out/%.cl.tromp-out
+.PRECIOUS: out/%.cl.blc-tromp-out
 out/%.cl.blc-tromp-out: examples/%.cl $(target_blc) $(TROMP) $(ASC2BIN)
 	mkdir -p ./out
 	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(TROMP) > $@.tmp
+	mv $@.tmp $@
+
+.PRECIOUS: out/%.cl.blc-uni-out
+out/%.cl.blc-uni-out: examples/%.cl $(target_blc) $(UNI) $(ASC2BIN)
+	mkdir -p ./out
+	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(UNI) > $@.tmp
 	mv $@.tmp $@
 
 .PRECIOUS: out/%.cl.ulamb-out
@@ -72,6 +81,9 @@ out/%.blc-out.diff: ./out/%.blc-out.cleaned ./out/%.sbcl-out
 out/%.blc-tromp-out.diff: ./out/%.blc-tromp-out.cleaned ./out/%.sbcl-out
 	cmp $^ || exit 1
 
+out/%.blc-uni-out.diff: ./out/%.blc-uni-out.cleaned ./out/%.sbcl-out
+	cmp $^ || exit 1
+
 out/%.ulamb-out.diff: ./out/%.ulamb-out.cleaned ./out/%.sbcl-out
 	cmp $^ || exit 1
 
@@ -82,9 +94,13 @@ out/%.lazyk-out.diff: ./out/%.lazyk-out.cleaned ./out/%.sbcl-out
 test-blc: $(addsuffix .blc-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for BLC with the interpreter 'Blc'."
 
-.PHONY: test-tromp
+.PHONY: test-blc-tromp
 test-blc-tromp: $(addsuffix .blc-tromp-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for BLC with the interpreter 'tromp'."
+
+.PHONY: test-blc-uni
+test-blc-uni: $(addsuffix .blc-uni-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
+	@echo "All tests have passed for BLC with the interpreter 'uni'."
 
 .PHONY: test-ulamb
 test-ulamb: $(addsuffix .ulamb-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
@@ -242,3 +258,23 @@ $(TROMP): ./build/tromp.c
 	cd build; cc -Wall -W -std=c99 -O2 -m64 -DInt=long -DA=9999999 -DX=8 tromp.c -o tromp
 	mv build/tromp ./bin
 	chmod 755 $(TROMP)
+
+.PHONY: show_uni.c_message
+show_uni.c_message:
+	@echo
+	@echo "    This procedure requires the binary lambda calculus interpreter 'uni'."
+	@echo "    To compile it and proceed, please place uni.c under ./build."
+	@echo "    Please see README.md for details."
+	@echo
+	@exit 1
+
+build/uni.c:
+	mkdir -p ./build
+	if [ ! -f $@ ]; then $(MAKE) show_uni.c_message; fi
+
+$(UNI): ./build/uni.c
+	mkdir -p ./bin
+	# Compile with the option -DA=9999999 (larger than the original -DM=999999) to execute large programs
+	cd build; gcc -Wall -W -O2 -std=c99 -m64 -DM=9999999 uni.c -o uni
+	mv build/uni ./bin
+	chmod 755 $(UNI)
