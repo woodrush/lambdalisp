@@ -8,7 +8,8 @@ TROMP=./bin/tromp
 ULAMB=./bin/clamb
 LAZYK=./bin/lazyk
 SBCL=sbcl
-ASC2BIN=./bin/asc2bin.com
+
+ASC2BIN=./bin/asc2bin
 
 target_blc=lambdalisp.blc
 target_ulamb=lambdalisp.ulamb
@@ -286,3 +287,10 @@ $(UNI): ./build/uni.c
 	cd build; $(CC) -Wall -W -O2 -std=c99 -m64 -DM=9999999 uni.c -o uni
 	mv build/uni ./bin
 	chmod 755 $(UNI)
+
+
+$(ASC2BIN): ./tools/asc2bin.c
+	mkdir -p ./bin
+	cd build; $(CC) ../tools/asc2bin.c -O2 -o asc2bin
+	mv build/asc2bin ./bin
+	chmod 755 $(ASC2BIN)
