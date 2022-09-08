@@ -109,7 +109,7 @@ $(target_lazy): $(BASE_SRCS) $(def_prelude_lazyk) ./src/lazyk-chars.cl ./src/mai
 	cd src; sbcl --script ./main-lazyk.cl > ../$(target_lazy).tmp
 
 	# Replace ``s`kki with k, which are equivalent terms
-	cat ../$(target_lazy).tmp | sed s/\`\`s\`kki/k/g > ../$(target_lazy).tmp2
+	cat $(target_lazy).tmp | sed s/\`\`s\`kki/k/g > $(target_lazy).tmp2
 	mv $(target_lazy).tmp2 $(target_lazy)
 	rm $(target_lazy).tmp
 
@@ -134,7 +134,7 @@ $(ULAMB): ./bin/clamb/clamb.c
 
 ./bin/lazyk/lazyk.c:
 	mkdir -p ./bin
-	cd bin; https://github.com/irori/lazyk
+	cd bin; git clone https://github.com/irori/lazyk
 
 $(LAZYK): ./bin/lazyk/lazyk.c
 	cd bin/lazyk; gcc -O2 lazyk.c -o lazyk
@@ -152,21 +152,18 @@ $(TROMP): ./bin/tromp.c
 	cd bin; cc -DM=9999999 -m64 -std=c99 tromp.c -o tromp
 	chmod 755 $(TROMP)
 
-./bin/Blc.s:
+
+show_blc.s_message:
 	mkdir -p ./bin
 	@echo "    This procedure requires the binary lambda calculus interpreter 'Blc'."
 	@echo "    To compile it and proceed, please place Blc.s and flat.lds under ./bin."
-	@echo "    Blc can be run on x86-64 Linux systems. For other setups, ./bin/tromp can be used."
+	@echo "    Blc can be run on x86-64 Linux systems. For other setups, ./bin/tromp and 'make test-blc-tromp' can be used."
 	@echo "    Please see README.md for details."
 	@exit 1
 
-./bin/flat.lds:
-	mkdir -p ./bin
-	@echo "    This procedure requires the binary lambda calculus interpreter 'Blc'."
-	@echo "    To compile it and proceed, please place Blc.s and flat.lds under ./bin."
-	@echo "    Blc can be run on x86-64 Linux systems. For other setups, ./bin/tromp can be used."
-	@echo "    Please see README.md for details."
-	@exit 1
+./bin/Blc.s: show_blc.s_message
+./bin/flat.lds: show_blc.s_message
+
 
 $(BLC): ./bin/Blc.s ./bin/flat.lds
 	# Extend the maximum memory limit to execute large programs
