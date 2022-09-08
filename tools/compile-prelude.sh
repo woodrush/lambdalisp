@@ -9,6 +9,7 @@ printf '(def-lazy **prelude** ((string-concatenator stdin) ';
     | tr "\n" " " \
     | sed -e 's/  */ /g' \
     | sed -e 's/) /)/g' \
+    | sed -e 's/ (/(/g' \
     | sed -e 's/ *$//g' \
     | rev \
     | sed -e 's/"/!/g' \

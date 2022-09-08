@@ -257,6 +257,9 @@
   (defmacro setf (place value)
     `(setf* ,place ,value))
 
+  (defun load (s)
+    s)
+
   (set-macro-character "#"
     (lambda (char)
       (if (eq "\\" (peek-char))
