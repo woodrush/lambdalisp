@@ -30,7 +30,7 @@ elif [[ "$1" == "compile-lazyk" ]]; then
         | sed -e 's/ *$//g' \
         | rev \
         | sed -e 's/"/!/g' \
-        | sed -e 's/\(.\)/"\1" /g' \
+        | sed -e 's/\(.\)/"*\1" /g' \
         | sed -e 's/\\/\\\\/g' \
         | sed -e 's/!/\\"/g' \
         | sed -e 's/\?/\\\\n/g' \
