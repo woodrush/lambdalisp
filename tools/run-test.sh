@@ -1,10 +1,15 @@
 #!/bin/bash
 set -e
 
+target=$1
 BLC=../uni
+ULAMB=../clamb/clamb
+LAZYK=../lazyk/lazyk
 ASC2BIN=../asc2bin.com
 SBCL=sbcl
 LAMBDALISP_BLC=./lambdalisp.blc
+LAMBDALISP_ULAMB=./lambdalisp.ulamb
+LAMBDALISP_LAZYK=./lambdalisp.lazy
 EXAMPLES=./examples
 
 function show_error () {
@@ -28,11 +33,36 @@ function compare_blc_sbcl () {
     cmp <(echo "$blc_result") <(echo "$sbcl_result") || show_error "$blc_result" "$sbcl_result"
 }
 
+function compare_ulamb_sbcl () {
+    filepath=$1
+    echo "Running Universal Lambda..."
+    blc_result=$( ( cat $LAMBDALISP_ULAMB | $ASC2BIN; cat $filepath ) | $ULAMB | sed -e '1s/> //')
+    echo "Running SBCL..."
+    sbcl_result=$(sbcl --script $filepath)
+    cmp <(echo "$blc_result") <(echo "$sbcl_result") || show_error "$blc_result" "$sbcl_result"
+}
+
+function compare_lazyk_sbcl () {
+    filepath=$1
+    echo "Running Universal Lambda..."
+    blc_result=$( cat $filepath | $LAZYK $LAMBDALISP_LAZYK -u | sed -e '1s/> //')
+    echo "Running SBCL..."
+    sbcl_result=$(sbcl --script $filepath)
+    cmp <(echo "$blc_result") <(echo "$sbcl_result") || show_error "$blc_result" "$sbcl_result"
+}
+
 
 for filename in $(ls $EXAMPLES | grep -e ".cl$"); do
     filepath="${EXAMPLES}/$filename"
     echo "Comparing $filepath..."
-    compare_blc_sbcl $filepath
+    if [[ "$target" == "ulamb" ]]; then
+        compare_ulamb_sbcl $filepath
+    elif [[ "$target" == "lazyk" ]]; then
+        compare_lazyk_sbcl $filepath
+    else
+        compare_blc_sbcl $filepath
+    fi
+
     echo "The outputs match."
 done
 echo "All tests have passed."

@@ -17,6 +17,14 @@ test:
 	$(MAKE) $(target_blc)
 	./tools/run-test.sh
 
+test-ulamb:
+	$(MAKE) $(target_blc)
+	./tools/run-test.sh ulamb
+
+test-lazyk:
+	$(MAKE) $(target_blc)
+	./tools/run-test.sh lazyk
+
 
 # Compile the prelude
 $(def_prelude): ./src/prelude.lisp ./tools/compile-prelude.sh
@@ -38,6 +46,7 @@ $(target_blc): $(BASE_SRCS) $(def_prelude) ./src/main.cl
 
 lazyk: $(target_lazy)
 $(target_lazy): $(BASE_SRCS) $(def_prelude_lazyk) ./src/lazyk-chars.cl ./src/main-lazyk.cl ./src/lazyk-ulamb-blc-wrapper.cl
+	@echo "Compiling to Lazy K takes a while (several minutes)."
 	cd src; sbcl --script ./main-lazyk.cl > ../$(target_lazy).tmp
 	mv $(target_lazy).tmp $(target_lazy)
 
@@ -46,6 +55,8 @@ $(target_ulamb): $(BASE_SRCS) $(def_prelude) ./src/main-ulamb.cl ./src/lazyk-ula
 	cd src; sbcl --script ./main-ulamb.cl > ../$(target_ulamb).tmp
 	mv $(target_ulamb).tmp $(target_ulamb)
 
+
+# Additional targets
 latex: $(target_latex)
 $(target_latex): $(BASE_SRCS) $(def_prelude) ./src/main-latex.cl
 	./tools/make-latex.sh
