@@ -1,4 +1,3 @@
-;; Execute at the same level as ./lambdalisp.cl for resolving nested `load`s
 (load "./lambdalisp.cl")
 (load "./lazyk-chars.cl")
 (load "./lazyk-ulamb-blc-wrapper.cl")

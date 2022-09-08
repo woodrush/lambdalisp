@@ -419,7 +419,3 @@
 
 (defmacro compile-to-simple-lambda-lazy (expr-lazy)
   `(compile-to-simple-lambda (macroexpand-lazy ,expr-lazy)))
-
-
-;; Message for LambdaLisp
-"loaded lazy.cl"
