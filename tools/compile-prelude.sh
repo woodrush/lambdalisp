@@ -34,7 +34,8 @@ elif [[ "$1" == "compile-lazyk" ]]; then
         | sed -e 's/\\/\\\\/g' \
         | sed -e 's/!/\\"/g' \
         | sed -e 's/\?/\\\\n/g' \
-        | sed -e 's/~/tilde/g'; printf "nil"; )
+        | sed -e 's/~/tilde/g' \
+        | tr -d "\n"; printf "nil"; )
 
     echo '))';
 
@@ -55,7 +56,8 @@ else
         | sed -e 's/\\/\\\\/g' \
         | sed -e 's/!/\\"/g' \
         | sed -e 's/\?/\\\\n/g' \
-        | sed -e 's/~/tilde/g'; printf "nil"; )
+        | sed -e 's/~/tilde/g' \
+        | tr -d "\n"; printf "nil"; )
 
     echo '))';
 fi
