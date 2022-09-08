@@ -556,7 +556,7 @@
   (do
     ;; Exit the program when EOF is reached
     (if (isnil stdin)
-      (cons "\\n" nil))
+      nil)
     (<- (c cdr-stdin) (stdin))
     (let* =-bit =-bit)
     (let* skip-comment skip-comment)

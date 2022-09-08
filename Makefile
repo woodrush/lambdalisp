@@ -43,7 +43,7 @@ interpreters: $(UNI) $(ULAMB) $(LAZYK) $(TROMP) $(BLC)
 .PRECIOUS: out/%.cl.sbcl-out
 out/%.cl.sbcl-out: examples/%.cl
 	mkdir -p ./out
-	( $(SBCL) --script $<; echo ) > $@.tmp
+	$(SBCL) --script $< > $@.tmp
 	mv $@.tmp $@
 
 .PRECIOUS: out/%.blc-out
