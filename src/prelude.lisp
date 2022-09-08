@@ -57,7 +57,7 @@
     (eq (type p) 'str))
 
   (defmacro labels (llist &rest b)
-    `(let (,@(mapcar (lambda (item) `(,(car item) ())) llist))
+    `(let (,@(mapcar (lambda (item) `(,(car item))) llist))
       ,@(mapcar (lambda (item) `(setq ,(car item) (lambda ,@(cdr item)))) llist)
       ,@b))
 
@@ -73,7 +73,7 @@
     (let ((i 0))
       (loop
         (if (atom l)
-          (return ()))
+          (return))
         (if (test-f item (car l))
           (return i))
         (setq i (+ 1 i))
@@ -93,7 +93,7 @@
       (cons (f (car p)) (mapcar f (cdr p)))))
 
   (defun reverse (l)
-    (let ((ret ()))
+    (let ((ret))
       (loop
         (if (atom l)
           (return ret))
@@ -108,11 +108,11 @@
 
   (defun format (option str &rest e)
     ;; Supports ~a and ~%
-    (let ((ret ()))
+    (let ((ret))
       (loop
         (cond
           ((eq str "")
-            (return ()))
+            (return))
           ((eq (carstr str) "~")
             (setq str (cdrstr str))
             (cond
@@ -133,7 +133,7 @@
       (setq str "")
       (loop
         (if (eq ret ())
-          (return ()))
+          (return))
         (setq str (+ (car ret) str))
         (setq ret (cdr ret)))
       (if option
@@ -146,12 +146,12 @@
   ;; Hash table
   ;;================================================================
   (defun make-hash-table* ()
-    (let ((hashtable ()))
+    (let ((hashtable))
       (defun-local getter (key)
         (let ((hashlist hashtable))
           (loop
             (if (atom hashlist)
-              (return ()))
+              (return))
             (if (eq key (car (car hashlist)))
               (return (cdr (car hashlist))))
             (setq hashlist (cdr hashlist)))))
@@ -230,9 +230,9 @@
         `(lambda (key value) ,(helper e))))
     (let ((fieldnames (collect-fieldnames b)))
       `(defun-local ,name ()
-        (let* ((super ())
-              (self ())
-              (setter ())
+        (let* ((super)
+              (self)
+              (setter)
               ,@(*parse-b b))
           (setq super ,superclass)
           (setq setter ,(*build-setter fieldnames))
