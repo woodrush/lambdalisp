@@ -1,28 +1,6 @@
-(load "./lazy-ext.cl")
+(if (not (boundp 'lambdacraft-loaded))
+  (load "./lambdacraft.cl"))
 
-(defmacro-lazy if-then-return (condition then else)
-  `(if ,condition ,then ,else))
-
-(defmacro-lazy let* (name value body)
-  `(let ((,name ,value)) ,body))
-
-(defmacro-lazy do* (top &rest proc)
-  (cond ((not proc)
-          top)
-        ((eq '<- (car (car proc)))
-          (let* ((topproc (car proc))
-                 (arglist (car (cdr topproc)))
-                 (body (car (cdr (cdr topproc)))))
-            `(do*
-                ,(append body `((lambda ,arglist ,top)))
-                ,@(cdr proc))))
-        (t
-          `(do*
-              ,(append (car proc) `(,top))
-              ,@(cdr proc)))))
-
-(defmacro-lazy do (&rest proc)
-  `(do* ,@(reverse proc)))
 
 (def-lazy powerlist
   (cons 128 (cons 64 (cons 32 (cons 16 (cons 8 (cons 4 (cons 2 (cons 1 nil)))))))))
@@ -105,12 +83,6 @@
     (<- (c-blc) (int2bitlist c-clamb powerlist))
     (cons c-blc (lazykstr-to-blcstr s-cdr))))
 
-
-;; (defun-lazy clamb-to-blc-wrapper (program io-bitlength supp-bitlength memlist proglist stdin)
-;;   (blcstr-to-clambstr (program io-bitlength supp-bitlength memlist proglist (clambstr-to-blcstr stdin))))
-
-;; (defun-lazy lazyk-to-blc-wrapper (program io-bitlength supp-bitlength memlist proglist stdin)
-;;   (blcstr-to-lazykstr (program io-bitlength supp-bitlength memlist proglist (lazykstr-to-blcstr stdin))))
 
 (defun-lazy lazyk-to-blc-wrapper (program stdin)
   (blcstr-to-lazykstr (program (lazykstr-to-blcstr stdin))))
