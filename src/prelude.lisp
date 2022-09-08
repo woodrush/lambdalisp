@@ -1,12 +1,12 @@
 (progn
-  (defglobal defmacro (macro (r e &rest b)
-    `(defglobal ,r (macro ,e (block ,r ,@b)))))
+  (defglobal defmacro (macro (name e &rest b)
+    `(defglobal ,name (macro ,e (block ,name ,@b)))))
 
-  (defmacro defun (r e &rest b)
-    `(defglobal ,r (lambda ,e (block ,r ,@b))))
+  (defmacro defun (name e &rest b)
+    `(defglobal ,name (lambda ,e (block ,name ,@b))))
 
-  (defmacro defun-local (r e &rest b)
-    `(setq ,r (lambda ,e (block ,r ,@b))))
+  (defmacro defun-local (name e &rest b)
+    `(setq ,name (lambda ,e (block ,name ,@b))))
 
   (defmacro defparameter (a b)
     `(defglobal ,a ,b))
@@ -50,9 +50,9 @@
   (defun stringp (p)
     (eq (type p) 'str))
 
-  (defmacro labels (l &rest b)
-    `(let (,@(mapcar (lambda (i) `(,(car i) ())) l))
-      ,@(mapcar (lambda (i) `(setq ,(car i) (lambda ,@(cdr i)))) l)
+  (defmacro labels (llist &rest b)
+    `(let (,@(mapcar (lambda (item) `(,(car item) ())) llist))
+      ,@(mapcar (lambda (item) `(setq ,(car item) (lambda ,@(cdr item)))) llist)
       ,@b))
 
   (defun length (l)
@@ -63,18 +63,18 @@
   (defmacro return (&rest p)
     `(return-from () ,(if (atom p) p (car p))))
 
-  (defun position* (i l test-f)
+  (defun position* (item l test-f)
     (let ((i 0))
       (loop
         (if (atom l)
           (return ()))
-        (if (test-f i (car l))
+        (if (test-f item (car l))
           (return i))
         (setq i (+ 1 i))
         (setq l (cdr l)))))
 
-  (defmacro position (i l test test-f)
-    `(position* ,i ,l ,test-f))
+  (defmacro position (item l test test-f)
+    `(position* ,item ,l ,test-f))
 
   (defmacro concatenate (p &rest e)
     `(+ ,@e))
@@ -116,10 +116,10 @@
               ((eq (carstr str) "a")
                 (if e
                   (progn
-                    (setq i (car e))
+                    (setq item (car e))
                     (setq e (cdr e)))
-                  (setq i ()))
-                (setq ret (cons (str i) ret)))))
+                  (setq item ()))
+                (setq ret (cons (str item) ret)))))
           (t
             (setq ret (cons (carstr str) ret))))
         (setq str (cdrstr str)))
@@ -184,7 +184,7 @@
         `(progn ,@b)))
     (helper r))
 
-  (defmacro defclass (r superclass &rest b)
+  (defmacro defclass (name superclass &rest b)
     (labels
       ((collect-fieldnames (e)
         (setq head (car (car e)))
@@ -223,7 +223,7 @@
               ((super 'setter) key value))))
         `(lambda (key value) ,(helper e))))
     (let ((fieldnames (collect-fieldnames b)))
-      `(defun-local ,r ()
+      `(defun-local ,name ()
         (let* ((super ())
               (self ())
               (setter ())
