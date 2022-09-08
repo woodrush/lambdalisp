@@ -62,13 +62,13 @@ test-compiler-hosting-blc: test/lambdacraft.cl.blc.out.blc.out
 
 
 # Self-hosting test - compile LambdaLisp's own source code written in Common Lisp using the LambdaLisp interpreter (untested)
-test/lambdalisp.cl.blc.out: $(BASE_SRCS) $(def_prelude) ./src/main.cl $(target_blc)
+test-self-host: $(BASE_SRCS) $(def_prelude) ./src/main.cl $(target_blc)
 	mkdir -p ./test
-	( cat $(target_blc) | $(ASC2BIN); \
-	  cat ./src/lambdacraft.cl ./src/build/def-prelude.cl ./src/lambdalisp.cl ) | $(BLC) | sed -e '1s/> //' > ./test/lambdalisp.cl.blc.out
-	cmp ./test/lambdalisp.cl.blc.out $(target_blc) || (echo "The LambdaLisp output does not match with the Common Lisp output." && exit 1)
-
-test-self-host: test/lambdalisp.cl.blc.out
+	( echo '(defparameter **lambdalisp-suppress-repl** t)'; \
+	  cat ./src/lambdacraft.cl ./src/build/def-prelude.cl ./src/lambdalisp.cl ./src/main.cl ) > ./test/lambdalisp-src-cat.cl
+	( cat $(target_blc) | $(ASC2BIN); cat ./test/lambdalisp-src-cat.cl ) | $(BLC) > ./test/lambdalisp.cl.blc.repl.out
+	cat ./test/lambdalisp.cl.blc.repl.out | sed -e '1s/> //' | ./test/lambdalisp.cl.blc.script.out
+	cmp ./test/lambdalisp.cl.blc.script.out $(target_blc) || (echo "The LambdaLisp output does not match with the Common Lisp output." && exit 1)
 	@echo "LambdaLisp self-hosting test passed."
 
 
