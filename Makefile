@@ -21,60 +21,62 @@ all:
 	$(MAKE) $(target_ulamb)
 
 test: test-blc test-compiler-hosting-blc
-
+test-all: test-blc test-ulamb test-lazyk test-compiler-hosting-blc test-compiler-hosting-ulamb test-compiler-hosting-lazyk
 
 #================================================================
 # Tests
 #================================================================
 # SBCL comparison test - compare LambdaLisp outputs with Common Lisp outputs for examples/*.cl
-out/%.cl.sbcl.out: examples/%.cl
+.PRECIOUS: out/%.cl.sbcl-out
+out/%.cl.sbcl-out: examples/%.cl
 	mkdir -p ./out
 	( $(SBCL) --script $<; echo ) > $@
 
-out/%.cl.blc.out: examples/%.cl $(target_blc) $(BLC) $(ASC2BIN)
+.PRECIOUS: out/%.cl.blc-out
+out/%.cl.blc-out: examples/%.cl $(target_blc) $(BLC) $(ASC2BIN)
 	mkdir -p ./out
 	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) > $@
 
-out/%.cl.ulamb.out: examples/%.cl $(target_ulamb) $(ULAMB) $(ASC2BIN)
+.PRECIOUS: out/%.cl.ulamb-out
+out/%.cl.ulamb-out: examples/%.cl $(target_ulamb) $(ULAMB) $(ASC2BIN)
 	mkdir -p ./out
 	( cat $(target_ulamb) | $(ASC2BIN); cat $< ) | $(ULAMB) > $@
 
-out/%.cl.lazyk.out: examples/%.cl $(target_lazy) $(LAZYK)
+.PRECIOUS: out/%.cl.lazyk-out
+out/%.cl.lazyk-out: examples/%.cl $(target_lazy) $(LAZYK)
 	mkdir -p ./out
 	cat $< | $(LAZYK) $(target_lazy) -u > $@
 
-test-blc-%.cl: out/%.cl.blc.out out/%.cl.sbcl.out
+out/%.cleaned: out/%
 # Remove the initial '> ' printed by LambdaLisp's REPL when comparing with SBCL's output
-	cat $< | sed -e '1s/> //' > test/%.cl.blc.out.tmp
-	cmp $<.tmp out/$*.cl.sbcl.out || (rm $<.tmp; exit 1)
+	cat $< | sed -e '1s/> //' > $<.cleaned
 
-test-ulamb-%.cl: out/%.cl.ulamb.out out/%.cl.sbcl.out
-# Remove the initial '> ' printed by LambdaLisp's REPL when comparing with SBCL's output
-	cat $< | sed -e '1s/> //' > $<.tmp
-	cmp $<.tmp out/$*.cl.sbcl.out || (rm $<.tmp; exit 1)
+out/%.blc-out.diff: ./out/%.blc-out.cleaned ./out/%.sbcl-out
+	cmp $^ || exit 1
 
-test-lazyk-%.cl: out/%.cl.lazyk.out out/%.cl.sbcl.out
-# Remove the initial '> ' printed by LambdaLisp's REPL when comparing with SBCL's output
-	cat $< | sed -e '1s/> //' > $<.tmp
-	cmp $<.tmp out/$*.cl.sbcl.out || (rm $<.tmp; exit 1)
+out/%.ulamb-out.diff: ./out/%.ulamb-out.cleaned ./out/%.sbcl-out
+	cmp $^ || exit 1
 
-test-blc: $(addprefix test-blc-, $(notdir $(wildcard examples/*.cl)))
-	@echo "All tests have passed for BLC."
+out/%.lazyk-out.diff: ./out/%.lazyk-out.cleaned ./out/%.sbcl-out
+	cmp $^ || exit 1
 
-test-ulamb: $(addprefix test-ulamb-, $(notdir $(wildcard examples/*.cl)))
+test-blc: $(addsuffix .blc-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
+	@echo "All tests have passed for BLC with the Blc interpreter."
+
+test-ulamb: $(addsuffix .blc-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for Universal Lambda."
 
-test-lazyk: $(addprefix test-lazyk-, $(notdir $(wildcard examples/*.cl)))
+test-lazyk: $(addsuffix .blc-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for Lazy K."
 
 
 # Compiler hosting test - execute the output of examples/lambdacraft.cl as a binary lambda calculus program
-test/lambdacraft.cl.blc.out.blc.out: test/lambdacraft.cl.blc.out $(BLC) $(ASC2BIN)
-	cat test/lambdacraft.cl.blc.out | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(BLC) > test/lambdacraft.cl.blc.out.blc.out
-	printf 'A' > test/lambdacraft.cl.blc.out.blc.out.expected
-	cmp test/lambdacraft.cl.blc.out.blc.out test/lambdacraft.cl.blc.out.blc.out.expected || (echo "Output does not match with 'A'" && exit 1)
+out/lambdacraft.cl.blc-out.cleaned.blc-out: out/lambdacraft.cl.blc-out.cleaned $(BLC) $(ASC2BIN)
+	out/lambdacraft.cl.blc-out.cleaned | $(ASC2BIN) | $(BLC) > out/lambdacraft.cl.blc-out.cleaned.blc-out
+	printf 'A' > out/lambdacraft.cl.blc-expected
+	cmp $< out/lambdacraft.cl.blc-expected || exit 1
 
-test-compiler-hosting-blc: test/lambdacraft.cl.blc.out.blc.out
+test-compiler-hosting-blc: out/lambdacraft.cl.blc-out.cleaned.blc-out
 	@echo "LambdaCraft-compiler-hosting-on-LambdaLisp test passed."
 
 
