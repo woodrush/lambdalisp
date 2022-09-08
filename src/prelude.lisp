@@ -22,21 +22,18 @@
 
   (defglobal list (macro (&rest *q)
     (if *q
-      (cons 'cons (cons (car *q) (cons (cons 'list (cdr *q)) ())))
-      ())))
+      (cons 'cons (cons (car *q) (cons (cons 'list (cdr *q)) ()))))))
 
   (defglobal cond (macro (*a &rest *b)
     (if *a
       (list 'if (car *a)
         (cons 'progn (cdr *a))
-        (cons 'cond *b))
-      ())))
+        (cons 'cond *b)))))
 
   (defun and (*p &rest *q)
     (if *q
       (if *p
-        (apply and *q)
-        ())
+        (apply and *q))
       *p))
 
   (defun or (*a &rest *b)
@@ -158,8 +155,7 @@
         (if (eq mode 'get)
           (getter key)
           (if (eq mode 'set)
-            (setter key (car value))
-            ())))))
+            (setter key (car value)))))))
 
   (defmacro make-hash-table (&rest *p)
     (make-hash-table*))
@@ -196,8 +192,7 @@
           (cons (if (eq head 'defmethod)
                   (car (cdr (car args)))
                   head)
-                (collect-fieldnames (cdr args)))
-          ()))
+                (collect-fieldnames (cdr args)))))
       (*parse-*b (*b)
         (setq *head (car (car *b)))
         (if *b
@@ -207,8 +202,7 @@
                         (*rest (cdr (cdr (cdr (car *b))))))
                     `(,fieldname (lambda ,*a ,@*rest)))
                   (car *b))
-                (*parse-*b (cdr *b)))
-          ()))
+                (*parse-*b (cdr *b)))))
       (*build-getter (args)
         (defun-local helper (args)
           (if args
@@ -216,8 +210,7 @@
                 ,(car args)
                 ,(helper (cdr args)))
             '(if super
-              (super a)
-              ())))
+              (super a))))
         `(lambda (a) ,(helper (cons 'setter (cons 'super args)))))
 
       (*build-setter (args)
@@ -227,8 +220,7 @@
                 (setq ,(car args) value)
                 ,(helper (cdr args)))
             '(if super
-              ((super 'setter) key value)
-              ())))
+              ((super 'setter) key value))))
         `(lambda (key value) ,(helper args))))
     (let ((fieldnames (collect-fieldnames *b)))
       `(defun-local ,name ()
@@ -266,11 +258,7 @@
         (progn
           (read-char)
           (read-char))
-        (if (eq "'" (peek-char))
-          (progn
-            (read-char)
-            (read))
-          (read)))))
-
-  ;; "loaded prelude.lisp"
-)
+        (progn
+          (if (eq "'" (peek-char))
+            (read-char))
+          (read))))))
