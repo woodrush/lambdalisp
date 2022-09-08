@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-cd ./src; sbcl --script ./targets/main-latex.cl \
+cd ./src; sbcl --script ./main-latex.cl \
 | LC_ALL=C sed -e "s/^/$/g" \
 | LC_ALL=C sed -e "s/$/$ @/g" \
 | LC_ALL=C sed -e "s/(/@\\\\allowbreak(/g" \

@@ -1,5 +1,5 @@
 (load "./lambdacraft.cl")
-(load "./def-prelude.cl")
+(load "./build/def-prelude.cl")
 
 
 ;;================================================================
