@@ -1,7 +1,7 @@
 BLC=./bin/Blc
 TROMP=./bin/tromp
-ULAMB=./bin/clamb/clamb
-LAZYK=./bin/lazyk/lazyk
+ULAMB=./bin/clamb
+LAZYK=./bin/lazyk
 SBCL=sbcl
 ASC2BIN=./bin/asc2bin.com
 
@@ -27,31 +27,44 @@ test: test-blc test-compiler-hosting-blc
 # Tests
 #================================================================
 # SBCL comparison test - compare LambdaLisp outputs with Common Lisp outputs for examples/*.cl
-test/%.cl.blc.out : examples/%.cl $(target_blc) $(BLC) $(ASC2BIN)
-	mkdir -p ./test
-	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) | sed -e '1s/> //' > ./test/$(notdir $<).blc.out
-	( $(SBCL) --script $<; echo ) > ./test/$(notdir $<).sbcl.out
-	cmp ./test/$(notdir $<).blc.out ./test/$(notdir $<).sbcl.out || (rm ./test/$(notdir $<).blc.out && echo "Test failed at $<" && exit 1)
+out/%.cl.sbcl.out: examples/%.cl
+	mkdir -p ./out
+	( $(SBCL) --script $<; echo ) > $@
 
-test-blc : $(addprefix test/, $(addsuffix .blc.out, $(notdir $(wildcard examples/*.cl))))
+out/%.cl.blc.out: examples/%.cl $(target_blc) $(BLC) $(ASC2BIN)
+	mkdir -p ./out
+	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) > $@
+
+out/%.cl.ulamb.out: examples/%.cl $(target_ulamb) $(ULAMB) $(ASC2BIN)
+	mkdir -p ./out
+	( cat $(target_ulamb) | $(ASC2BIN); cat $< ) | $(ULAMB) > $@
+
+out/%.cl.lazyk.out: examples/%.cl $(target_lazy) $(LAZYK)
+	mkdir -p ./out
+	cat $< | $(LAZYK) $(target_lazy) -u > $@
+
+test-blc-%.cl: out/%.cl.blc.out out/%.cl.sbcl.out
+# Remove the initial '> ' printed by LambdaLisp's REPL when comparing with SBCL's output
+	cat $< | sed -e '1s/> //' > test/%.cl.blc.out.tmp
+	cmp $<.tmp out/$*.cl.sbcl.out || (rm $<.tmp; exit 1)
+
+test-ulamb-%.cl: out/%.cl.ulamb.out out/%.cl.sbcl.out
+# Remove the initial '> ' printed by LambdaLisp's REPL when comparing with SBCL's output
+	cat $< | sed -e '1s/> //' > $<.tmp
+	cmp $<.tmp out/$*.cl.sbcl.out || (rm $<.tmp; exit 1)
+
+test-lazyk-%.cl: out/%.cl.lazyk.out out/%.cl.sbcl.out
+# Remove the initial '> ' printed by LambdaLisp's REPL when comparing with SBCL's output
+	cat $< | sed -e '1s/> //' > $<.tmp
+	cmp $<.tmp out/$*.cl.sbcl.out || (rm $<.tmp; exit 1)
+
+test-blc: $(addprefix test-blc-, $(notdir $(wildcard examples/*.cl)))
 	@echo "All tests have passed for BLC."
 
-test/%.cl.ulamb.out : examples/%.cl $(target_ulamb) $(ULAMB) $(ASC2BIN)
-	mkdir -p ./test
-	( cat $(target_ulamb) | $(ASC2BIN); cat $< ) | $(ULAMB) | sed -e '1s/> //' > ./test/$(notdir $<).ulamb.out
-	( $(SBCL) --script $<; echo ) > ./test/$(notdir $<).sbcl.out
-	cmp ./test/$(notdir $<).ulamb.out ./test/$(notdir $<).sbcl.out || (echo "Test failed at $<" && exit 1)
-
-test-ulamb : $(addprefix test/, $(addsuffix .ulamb.out, $(notdir $(wildcard examples/*.cl))))
+test-ulamb: $(addprefix test-ulamb-, $(notdir $(wildcard examples/*.cl)))
 	@echo "All tests have passed for Universal Lambda."
 
-test/%.cl.lazy.out : examples/%.cl $(target_lazy) $(LAZYK)
-	mkdir -p ./test
-	cat $< | $(LAZYK) $(target_lazy) -u | sed -e '1s/> //' > ./test/$(notdir $<).lazy.out
-	( $(SBCL) --script $<; echo ) > ./test/$(notdir $<).sbcl.out
-	cmp ./test/$(notdir $<).lazy.out ./test/$(notdir $<).sbcl.out || (echo "Test failed at $<" && exit 1)
-
-test-lazyk : $(addprefix test/, $(addsuffix .lazy.out, $(notdir $(wildcard examples/*.cl))))
+test-lazyk: $(addprefix test-lazyk-, $(notdir $(wildcard examples/*.cl)))
 	@echo "All tests have passed for Lazy K."
 
 
@@ -124,50 +137,69 @@ $(target_latex): $(BASE_SRCS) $(def_prelude) ./src/main-latex.cl
 #================================================================
 # Building the interpreters
 #================================================================
-./bin/clamb/clamb.c:
-	mkdir -p ./bin
-	cd bin; git clone https://github.com/irori/clamb
+./build/clamb/clamb.c:
+	mkdir -p ./build
+	cd build; git clone https://github.com/irori/clamb
 
-$(ULAMB): ./bin/clamb/clamb.c
-	cd bin/clamb; gcc -O2 clamb.c -o clamb
+$(ULAMB): ./build/clamb/clamb.c
+	mkdir -p ./bin
+	cd build/clamb; gcc -O2 clamb.c -o clamb
+	mv build/clamb/clamb ./bin
 	chmod 755 $(ULAMB)
 
-./bin/lazyk/lazyk.c:
-	mkdir -p ./bin
-	cd bin; git clone https://github.com/irori/lazyk
+./build/lazyk/lazyk.c:
+	mkdir -p ./build
+	cd build; git clone https://github.com/irori/lazyk
 
-$(LAZYK): ./bin/lazyk/lazyk.c
-	cd bin/lazyk; gcc -O2 lazyk.c -o lazyk
+$(LAZYK): ./build/lazyk/lazyk.c
+	mkdir -p ./bin
+	cd build/lazyk; gcc -O2 lazyk.c -o lazyk
+	mv build/lazyk/lazyk ./bin
 	chmod 755 $(LAZYK)
 
-bin/tromp.c:
-	mkdir -p ./bin
+show_tromp.c_message:
+	@echo
 	@echo "    This procedure requires the binary lambda calculus interpreter 'tromp'."
-	@echo "    To compile it and proceed, please place tromp.c under ./bin."
+	@echo "    To compile it and proceed, please place tromp.c under ./build."
 	@echo "    Please see README.md for details."
+	@echo
 	@exit 1
 
-$(TROMP): ./bin/tromp.c
+build/tromp.c:
+	mkdir -p ./build
+	if [ ! -f $@ ]; then $(MAKE) show_tromp.c_message; fi
+
+$(TROMP): ./build/tromp.c
+	mkdir -p ./bin
 	# Compile with the option -DM=9999999 (larger than the original -DM=999999) to execute large programs
-	cd bin; cc -DM=9999999 -m64 -std=c99 tromp.c -o tromp
+	cd build; cc -DM=9999999 -m64 -std=c99 tromp.c -o tromp
+	mv build/tromp ./bin
 	chmod 755 $(TROMP)
 
 
-show_blc.s_message:
-	mkdir -p ./bin
+show_Blc.S_message:
+	@echo
 	@echo "    This procedure requires the binary lambda calculus interpreter 'Blc'."
-	@echo "    To compile it and proceed, please place Blc.s and flat.lds under ./bin."
+	@echo "    To compile it and proceed, please place Blc.S and flat.lds under ./build."
+	@echo "    (Please use the uppercase Blc.S, and not the lowercase blc.S.)"
 	@echo "    Blc can be run on x86-64 Linux systems. For other setups, ./bin/tromp and 'make test-blc-tromp' can be used."
 	@echo "    Please see README.md for details."
+	@echo
 	@exit 1
 
-./bin/Blc.s: show_blc.s_message
-./bin/flat.lds: show_blc.s_message
+build/Blc.S:
+	mkdir -p ./build
+	if [ ! -f $@ ]; then $(MAKE) show_Blc.S_message; fi
 
+build/flat.lds:
+	mkdir -p ./build
+	if [ ! -f $@ ]; then $(MAKE) show_Blc.S_message; fi
 
-$(BLC): ./bin/Blc.s ./bin/flat.lds
+$(BLC): build/Blc.S build/flat.lds
+	mkdir -p ./bin
 	# Extend the maximum memory limit to execute large programs
-	cd bin; cat Blc.S | sed -e 's/#define TERMS	5000000/#define TERMS	50000000/' > Blc.ext.S
-	cd bin; cc -c -o Blc.o Blc.ext.S
-	cd bin; ld.bfd -o Blc Blc.o -T flat.lds
+	cd build; cat Blc.S | sed -e 's/#define TERMS	5000000/#define TERMS	50000000/' > Blc.ext.S
+	cd build; cc -c -o Blc.o Blc.ext.S
+	cd build; ld.bfd -o Blc Blc.o -T flat.lds
+	mv build/Blc ./bin
 	chmod 755 $(BLC)
