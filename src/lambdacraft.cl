@@ -1,4 +1,5 @@
 (defparameter profile-index-depth nil)
+(defparameter lambdacraft-loaded t)
 
 (defun islambda (expr)
   (and (atom (car expr)) (eq 'lambda (car expr))))

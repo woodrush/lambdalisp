@@ -3,9 +3,23 @@ set -e
 
 prelude_lisp="./src/prelude.lisp"
 
-# Compile the prelude
-if [ $# -eq 0 ]; then
+# Count the number of occurrences of each character
+if [[ "$1" == "count-chars" ]; then
+    cat $prelude_lisp \
+        | sed -e 's/;.*$//g' \
+        | tr "\n" " " \
+        | sed -e 's/  */ /g' \
+        | sed -e 's/) /)/g' \
+        | sed -e 's/ (/(/g' \
+        | sed -e 's/ *$//g' \
+        | rev \
+        | sed -e 's/\(.\)/\1\'$'\n/g' \
+        | sort | uniq -c | sort -n
+
+# Optimize for SKI combinator calculus
+elif [[ "$1" == "compile-lazyk" ]; then
     printf '(def-lazy **prelude** ((string-concatenator stdin) ';
+
     ( cat $prelude_lisp \
         | sed -e 's/;.*$//g' \
         | tr "\n" " " \
@@ -23,9 +37,11 @@ if [ $# -eq 0 ]; then
 
     echo '))';
 
-# If an extra argument is supplied, count the number of occurrences of each character instead
+# Compile to binary lambda calculus notation
 else
-    cat $prelude_lisp \
+    printf '(def-lazy **prelude** ((string-concatenator stdin) ';
+
+    ( cat $prelude_lisp \
         | sed -e 's/;.*$//g' \
         | tr "\n" " " \
         | sed -e 's/  */ /g' \
@@ -33,6 +49,12 @@ else
         | sed -e 's/ (/(/g' \
         | sed -e 's/ *$//g' \
         | rev \
-        | sed -e 's/\(.\)/\1\'$'\n/g' \
-        | sort | uniq -c | sort -n
+        | sed -e 's/"/!/g' \
+        | sed -e 's/\(.\)/"\1" /g' \
+        | sed -e 's/\\/\\\\/g' \
+        | sed -e 's/!/\\"/g' \
+        | sed -e 's/\?/\\\\n/g' \
+        | sed -e 's/~/tilde/g'; printf "nil"; )
+
+    echo '))';
 fi
