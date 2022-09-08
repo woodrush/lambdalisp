@@ -23,16 +23,16 @@ test: test-blc
 
 
 # Tests
-examples/%.blc.test : examples/%.cl
+test/%.cl.blc.out : examples/%.cl $(target_blc)
 	mkdir -p ./test
 	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) | sed -e '1s/> //' > ./test/$(notdir $<).blc.out
 	( $(SBCL) --script $<; echo ) > ./test/$(notdir $<).sbcl.out
-	cmp ./test/$(notdir $<).blc.out ./test/$(notdir $<).sbcl.out || (echo "Test failed at $<" && exit 1)
+	cmp ./test/$(notdir $<).blc.out ./test/$(notdir $<).sbcl.out || (rm ./test/$(notdir $<).blc.out && echo "Test failed at $<" && exit 1)
 
-test-blc : $(addsuffix .blc.test, $(basename $(wildcard examples/*.cl)))
+test-blc : $(addprefix test/, $(addsuffix .blc.out, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for BLC."
 
-examples/%.ulamb.test : examples/%.cl
+examples/%.ulamb.test : examples/%.cl $(target_ulamb)
 	mkdir -p ./test
 	( cat $(target_ulamb) | $(ASC2BIN); cat $< ) | $(ULAMB) | sed -e '1s/> //' > ./test/$(notdir $<).ulamb.out
 	( $(SBCL) --script $<; echo ) > ./test/$(notdir $<).sbcl.out
@@ -41,7 +41,7 @@ examples/%.ulamb.test : examples/%.cl
 test-ulamb : $(addsuffix .ulamb.test, $(basename $(wildcard examples/*.cl)))
 	@echo "All tests have passed for Universal Lambda."
 
-examples/%.lazyk.test : examples/%.cl
+examples/%.lazyk.test : examples/%.cl $(target_lazy)
 	mkdir -p ./test
 	cat $< | $(LAZYK) $(target_lazy) -u | sed -e '1s/> //' > ./test/$(notdir $<).lazy.out
 	( $(SBCL) --script $<; echo ) > ./test/$(notdir $<).sbcl.out
@@ -49,6 +49,13 @@ examples/%.lazyk.test : examples/%.cl
 
 test-lazyk : $(addsuffix .lazyk.test, $(basename $(wildcard examples/*.cl)))
 	@echo "All tests have passed for Lazy K."
+
+
+test-compiler-blc: test/lambdacraft.cl.blc.out $(target_blc)
+	cat test/lambdacraft.cl.blc.out | sed 's/[^0-9]*//g' | tr -d "\n" | 
+	mkdir -p ./test
+	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) | sed 's/[^0-9]*//g' | tr -d "\n" > ./test/lambdacraft.cl.blc
+
 
 
 # Compile the prelude
