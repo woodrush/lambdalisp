@@ -6,4 +6,6 @@
 (load "./targets/def-prelude-lazyk.cl")
 (load "./targets/blc-lazyk-ulamb-wrapper.cl")
 
-(format t (compile-to-ski-lazy (blc-to-lazyk-wrapper main)))
+(format t "`~a~a"
+  (compile-to-ski-lazy init)
+  (compile-to-ski-lazy string-generator))
