@@ -563,19 +563,23 @@
     (<- (ret-reader-hook reg-heap stdin) (check-reader-hooks c reg-heap stdin))
     (if-then-return (not (isnil ret-reader-hook))
       (cont ret-reader-hook reg-heap stdin))
-    ((cond
+    (cond
       ((=-bit ";" c)
         (do
           (<- (stdin) (skip-comment cdr-stdin))
-          (read-expr reg-heap stdin)))
+          (read-expr reg-heap stdin cont)))
       ((or (=-bit " " c) (=-bit "\\n" c))
-        (read-expr reg-heap cdr-stdin))
+        (read-expr reg-heap cdr-stdin cont))
       ((=-bit "(" c)
-        (read-list reg-heap cdr-stdin))
+        (read-list reg-heap cdr-stdin cont))
+      ((=-bit ")" c)
+        (do
+          (<- (reg heap) (reg-heap))
+          (error str-unexpected-paren (cons3 reg heap cdr-stdin))))
       ((=-bit "\"" c)
         (do
           (<- (str stdin) (read-string cdr-stdin))
-          (lambda (cont) (cont (string* str) reg-heap stdin))))
+          (cont (string* str) reg-heap stdin)))
       (((and
           (=-bit "-" c)
           (and ((cmp* "0" (car cdr-stdin)) t t nil)
@@ -583,34 +587,33 @@
         (do
           (<- (n stdin) (read-unsigned-int cdr-stdin int-zero))
           (<- (n) (negate n))
-          (lambda (cont) (cont (int* n) reg-heap stdin))))
+          (cont (int* n) reg-heap stdin)))
       ((and ((cmp* "0" c) t t nil)
             ((cmp* c "9") t t nil))
         (do
           (<- (n stdin) (read-unsigned-int stdin int-zero))
-          (lambda (cont) (cont (int* n) reg-heap stdin))))
+          (cont (int* n) reg-heap stdin)))
       ((=-bit "'" c)
         (do
           (<- (expr reg-heap stdin) (read-expr reg-heap cdr-stdin))
-          (lambda (cont) (cont (cons-data@ (atom* kQuote) (cons-data@ expr (atom* nil))) reg-heap stdin))))
+          (cont (cons-data@ (atom* kQuote) (cons-data@ expr (atom* nil))) reg-heap stdin)))
       ((=-bit "`" c)
         (do
           (<- (expr reg-heap stdin) (read-expr reg-heap cdr-stdin))
-          (lambda (cont) (cont (cons-data@ (atom* (list "`")) (cons-data@ expr (atom* nil))) reg-heap stdin))))
+          (cont (cons-data@ (atom* (list "`")) (cons-data@ expr (atom* nil))) reg-heap stdin)))
       ((=-bit "," c)
         (do
           (<- (c2 cdr-cdr-stdin) (cdr-stdin))
           (if-then-return (=-bit "@" c2)
             (do
               (<- (expr reg-heap stdin) (read-expr reg-heap cdr-cdr-stdin))
-              (lambda (cont) (cont (cons-data@ (atom* (list "," "@")) (cons-data@ expr (atom* nil))) reg-heap stdin))))
+              (cont (cons-data@ (atom* (list "," "@")) (cons-data@ expr (atom* nil))) reg-heap stdin)))
           (<- (expr reg-heap stdin) (read-expr reg-heap cdr-stdin))
-          (lambda (cont) (cont (cons-data@ (atom* (list ",")) (cons-data@ expr (atom* nil))) reg-heap stdin))))
+          (cont (cons-data@ (atom* (list ",")) (cons-data@ expr (atom* nil))) reg-heap stdin)))
       (t
         (do
           (<- (str stdin) (read-atom stdin))
-          (lambda (cont) (cont (atom* str) reg-heap stdin)))))
-      cont)))
+          (cont (atom* str) reg-heap stdin))))))
 
 
 ;;================================================================
@@ -1464,6 +1467,7 @@
 
 (defun-lazy string-generator (stdin cont)
   (do
+    (let* "x"     (do (b0) (b1) (b1) (b1) (b1) (b0) (b0) (b0) nil))
     (let* "\\"    (do (b0) (b1) (b0) (b1) (b1) (b1) (b0) (b0) nil))
     (let* "\\n"   (do (b0) (b0) (b0) (b0) (b1) (b0) (b1) (b0) nil))
     (let* "tilde" (do (b0) (b1) (b1) (b1) (b1) (b1) (b1) (b0) nil))
@@ -1513,6 +1517,7 @@
     (let* ")"     (do (b0) (b0) (b1) (b0) (b1) (b0) (b0) (b1) nil))
     (cont
       **prelude**
+      (list "u" "n" "e" "x" "p" "e" "c" "t" "e" "d" " " ")")
       (list "p" "r" "i" "n" "t")
       (list "r" "e" "a" "d")
       (list "q" "u" "o" "t" "e") ;kQuote
@@ -1610,6 +1615,7 @@
 (defun-lazy init (string-generator stdin)
   (do
     (<- (prelude-str
+         str-unexpected-paren
          kPrint
          kRead
          kQuote
