@@ -1,8 +1,13 @@
+;;========================================================================================
+;; The following program is compatible with both Common Lisp and LambdaLisp.
+;; A more concise but LambdaLisp-exclusive version is available as `object-oriented.cl`.
+;;========================================================================================
 (defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
 
-;;================================================================
+
+;;========================================================================================
 ;; Macro definitions for Common Lisp compatibility
-;;================================================================
+;;========================================================================================
 (defmacro dot (instance accesor)
   `(funcall ,instance ',accesor))
 
@@ -83,26 +88,25 @@
 ;;================================================================
 ;; The main program
 ;;================================================================
-(defclass* counter ()
+(defclass* Counter ()
   (i 0)
-
-  (defmethod *init (i)
-    (setf* (dot self i) i))
 
   (defmethod inc ()
     (setf* (dot self i) (+ 1 (dot self i))))
 
   (defmethod dec ()
-    (cond
-      ((dot self i)
-        (setf* (dot self i) (- (dot self i) 1)))
-      (t
-        (dot self i))))
+    (setf* (dot self i) (- (dot self i) 1))))
+
+
+(defclass* Counter-add (Counter)
+  (defmethod *init (i)
+    (setf* (dot self i) i))
 
   (defmethod add (n)
     (setf* (dot self i) (+ (dot self i) n))))
 
-(defclass* counter-sub (counter)
+
+(defclass* Counter-addsub (Counter-add)
   (defmethod *init (c)
     (funcall (dot (dot self super) *init) c))
 
@@ -110,33 +114,42 @@
     (setf* (dot self i) (- (dot self i) n))))
 
 
-(defparameter counter1 (new counter 0))
-(defparameter counter2 (new counter-sub 100))
+(defparameter counter1 (new Counter))
+(defparameter counter2 (new Counter-add 100))
+(defparameter counter3 (new Counter-addsub 10000))
 
 (print (funcall (dot counter1 inc)))
 (print (funcall (dot counter1 inc)))
 (print (funcall (dot counter2 inc)))
+(print (funcall (dot counter3 inc)))
 (print (funcall (dot counter1 inc)))
 (print (funcall (dot counter2 inc)))
+(print (funcall (dot counter3 inc)))
 (print (funcall (dot counter1 inc)))
+(print (funcall (dot counter3 inc)))
 
 (print (funcall (dot counter1 dec)))
+(print (funcall (dot counter3 dec)))
 (print (funcall (dot counter1 dec)))
 (print (funcall (dot counter2 dec)))
+(print (funcall (dot counter3 dec)))
 (print (funcall (dot counter1 dec)))
 
-(print (funcall (dot counter1 add) 10))
-(print (funcall (dot counter2 add) 10))
+(print (funcall (dot counter2 add) 100))
+(print (funcall (dot counter3 add) 10000))
 
-
-(print (funcall (dot counter2 sub) 5))
+(print (funcall (dot counter3 sub) 100))
 
 (print (setf* (dot counter1 i) 5))
-(print (setf* (dot counter2 i) 100))
+(print (setf* (dot counter2 i) 500))
+(print (setf* (dot counter3 i) 50000))
 
 (print (funcall (dot counter1 inc)))
 (print (funcall (dot counter2 inc)))
+(print (funcall (dot counter3 inc)))
 (print (funcall (dot counter2 inc)))
 (print (funcall (dot counter1 inc)))
+(print (funcall (dot counter3 inc)))
 (print (funcall (dot counter2 inc)))
 (print (funcall (dot counter2 inc)))
+(print (funcall (dot counter3 inc)))
