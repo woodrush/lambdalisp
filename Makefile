@@ -32,22 +32,22 @@ test/%.cl.blc.out : examples/%.cl $(target_blc)
 test-blc : $(addprefix test/, $(addsuffix .blc.out, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for BLC."
 
-examples/%.ulamb.test : examples/%.cl $(target_ulamb)
+test/%.cl.ulamb.out : examples/%.cl $(target_ulamb)
 	mkdir -p ./test
 	( cat $(target_ulamb) | $(ASC2BIN); cat $< ) | $(ULAMB) | sed -e '1s/> //' > ./test/$(notdir $<).ulamb.out
 	( $(SBCL) --script $<; echo ) > ./test/$(notdir $<).sbcl.out
 	cmp ./test/$(notdir $<).ulamb.out ./test/$(notdir $<).sbcl.out || (echo "Test failed at $<" && exit 1)
 
-test-ulamb : $(addsuffix .ulamb.test, $(basename $(wildcard examples/*.cl)))
+test-ulamb : $(addprefix test/, $(addsuffix .ulamb.out, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for Universal Lambda."
 
-examples/%.lazyk.test : examples/%.cl $(target_lazy)
+test/%.cl.lazy.out : examples/%.cl $(target_lazy)
 	mkdir -p ./test
 	cat $< | $(LAZYK) $(target_lazy) -u | sed -e '1s/> //' > ./test/$(notdir $<).lazy.out
 	( $(SBCL) --script $<; echo ) > ./test/$(notdir $<).sbcl.out
 	cmp ./test/$(notdir $<).lazy.out ./test/$(notdir $<).sbcl.out || (echo "Test failed at $<" && exit 1)
 
-test-lazyk : $(addsuffix .lazyk.test, $(basename $(wildcard examples/*.cl)))
+test-lazyk : $(addprefix test/, $(addsuffix .lazy.out, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for Lazy K."
 
 
