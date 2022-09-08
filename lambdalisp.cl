@@ -1676,7 +1676,7 @@
 
     (let* stringeq stringeq)
 
-    ;; Mutual recursion for read-expr, eval, and repl
+    ;; Mutual recursion for read-expr, eval, eval-apply, and repl
     (let* def-read-expr def-read-expr)
     (let* def-eval def-eval)
     (let* def-eval-apply def-eval-apply)
@@ -1719,9 +1719,6 @@
 ;;================================================================
 ;; Compilation
 ;;================================================================
-;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
-
-;; ;; (format t (compile-to-ski-lazy main))
 (if (boundp 'lambdalisp-compile-latex)
   (format t (compile-to-simple-lambda-lazy main))
   (format t (compile-to-blc-lazy main)))
@@ -1729,18 +1726,7 @@
 ;; (format t (concatenate 'string "`"  (compile-to-ski-lazy main) (compile-to-ski-lazy string-generator)))
 ;; (format t (concatenate 'string "01" (compile-to-blc-lazy main) (compile-to-blc-lazy string-generator)))
 
-;; (print (compile-to-simple-lambda main))
-
 ;; (format t (compile-to-js-arrow-lazy main))
-;; (format t (compile-to-simple-lambda-lazy main))
-
-;; (format t (compile-to-blc-lazy string-generator))
-
-
-;; (setq *print-pretty* 'nil)
-;; (print (compile-to-simple-lambda-lazy main))
-
-;; (format t (compile-to-blc-lazy string-generator))
 
 ;; ;; Print lambda term
 ;; (setf *print-right-margin* 800)

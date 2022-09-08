@@ -14,6 +14,8 @@ function show_error () {
     echo "SBCL:"
     echo $2
     echo "The test has failed on $filepath."
+    echo "If the interpreter uni or Blc exits with a segmentation fault, the interpreter may be compiled with the defualt memory usage configurations."
+    echo "Compiling uni/Blc with an extended memory usage setting may avoid the segmentation fault."
     exit 1
 }
 
