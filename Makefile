@@ -37,12 +37,12 @@ $(target_blc): $(BASE_SRCS) $(def_prelude) ./src/main.cl
 	mv $(target_blc).tmp $(target_blc)
 
 lazyk: $(target_lazy)
-$(target_lazy): $(BASE_SRCS) $(def_prelude_lazyk) ./src/chars-lazyk.cl ./src/main-lazyk.cl ./src/blc-lazyk-ulamb-wrapper.cl
+$(target_lazy): $(BASE_SRCS) $(def_prelude_lazyk) ./src/lazyk-chars.cl ./src/main-lazyk.cl ./src/lazyk-ulamb-blc-wrapper.cl
 	cd src; sbcl --script ./main-lazyk.cl > ../$(target_lazy).tmp
 	mv $(target_lazy).tmp $(target_lazy)
 
 ulamb: $(target_ulamb)
-$(target_ulamb): $(BASE_SRCS) $(def_prelude) ./src/main-ulamb.cl ./src/blc-lazyk-ulamb-wrapper.cl
+$(target_ulamb): $(BASE_SRCS) $(def_prelude) ./src/main-ulamb.cl ./src/lazyk-ulamb-blc-wrapper.cl
 	cd src; sbcl --script ./main-ulamb.cl > ../$(target_ulamb).tmp
 	mv $(target_ulamb).tmp $(target_ulamb)
 
