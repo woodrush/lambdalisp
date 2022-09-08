@@ -20,8 +20,13 @@ all:
 	$(MAKE) $(target_blc)
 	$(MAKE) $(target_ulamb)
 
-test: test-blc test-compiler-hosting-blc
-test-all: test-blc test-ulamb test-lazyk test-compiler-hosting-blc
+test: test-blc test-compiler-hosting-blc test-compiler-hosting-blc-tromp
+test-all: test-blc test-blc-tromp test-ulamb test-lazyk test-compiler-hosting-blc test-compiler-hosting-blc-tromp
+
+# For non-x86-64-Linux targets, which does not run the interpreter 'Blc'
+test-nonlinux: test-blc-tromp test-compiler-hosting-blc-tromp
+test-all-nonlinux: test-blc-tromp test-ulamb test-lazyk test-compiler-hosting-blc-tromp
+
 
 #================================================================
 # Tests
@@ -37,6 +42,12 @@ out/%.cl.sbcl-out: examples/%.cl
 out/%.cl.blc-out: examples/%.cl $(target_blc) $(BLC) $(ASC2BIN)
 	mkdir -p ./out
 	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) > $@.tmp
+	mv $@.tmp $@
+
+.PRECIOUS: out/%.cl.tromp-out
+out/%.cl.blc-tromp-out: examples/%.cl $(target_blc) $(TROMP) $(ASC2BIN)
+	mkdir -p ./out
+	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(TROMP) > $@.tmp
 	mv $@.tmp $@
 
 .PRECIOUS: out/%.cl.ulamb-out
@@ -58,6 +69,9 @@ out/%.cleaned: out/%
 out/%.blc-out.diff: ./out/%.blc-out.cleaned ./out/%.sbcl-out
 	cmp $^ || exit 1
 
+out/%.blc-tromp-out.diff: ./out/%.blc-tromp-out.cleaned ./out/%.sbcl-out
+	cmp $^ || exit 1
+
 out/%.ulamb-out.diff: ./out/%.ulamb-out.cleaned ./out/%.sbcl-out
 	cmp $^ || exit 1
 
@@ -66,7 +80,11 @@ out/%.lazyk-out.diff: ./out/%.lazyk-out.cleaned ./out/%.sbcl-out
 
 .PHONY: test-blc
 test-blc: $(addsuffix .blc-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
-	@echo "All tests have passed for BLC with the Blc interpreter."
+	@echo "All tests have passed for BLC with the interpreter 'Blc'."
+
+.PHONY: test-tromp
+test-blc-tromp: $(addsuffix .blc-tromp-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
+	@echo "All tests have passed for BLC with the interpreter 'tromp'."
 
 .PHONY: test-ulamb
 test-ulamb: $(addsuffix .ulamb-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
@@ -85,6 +103,15 @@ test-compiler-hosting-blc: out/lambdacraft.cl.blc-out $(BLC) $(ASC2BIN) examples
 	printf 'A' > out/lambdacraft.cl.blc-expected
 	cmp $@ out/lambdacraft.cl.blc-expected || ( rm $@; exit 1)
 	@echo "LambdaCraft-compiler-hosting-on-LambdaLisp test passed."
+
+.PHONY: test-compiler-hosting-blc-tromp
+test-compiler-hosting-blc-tromp: out/lambdacraft.cl.blc-tromp-out $(TROMP) $(ASC2BIN) examples/lambdacraft.cl
+# Remove non-01-characters and provide it to BLC
+	cat $< | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(TROMP) > $@
+	printf 'A' > out/lambdacraft.cl.blc-expected
+	cmp $@ out/lambdacraft.cl.blc-expected || ( rm $@; exit 1)
+	@echo "LambdaCraft-compiler-hosting-on-LambdaLisp test passed."
+
 
 
 # Self-hosting test - compile LambdaLisp's own source code written in Common Lisp using the LambdaLisp interpreter (currently theoretical - requires a lot of time and memory)
@@ -211,7 +238,7 @@ build/tromp.c:
 
 $(TROMP): ./build/tromp.c
 	mkdir -p ./bin
-	# Compile with the option -DM=9999999 (larger than the original -DM=999999) to execute large programs
-	cd build; cc -DM=9999999 -m64 -std=c99 tromp.c -o tromp
+	# Compile with the option -DA=9999999 (larger than the original -DM=999999) to execute large programs
+	cd build; cc -Wall -W -std=c99 -O2 -m64 -DInt=long -DA=9999999 -DX=8 tromp.c -o tromp
 	mv build/tromp ./bin
 	chmod 755 $(TROMP)
