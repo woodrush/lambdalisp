@@ -24,9 +24,9 @@ all:
 test: test-blc test-tromp test-compiler-hosting-blc test-compiler-hosting-blc-tromp
 test-all: test-blc test-blc-tromp test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc test-compiler-hosting-blc-tromp
 
-# For non-x86-64-Linux targets, which does not run the interpreter 'Blc'
-test-nonlinux: test-blc-tromp test-compiler-hosting-blc-tromp
-test-all-nonlinux: test-blc-tromp test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-tromp
+# For non-x86-64-Linux targets, which does not run the interpreter 'Blc', or which cannot compile tromp.c, use 'uni' instead
+test-nonlinux: test-blc-uni test-compiler-hosting-blc-uni
+test-all-nonlinux: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni
 
 interpreters: $(TROMP) $(UNI) $(ULAMB) $(LAZYK) $(BLC)
 
@@ -120,10 +120,10 @@ test-compiler-hosting-blc: out/lambdacraft.cl.blc-out $(BLC) $(ASC2BIN) examples
 	cmp $@ out/lambdacraft.cl.blc-expected || ( rm $@; exit 1)
 	@echo "LambdaCraft-compiler-hosting-on-LambdaLisp test passed."
 
-.PHONY: test-compiler-hosting-blc-tromp
-test-compiler-hosting-blc-tromp: out/lambdacraft.cl.blc-tromp-out $(TROMP) $(ASC2BIN) examples/lambdacraft.cl
+.PHONY: test-compiler-hosting-blc-uni
+test-compiler-hosting-blc-uni: out/lambdacraft.cl.blc-uni-out $(UNI) $(ASC2BIN) examples/lambdacraft.cl
 # Remove non-01-characters and provide it to BLC
-	cat $< | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(TROMP) > $@
+	cat $< | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(UNI) > $@
 	printf 'A' > out/lambdacraft.cl.blc-expected
 	cmp $@ out/lambdacraft.cl.blc-expected || ( rm $@; exit 1)
 	@echo "LambdaCraft-compiler-hosting-on-LambdaLisp test passed."
