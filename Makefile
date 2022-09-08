@@ -1,3 +1,7 @@
+# This setting needs to be changed on a Mac to compile tromp.c (make ./bin/tromp, make test-blc-tromp, etc.).
+# Please see README.md for details.
+CC=cc
+
 BLC=./bin/Blc
 UNI=./bin/uni
 TROMP=./bin/tromp
@@ -21,14 +25,15 @@ all:
 	$(MAKE) $(target_blc)
 	$(MAKE) $(target_ulamb)
 
-test: test-blc test-tromp test-compiler-hosting-blc test-compiler-hosting-blc-tromp
-test-all: test-blc test-blc-tromp test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc test-compiler-hosting-blc-tromp
+test: test-blc-uni test-compiler-hosting-blc-uni
+test-all: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-tromp
 
-# For non-x86-64-Linux targets, which does not run the interpreter 'Blc', or which cannot compile tromp.c, use 'uni' instead
-test-nonlinux: test-blc-uni test-compiler-hosting-blc-uni
-test-all-nonlinux: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni
+# On x86-64-Linux, the interpreter 'Blc' can be used.
+test-linux: test-blc test-tromp test-compiler-hosting-blc test-compiler-hosting-blc-tromp
+test-all-linux: test-blc test-blc-tromp test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc test-compiler-hosting-blc-tromp
 
-interpreters: $(TROMP) $(UNI) $(ULAMB) $(LAZYK) $(BLC)
+interpreters: $(UNI) $(ULAMB) $(LAZYK) $(TROMP) $(BLC)
+
 
 
 #================================================================
@@ -129,7 +134,6 @@ test-compiler-hosting-blc-uni: out/lambdacraft.cl.blc-uni-out $(UNI) $(ASC2BIN) 
 	@echo "LambdaCraft-compiler-hosting-on-LambdaLisp test passed."
 
 
-
 # Self-hosting test - compile LambdaLisp's own source code written in Common Lisp using the LambdaLisp interpreter (currently theoretical - requires a lot of time and memory)
 .PHONY: test-self-host
 test-self-host: $(BASE_SRCS) $(def_prelude) ./src/main.cl $(target_blc) $(BLC) $(ASC2BIN)
@@ -196,9 +200,10 @@ $(target_latex): $(BASE_SRCS) $(def_prelude) ./src/main-latex.cl
 
 $(ULAMB): ./build/clamb/clamb.c
 	mkdir -p ./bin
-	cd build/clamb; gcc -O2 clamb.c -o clamb
+	cd build/clamb; $(CC) -O2 clamb.c -o clamb
 	mv build/clamb/clamb ./bin
 	chmod 755 $(ULAMB)
+
 
 ./build/lazyk/lazyk.c:
 	mkdir -p ./build
@@ -206,7 +211,7 @@ $(ULAMB): ./build/clamb/clamb.c
 
 $(LAZYK): ./build/lazyk/lazyk.c
 	mkdir -p ./bin
-	cd build/lazyk; gcc -O2 lazyk.c -o lazyk
+	cd build/lazyk; $(CC) -O2 lazyk.c -o lazyk
 	mv build/lazyk/lazyk ./bin
 	chmod 755 $(LAZYK)
 
@@ -217,7 +222,7 @@ show_Blc.S_message:
 	@echo "    This procedure requires the binary lambda calculus interpreter 'Blc'."
 	@echo "    To compile it and proceed, please place Blc.S and flat.lds under ./build."
 	@echo "    (Please use the uppercase Blc.S, and not the lowercase blc.S.)"
-	@echo "    Blc can be run on x86-64 Linux systems. For other setups, ./bin/tromp and 'make test-blc-tromp' can be used."
+	@echo "    Blc can be run on x86-64 Linux systems. In other environments, ./bin/tromp or ./bin/uni (make test-blc-tromp, make test-blc-uni) can be used."
 	@echo "    Please see README.md for details."
 	@echo
 	@exit 1
@@ -234,16 +239,18 @@ $(BLC): build/Blc.S build/flat.lds
 	mkdir -p ./bin
 	# Extend the maximum memory limit to execute large programs
 	cd build; cat Blc.S | sed -e 's/#define TERMS	5000000/#define TERMS	50000000/' > Blc.ext.S
-	cd build; cc -c -o Blc.o Blc.ext.S
+	cd build; $(CC) -c -o Blc.o Blc.ext.S
 	cd build; ld.bfd -o Blc Blc.o -T flat.lds
 	mv build/Blc ./bin
 	chmod 755 $(BLC)
+
 
 .PHONY: show_tromp.c_message
 show_tromp.c_message:
 	@echo
 	@echo "    This procedure requires the binary lambda calculus interpreter 'tromp'."
 	@echo "    To compile it and proceed, please place tromp.c under ./build."
+	@echo "    Note that on a Mac, the default gcc may not compile tromp.c, and an installation of a different version for gcc may be required."
 	@echo "    Please see README.md for details."
 	@echo
 	@exit 1
@@ -255,9 +262,10 @@ build/tromp.c:
 $(TROMP): ./build/tromp.c
 	mkdir -p ./bin
 	# Compile with the option -DA=9999999 (larger than the original -DM=999999) to execute large programs
-	cd build; cc -Wall -W -std=c99 -O2 -m64 -DInt=long -DA=9999999 -DX=8 tromp.c -o tromp
+	cd build; $(CC) -Wall -W -std=c99 -O2 -m64 -DInt=long -DA=9999999 -DX=8 tromp.c -o tromp
 	mv build/tromp ./bin
 	chmod 755 $(TROMP)
+
 
 .PHONY: show_uni.c_message
 show_uni.c_message:
@@ -275,6 +283,6 @@ build/uni.c:
 $(UNI): ./build/uni.c
 	mkdir -p ./bin
 	# Compile with the option -DA=9999999 (larger than the original -DM=999999) to execute large programs
-	cd build; gcc -Wall -W -O2 -std=c99 -m64 -DM=9999999 uni.c -o uni
+	cd build; $(CC) -Wall -W -O2 -std=c99 -m64 -DM=9999999 uni.c -o uni
 	mv build/uni ./bin
 	chmod 755 $(UNI)
