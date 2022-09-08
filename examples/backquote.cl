@@ -13,8 +13,7 @@
             (append (eval (car (cdr (car expr)))) (BACKQUOTE-FUNCTION (cdr expr) depth))
             (cons
               (list 'COMMA-SPLICE (BACKQUOTE-FUNCTION (car (cdr (car expr))) (- depth 1)))
-              (BACKQUOTE-FUNCTION (cdr expr) (- depth 1))))
-          )
+              (BACKQUOTE-FUNCTION (cdr expr) (- depth 1)))))
         ((eq (car expr) 'COMMA)
           (if (= depth 0)
             (eval (car (cdr expr)))
@@ -35,9 +34,8 @@
       (read-char stream t nil t)
       (let ((expr (read stream t nil t)))
         (cons 'COMMA-SPLICE (cons expr nil))))
-    (progn
-      (let ((expr (read stream t nil t)))
-        (cons 'COMMA (cons expr nil))))))
+    (let ((expr (read stream t nil t)))
+      (cons 'COMMA (cons expr nil)))))
 (set-macro-character #\~ #'comma-macro)
 
 
