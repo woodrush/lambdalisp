@@ -46,32 +46,32 @@ out/%.cl.sbcl-out: examples/%.cl
 	( $(SBCL) --script $<; echo ) > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: out/%.cl.blc-out
-out/%.cl.blc-out: examples/%.cl $(target_blc) $(BLC) $(ASC2BIN)
+.PRECIOUS: out/%.blc-out
+out/%.blc-out: examples/% $(target_blc) $(BLC) $(ASC2BIN)
 	mkdir -p ./out
 	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: out/%.cl.blc-tromp-out
-out/%.cl.blc-tromp-out: examples/%.cl $(target_blc) $(TROMP) $(ASC2BIN)
+.PRECIOUS: out/%.blc-tromp-out
+out/%.blc-tromp-out: examples/% $(target_blc) $(TROMP) $(ASC2BIN)
 	mkdir -p ./out
 	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(TROMP) > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: out/%.cl.blc-uni-out
-out/%.cl.blc-uni-out: examples/%.cl $(target_blc) $(UNI) $(ASC2BIN)
+.PRECIOUS: out/%.blc-uni-out
+out/%.blc-uni-out: examples/% $(target_blc) $(UNI) $(ASC2BIN)
 	mkdir -p ./out
 	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(UNI) > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: out/%.cl.ulamb-out
-out/%.cl.ulamb-out: examples/%.cl $(target_ulamb) $(ULAMB) $(ASC2BIN)
+.PRECIOUS: out/%.ulamb-out
+out/%.ulamb-out: examples/% $(target_ulamb) $(ULAMB) $(ASC2BIN)
 	mkdir -p ./out
 	( cat $(target_ulamb) | $(ASC2BIN); cat $< ) | $(ULAMB) > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: out/%.cl.lazyk-out
-out/%.cl.lazyk-out: examples/%.cl $(target_lazy) $(LAZYK)
+.PRECIOUS: out/%.lazyk-out
+out/%.lazyk-out: examples/% $(target_lazy) $(LAZYK)
 	mkdir -p ./out
 	cat $< | $(LAZYK) $(target_lazy) -u > $@.tmp
 	mv $@.tmp $@
