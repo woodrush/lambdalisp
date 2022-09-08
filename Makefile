@@ -19,10 +19,10 @@ all:
 	$(MAKE) $(target_blc)
 	$(MAKE) $(target_ulamb)
 
-test: test-blc test-compiler-blc
+test: test-blc test-compiler-hosting-blc
 
 
-# Tests
+# SBCL comparison test - compare LambdaLisp outputs with Common Lisp outputs for examples/*.cl
 test/%.cl.blc.out : examples/%.cl $(target_blc)
 	mkdir -p ./test
 	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) | sed -e '1s/> //' > ./test/$(notdir $<).blc.out
@@ -51,11 +51,26 @@ test-lazyk : $(addprefix test/, $(addsuffix .lazy.out, $(notdir $(wildcard examp
 	@echo "All tests have passed for Lazy K."
 
 
-test-compiler-blc: test/lambdacraft.cl.blc.out
+# Compiler hosting test - execute the output of examples/lambdacraft.cl as a binary lambda calculus program
+test/lambdacraft.cl.blc.out.blc.out: test/lambdacraft.cl.blc.out
 	cat test/lambdacraft.cl.blc.out | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(BLC) > test/lambdacraft.cl.blc.out.blc.out
 	printf 'A' > test/lambdacraft.cl.blc.out.blc.out.expected
 	cmp test/lambdacraft.cl.blc.out.blc.out test/lambdacraft.cl.blc.out.blc.out.expected || (echo "Output does not match with 'A'" && exit 1)
+
+test-compiler-hosting-blc: test/lambdacraft.cl.blc.out.blc.out
 	@echo "LambdaCraft-compiler-hosting-on-LambdaLisp test passed."
+
+
+# Self-hosting test - compile LambdaLisp's own source code written in Common Lisp using the LambdaLisp interpreter (untested)
+test/lambdalisp.cl.blc.out: $(BASE_SRCS) $(def_prelude) ./src/main.cl $(target_blc)
+	mkdir -p ./test
+	( cat $(target_blc) | $(ASC2BIN); \
+	  cat ./src/lambdacraft.cl ./src/build/def-prelude.cl ./src/lambdalisp.cl ) | $(BLC) | sed -e '1s/> //' > ./test/lambdalisp.cl.blc.out
+	cmp ./test/lambdalisp.cl.blc.out $(target_blc) || (echo "The LambdaLisp output does not match with the Common Lisp output." && exit 1)
+
+test-self-host: test/lambdalisp.cl.blc.out
+	@echo "LambdaLisp self-hosting test passed."
+
 
 
 # Compile the prelude
