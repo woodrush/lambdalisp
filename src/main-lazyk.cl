@@ -6,6 +6,5 @@
 ;; Override the prelude definition with the Lazy K optimized version
 (load "./build/def-prelude-lazyk.cl")
 
-(format t "`~a~a"
-  (compile-to-ski-lazy init)
-  (compile-to-ski-lazy string-generator))
+
+(format t (compile-to-ski-lazy (blc-to-lazyk-wrapper main)))
