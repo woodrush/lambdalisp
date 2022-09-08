@@ -1,8 +1,14 @@
-;; The prelude becomes hard-coded inside lambdalisp.blc after compilation and is run during the initialization phase of the REPL.
+;;================================================================================================================================
+;; LambdaLisp prelude script
+;; 
+;; This prelude file is run as a startup script at LambdaLisp's initialization phase.
+;; At compile time, this file becomes encoded into a lambda calculus string representation and is
+;; hard-coded inside its lambda calculus source code as a lambda calculus term.
+;; 
 ;; At runtime, the contents of this file is prepended to the standard input and is interpreted as a LambdaLisp expression.
 ;; The REPL initially reads one Lisp term from the input stream (containing this file), evaluates it, and prints nothing.
 ;; The prelude is wrapped with `progn` to evaluate multiple expressions during this initialization phase.
-;; The string representation of this file is compressed to an efficient lambda term representation using ./tools/compile-prelude.sh at compile time.
+;;================================================================================================================================
 
 (progn
   (defglobal defmacro (macro (name e &rest b)
