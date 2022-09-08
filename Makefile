@@ -21,7 +21,7 @@ all:
 	$(MAKE) $(target_ulamb)
 
 test: test-blc test-compiler-hosting-blc
-test-all: test-blc test-ulamb test-lazyk test-compiler-hosting-blc test-compiler-hosting-ulamb test-compiler-hosting-lazyk
+test-all: test-blc test-ulamb test-lazyk test-compiler-hosting-blc
 
 #================================================================
 # Tests
@@ -30,22 +30,26 @@ test-all: test-blc test-ulamb test-lazyk test-compiler-hosting-blc test-compiler
 .PRECIOUS: out/%.cl.sbcl-out
 out/%.cl.sbcl-out: examples/%.cl
 	mkdir -p ./out
-	( $(SBCL) --script $<; echo ) > $@
+	( $(SBCL) --script $<; echo ) > $@.tmp
+	mv $@.tmp $@
 
 .PRECIOUS: out/%.cl.blc-out
 out/%.cl.blc-out: examples/%.cl $(target_blc) $(BLC) $(ASC2BIN)
 	mkdir -p ./out
-	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) > $@
+	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) > $@.tmp
+	mv $@.tmp $@
 
 .PRECIOUS: out/%.cl.ulamb-out
 out/%.cl.ulamb-out: examples/%.cl $(target_ulamb) $(ULAMB) $(ASC2BIN)
 	mkdir -p ./out
-	( cat $(target_ulamb) | $(ASC2BIN); cat $< ) | $(ULAMB) > $@
+	( cat $(target_ulamb) | $(ASC2BIN); cat $< ) | $(ULAMB) > $@.tmp
+	mv $@.tmp $@
 
 .PRECIOUS: out/%.cl.lazyk-out
 out/%.cl.lazyk-out: examples/%.cl $(target_lazy) $(LAZYK)
 	mkdir -p ./out
-	cat $< | $(LAZYK) $(target_lazy) -u > $@
+	cat $< | $(LAZYK) $(target_lazy) -u > $@.tmp
+	mv $@.tmp $@
 
 out/%.cleaned: out/%
 # Remove the initial '> ' printed by LambdaLisp's REPL when comparing with SBCL's output
@@ -71,16 +75,17 @@ test-lazyk: $(addsuffix .blc-out.diff, $(addprefix out/, $(notdir $(wildcard exa
 
 
 # Compiler hosting test - execute the output of examples/lambdacraft.cl as a binary lambda calculus program
-out/lambdacraft.cl.blc-out.cleaned.blc-out: out/lambdacraft.cl.blc-out.cleaned $(BLC) $(ASC2BIN)
-	out/lambdacraft.cl.blc-out.cleaned | $(ASC2BIN) | $(BLC) > out/lambdacraft.cl.blc-out.cleaned.blc-out
+.PHONY: test-compiler-hosting-blc
+test-compiler-hosting-blc: out/lambdacraft.cl.blc-out $(BLC) $(ASC2BIN) examples/lambdacraft.cl
+# Remove non-01-characters and provide it to BLC
+	cat $< | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(BLC) > $@
 	printf 'A' > out/lambdacraft.cl.blc-expected
-	cmp $< out/lambdacraft.cl.blc-expected || exit 1
-
-test-compiler-hosting-blc: out/lambdacraft.cl.blc-out.cleaned.blc-out
+	cmp $@ out/lambdacraft.cl.blc-expected || ( rm $@; exit 1)
 	@echo "LambdaCraft-compiler-hosting-on-LambdaLisp test passed."
 
 
-# Self-hosting test - compile LambdaLisp's own source code written in Common Lisp using the LambdaLisp interpreter (untested)
+# Self-hosting test - compile LambdaLisp's own source code written in Common Lisp using the LambdaLisp interpreter (currently theoretical - requires a lot of time and memory)
+.PHONY: test-self-host
 test-self-host: $(BASE_SRCS) $(def_prelude) ./src/main.cl $(target_blc) $(BLC) $(ASC2BIN)
 	mkdir -p ./test
 	( echo '(defparameter **lambdalisp-suppress-repl** t)'; \
