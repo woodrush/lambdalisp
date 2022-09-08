@@ -19,7 +19,7 @@ all:
 	$(MAKE) $(target_blc)
 	$(MAKE) $(target_ulamb)
 
-test: test-blc
+test: test-blc test-compiler-blc
 
 
 # Tests
@@ -51,11 +51,11 @@ test-lazyk : $(addprefix test/, $(addsuffix .lazy.out, $(notdir $(wildcard examp
 	@echo "All tests have passed for Lazy K."
 
 
-test-compiler-blc: test/lambdacraft.cl.blc.out $(target_blc)
-	cat test/lambdacraft.cl.blc.out | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(BLC) | tee test/lambdacraft.cl.blc.out.blc.out
+test-compiler-blc: test/lambdacraft.cl.blc.out
+	cat test/lambdacraft.cl.blc.out | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(BLC) > test/lambdacraft.cl.blc.out.blc.out
 	printf 'A' > test/lambdacraft.cl.blc.out.blc.out.expected
 	cmp test/lambdacraft.cl.blc.out.blc.out test/lambdacraft.cl.blc.out.blc.out.expected || (echo "Output does not match with 'A'" && exit 1)
-	@echo "LambdaCraft compilation test passed."
+	@echo "LambdaCraft-compiler-hosting-on-LambdaLisp test passed."
 
 
 # Compile the prelude
