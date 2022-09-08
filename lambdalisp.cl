@@ -1442,123 +1442,96 @@
     (t
       (string-concatenator (cons x curstr)))))
 
+(defmacro-lazy b0 (x) `(cons t ,x))
+(defmacro-lazy b1 (x) `(cons nil ,x))
+(defmacro-lazy list4 (a b c d) `(list ,a ,b ,c ,d))
+
 (defun-lazy string-generator (stdin cont)
   (do
-    (<- ("\\" "\\n" "tilde" "0" "1" "." "<" ">" "=" "%" "/" "*" "+" "-" "&" "y" "h" "k" "v" "b" "g" "m" "p" "u" "q" "#" "@" "," "`" "'" "w" "\"" "f" "i" "o" "l" "d" "n" "c" "s" "t" "a" "r" "e" "(" ")" " ")
-      ((lambda (cont)
-        (let ((cons2 (lambda (x y z) (cons x (cons y z))))
-              (sym2 (lambda (a b) (cons t (cons t (cons nil (cons t (do (a) (b) nil)))))))
-              (char3 (lambda (a b c) (cons t (cons nil (do (a) (b) (c) nil)))))
-              ("11" (cons2 nil nil))
-              ("10" (cons2 nil t))
-              ("01" (cons2 t nil))
-              ("00" (cons2 t t)))
-          (cont
-            (do ("01") ("01") ("11") ("00") nil)  ;; "\\"
-            (do ("00") ("00") ("10") ("10") nil)  ;; "\\n"
-            (do ("01") ("11") ("11") ("10") nil)  ;; "tilde"
-            (do ("00") ("11") ("00") ("00") nil)  ;; "0"
-            (do ("00") ("11") ("00") ("01") nil)  ;; "1"
-            (sym2 ("11") ("10"))         ;; "."
-            (do ("00") ("11") ("11") ("00") nil)  ;; "<"
-            (do ("00") ("11") ("11") ("10") nil)  ;; ">"
-            (do ("00") ("11") ("11") ("01") nil)  ;; "="
-            (sym2 ("01") ("01"))         ;; "%"
-            (sym2 ("11") ("11"))         ;; "/"
-            (sym2 ("10") ("10"))         ;; "*"
-            (sym2 ("10") ("11"))         ;; "+"
-            (sym2 ("11") ("01"))         ;; "-"
-            (do ("00") ("10") ("01") ("10") nil)  ;; "&"
-            (char3 ("11") ("10") ("01")) ;; "y"
-            (char3 ("10") ("10") ("00")) ;; "h"
-            (char3 ("10") ("10") ("11")) ;; "k"
-            (char3 ("11") ("01") ("10")) ;; "v"
-            (char3 ("10") ("00") ("10")) ;; "b"
-            (char3 ("10") ("01") ("11")) ;; "g"
-            (char3 ("10") ("11") ("01")) ;; "m"
-            (char3 ("11") ("00") ("00")) ;; "p"
-            (char3 ("11") ("01") ("01")) ;; "u"
-            (char3 ("11") ("00") ("01")) ;; "q"
-            (do ("00") ("10") ("00") ("11") nil)  ;; "#"
-            (do ("01") ("00") ("00") ("00") nil)  ;; "@"
-            (sym2 ("11") ("00"))         ;; ","
-            (char3 ("10") ("00") ("00")) ;; "`"
-            (sym2 ("01") ("11"))         ;; "'"
-            (char3 ("11") ("01") ("11")) ;; "w"
-            (sym2 ("00") ("10"))         ;; "\""
-            (char3 ("10") ("01") ("10")) ;; "f"
-            (char3 ("10") ("10") ("01")) ;; "i"
-            (char3 ("10") ("11") ("11")) ;; "o"
-            (char3 ("10") ("11") ("00")) ;; "l"
-            (char3 ("10") ("01") ("00")) ;; "d"
-            (char3 ("10") ("11") ("10")) ;; "n"
-            (char3 ("10") ("00") ("11")) ;; "c"
-            (char3 ("11") ("00") ("11")) ;; "s"
-            (char3 ("11") ("01") ("00")) ;; "t"
-            (char3 ("10") ("00") ("01")) ;; "a"
-            (char3 ("11") ("00") ("10")) ;; "r"
-            (char3 ("10") ("01") ("01")) ;; "e"
-            (sym2 ("10") ("00"))         ;; "("
-            (sym2 ("10") ("01"))         ;; ")"
-            (sym2 ("00") ("00"))         ;; " "
-
-            ;; Delayed application to the outermost `cont`
-            (char3 ("01") ("11") ("00")) ;; "\\"
-            (do ("01") ("00") ("00") ("00") nil)  ;; "@"
-            (sym2 ("11") ("00"))         ;; ","
-            (sym2 ("01") ("11"))         ;; "'"
-            (sym2 ("00") ("10"))         ;; "\""
-            (char3 ("10") ("00") ("00")) ;; "`"
-            (sym2 ("11") ("01"))         ;; "-"
-            (do ("00") ("11") ("10") ("11") nil)  ;; ";"
-            (do ("00") ("11") ("00") ("00") nil)  ;; "0"
-            (do ("00") ("11") ("00") ("01") nil)  ;; "1"
-            (do ("00") ("11") ("10") ("01") nil)  ;; "9"
-            (do ("00") ("11") ("11") ("10") nil)  ;; ">"
-            (sym2 ("11") ("10"))         ;; "."
-            (sym2 ("00") ("00"))         ;; " "
-            (do ("00") ("00") ("10") ("10") nil)  ;; "\\n"
-            (sym2 ("10") ("00"))         ;; "("
-            (sym2 ("10") ("01"))         ;; ")"
-            )))))
-    (let* cont (cont **prelude**))
-    (let* list4 (lambda (a b c d) (list a b c d)))
+    (let* "\\"    (do (b0) (b1) (b0) (b1) (b1) (b1) (b0) (b0) nil))
+    (let* "\\n"   (do (b0) (b0) (b0) (b0) (b1) (b0) (b1) (b0) nil))
+    (let* "tilde" (do (b0) (b1) (b1) (b1) (b1) (b1) (b1) (b0) nil))
+    (let* "0"     (do (b0) (b0) (b1) (b1) (b0) (b0) (b0) (b0) nil))
+    (let* "1"     (do (b0) (b0) (b1) (b1) (b0) (b0) (b0) (b1) nil))
+    (let* "."     (do (b0) (b0) (b1) (b0) (b1) (b1) (b1) (b0) nil))
+    (let* "<"     (do (b0) (b0) (b1) (b1) (b1) (b1) (b0) (b0) nil))
+    (let* ">"     (do (b0) (b0) (b1) (b1) (b1) (b1) (b1) (b0) nil))
+    (let* "="     (do (b0) (b0) (b1) (b1) (b1) (b1) (b0) (b1) nil))
+    (let* "%"     (do (b0) (b0) (b1) (b0) (b0) (b1) (b0) (b1) nil))
+    (let* "/"     (do (b0) (b0) (b1) (b0) (b1) (b1) (b1) (b1) nil))
+    (let* "*"     (do (b0) (b0) (b1) (b0) (b1) (b0) (b1) (b0) nil))
+    (let* "+"     (do (b0) (b0) (b1) (b0) (b1) (b0) (b1) (b1) nil))
+    (let* "-"     (do (b0) (b0) (b1) (b0) (b1) (b1) (b0) (b1) nil))
+    (let* "&"     (do (b0) (b0) (b1) (b0) (b0) (b1) (b1) (b0) nil))
+    (let* "y"     (do (b0) (b1) (b1) (b1) (b1) (b0) (b0) (b1) nil))
+    (let* "h"     (do (b0) (b1) (b1) (b0) (b1) (b0) (b0) (b0) nil))
+    (let* "k"     (do (b0) (b1) (b1) (b0) (b1) (b0) (b1) (b1) nil))
+    (let* "v"     (do (b0) (b1) (b1) (b1) (b0) (b1) (b1) (b0) nil))
+    (let* "b"     (do (b0) (b1) (b1) (b0) (b0) (b0) (b1) (b0) nil))
+    (let* "g"     (do (b0) (b1) (b1) (b0) (b0) (b1) (b1) (b1) nil))
+    (let* "m"     (do (b0) (b1) (b1) (b0) (b1) (b1) (b0) (b1) nil))
+    (let* "p"     (do (b0) (b1) (b1) (b1) (b0) (b0) (b0) (b0) nil))
+    (let* "u"     (do (b0) (b1) (b1) (b1) (b0) (b1) (b0) (b1) nil))
+    (let* "q"     (do (b0) (b1) (b1) (b1) (b0) (b0) (b0) (b1) nil))
+    (let* "#"     (do (b0) (b0) (b1) (b0) (b0) (b0) (b1) (b1) nil))
+    (let* "@"     (do (b0) (b1) (b0) (b0) (b0) (b0) (b0) (b0) nil))
+    (let* ","     (do (b0) (b0) (b1) (b0) (b1) (b1) (b0) (b0) nil))
+    (let* "`"     (do (b0) (b1) (b1) (b0) (b0) (b0) (b0) (b0) nil))
+    (let* "'"     (do (b0) (b0) (b1) (b0) (b0) (b1) (b1) (b1) nil))
+    (let* "w"     (do (b0) (b1) (b1) (b1) (b0) (b1) (b1) (b1) nil))
+    (let* "\""    (do (b0) (b0) (b1) (b0) (b0) (b0) (b1) (b0) nil))
+    (let* "f"     (do (b0) (b1) (b1) (b0) (b0) (b1) (b1) (b0) nil))
+    (let* "i"     (do (b0) (b1) (b1) (b0) (b1) (b0) (b0) (b1) nil))
+    (let* "o"     (do (b0) (b1) (b1) (b0) (b1) (b1) (b1) (b1) nil))
+    (let* "l"     (do (b0) (b1) (b1) (b0) (b1) (b1) (b0) (b0) nil))
+    (let* "d"     (do (b0) (b1) (b1) (b0) (b0) (b1) (b0) (b0) nil))
+    (let* "n"     (do (b0) (b1) (b1) (b0) (b1) (b1) (b1) (b0) nil))
+    (let* "c"     (do (b0) (b1) (b1) (b0) (b0) (b0) (b1) (b1) nil))
+    (let* "s"     (do (b0) (b1) (b1) (b1) (b0) (b0) (b1) (b1) nil))
+    (let* "t"     (do (b0) (b1) (b1) (b1) (b0) (b1) (b0) (b0) nil))
+    (let* "a"     (do (b0) (b1) (b1) (b0) (b0) (b0) (b0) (b1) nil))
+    (let* "r"     (do (b0) (b1) (b1) (b1) (b0) (b0) (b1) (b0) nil))
+    (let* "e"     (do (b0) (b1) (b1) (b0) (b0) (b1) (b0) (b1) nil))
+    (let* "("     (do (b0) (b0) (b1) (b0) (b1) (b0) (b0) (b0) nil))
+    (let* ")"     (do (b0) (b0) (b1) (b0) (b1) (b0) (b0) (b1) nil))
+    (let* " "     (do (b0) (b0) (b1) (b0) (b0) (b0) (b0) (b0) nil))
     (cont
-      (cons "p" (list4 "r" "i" "n" "t"))
-      (list4 "r" "e" "a" "d")
-      (cons "q" (list4 "u" "o" "t" "e")) ;kQuote
-      (list4 "a" "t" "o" "m") ;kAtom
+      **prelude**
+      (list "p" "r" "i" "n" "t")
+      (list "r" "e" "a" "d")
+      (list "q" "u" "o" "t" "e") ;kQuote
+      (list "a" "t" "o" "m") ;kAtom
       (list "c" "a" "r") ;kCar
       (list "c" "d" "r") ;kCdr
       (list "e" "q"); kEq
-      (list4 "c" "o" "n" "s") ;kCons
-      (list-tail "d" "e" "f" "g" "l" (list4 "o" "b" "a" "l"))
-      (list-tail "b" "o" (list4 "u" "n" "d" "p"))
-      (cons "l" (cons "a" (list4 "m" "b" "d" "a")))
-      (cons "m" (list4 "a" "c" "r" "o"))
-      (cons "p" (list4 "r" "o" "g" "n"))
-      (cons "b" (list4 "l" "o" "c" "k"))
-      (cons "r" (cons "e" (cons "t" (cons "u" (cons "r" (cons "n" (cons "-" (list4 "f" "r" "o" "m"))))))))
-      (cons "e" (list4 "r" "r" "o" "r"))
-      (cons "p" (cons "e" (cons "e" (cons "k" (cons "-" (list4 "c" "h" "a" "r"))))))
-      (list-tail "r" "e" "a" "d" "-" (list4 "c" "h" "a" "r"))
-      (list-tail "s" "e" "t" "-" "m" "a" "c" "r" "o" "-" "c" "h" "a" "r" "a" (list4 "c" "t" "e" "r"))
-      (list4 "e" "v" "a" "l")
-      (cons "a" (list4 "p" "p" "l" "y"))
-      (list4 "l" "o" "o" "p")
+      (list "c" "o" "n" "s") ;kCons
+      (list "d" "e" "f" "g" "l" "o" "b" "a" "l")
+      (list "b" "o" "u" "n" "d" "p")
+      (list "l" "a" "m" "b" "d" "a")
+      (list "m" "a" "c" "r" "o")
+      (list "p" "r" "o" "g" "n")
+      (list "b" "l" "o" "c" "k")
+      (list "r" "e" "t" "u" "r" "n" "-" "f" "r" "o" "m")
+      (list "e" "r" "r" "o" "r")
+      (list "p" "e" "e" "k" "-" "c" "h" "a" "r")
+      (list "r" "e" "a" "d" "-" "c" "h" "a" "r")
+      (list "s" "e" "t" "-" "m" "a" "c" "r" "o" "-" "c" "h" "a" "r" "a" "c" "t" "e" "r")
+      (list "e" "v" "a" "l")
+      (list "a" "p" "p" "l" "y")
+      (list "l" "o" "o" "p")
       (list "l" "e" "t"); kLet
-      (list4 "s" "e" "t" "q")
-      (cons "&" (list4 "r" "e" "s" "t"))
-      (cons "a" (cons "p" (list4 "p" "e" "n" "d")))
-      (cons "i" (cons "n" (list4 "t" "e" "r" "n")))
-      (list-tail "c" "a" (list4 "r" "s" "t" "r")) ;kCarstr
-      (list-tail "c" "d" (list4 "r" "s" "t" "r")) ;kCdrstr
-      (cdr (list4 nil "s" "t" "r")) ;kStr
-      (list4 "t" "y" "p" "e") ; kType
-      (cons "m" (cons "a" (list4 "l" "l" "o" "c")))
-      (list-tail "m" "e" "m" (list4 "r" "e" "a" "d"))
-      (list-tail "m" "e" "m" "w" (list4 "r" "i" "t" "e"))
-      (list-tail "*" "*" "l" "a" "m" "b" "d" "a" "l" "i" "s" "p" "-" "s" "u" "p" "p" "r" "e" "s" "s" "-" "r" "e" (list4 "p" "l" "*" "*"))
+      (list "s" "e" "t" "q")
+      (list "&" "r" "e" "s" "t")
+      (list "a" "p" "p" "e" "n" "d")
+      (list "i" "n" "t" "e" "r" "n")
+      (list "c" "a" "r" "s" "t" "r") ;kCarstr
+      (list "c" "d" "r" "s" "t" "r") ;kCdrstr
+      (list "s" "t" "r") ;kStr
+      (list "t" "y" "p" "e") ; kType
+      (list "m" "a" "l" "l" "o" "c")
+      (list "m" "e" "m" "r" "e" "a" "d")
+      (list "m" "e" "m" "w" "r" "i" "t" "e")
+      (list "*" "*" "l" "a" "m" "b" "d" "a" "l" "i" "s" "p" "-" "s" "u" "p" "p" "r" "e" "s" "s" "-" "r" "e" "p" "l" "*" "*")
       (list "+")
       (list "-")
       (list "*")
@@ -1568,8 +1541,26 @@
       (list ">")
       (list "<")
       (list "i" "f")
-      (cdr (list4 (lambda (x) x) "n" "i" "l"))
-      (atom* (list "t")))))
+      (list "n" "i" "l")
+      (atom* (list "t"))
+      (do (b0) (b1) (b0) (b1) (b1) (b1) (b0) (b0) nil) ;; "\\"
+      (do (b0) (b1) (b0) (b0) (b0) (b0) (b0) (b0) nil) ;; "@"
+      (do (b0) (b0) (b1) (b0) (b1) (b1) (b0) (b0) nil) ;; ","
+      (do (b0) (b0) (b1) (b0) (b0) (b1) (b1) (b1) nil) ;; "'"
+      (do (b0) (b0) (b1) (b0) (b0) (b0) (b1) (b0) nil) ;; "\""
+      (do (b0) (b1) (b1) (b0) (b0) (b0) (b0) (b0) nil) ;; "`"
+      (do (b0) (b0) (b1) (b0) (b1) (b1) (b0) (b1) nil) ;; "-"
+      (do (b0) (b0) (b1) (b1) (b1) (b0) (b1) (b1) nil) ;; ";"
+      (do (b0) (b0) (b1) (b1) (b0) (b0) (b0) (b0) nil) ;; "0"
+      (do (b0) (b0) (b1) (b1) (b0) (b0) (b0) (b1) nil) ;; "1"
+      (do (b0) (b0) (b1) (b1) (b1) (b0) (b0) (b1) nil) ;; "9"
+      (do (b0) (b0) (b1) (b1) (b1) (b1) (b1) (b0) nil) ;; ">"
+      (do (b0) (b0) (b1) (b0) (b1) (b1) (b1) (b0) nil) ;; "."
+      (do (b0) (b0) (b1) (b0) (b0) (b0) (b0) (b0) nil) ;; " "
+      (do (b0) (b0) (b0) (b0) (b1) (b0) (b1) (b0) nil) ;; "\\n"
+      (do (b0) (b0) (b1) (b0) (b1) (b0) (b0) (b0) nil) ;; "("
+      (do (b0) (b0) (b1) (b0) (b1) (b0) (b0) (b1) nil) ;; ")"
+      )))
 
 
 ;;================================================================
