@@ -1248,6 +1248,15 @@
               (<- (reg heap stdin) (state))
               (<- (heap) (memory-write* heap *val newenv))
               (cont bind-var (cons3 reg heap stdin))))
+          ((stringeq (valueof head) kBoundp)
+            (do
+              (<- (arg1) (car-data tail))
+              (<- (expr state) (eval arg1 state))
+              (<- (reg heap stdin) (state))
+              (<- (_ *val) (assoc expr reg heap))
+              (if (isnil *val)
+                (cont (atom* nil) state)
+                (cont t-atom state))))
           ((stringeq (valueof head) kDefglobal)
             (do
               (<- (reg heap stdin) (state))
@@ -1524,6 +1533,7 @@
       (list "e" "q"); kEq
       (list4 "c" "o" "n" "s") ;kCons
       (list-tail "d" "e" "f" "g" "l" (list4 "o" "b" "a" "l"))
+      (list-tail "b" "o" (list4 "u" "n" "d" "p"))
       (cons "l" (cons "a" (list4 "m" "b" "d" "a")))
       (cons "m" (list4 "a" "c" "r" "o"))
       (cons "p" (list4 "r" "o" "g" "n"))
@@ -1602,6 +1612,7 @@
          kEq
          kCons
          kDefglobal
+         kBoundp
          kLambda
          kMacro
          kProgn
@@ -1711,10 +1722,9 @@
 ;; (format t (write-to-string (to-de-bruijn (curry (macroexpand-lazy main)))))
 
 ;; ;; (format t (compile-to-ski-lazy main))
-(if (boundp lambdalisp-compile-latex)
+(if (boundp 'lambdalisp-compile-latex)
   (format t (compile-to-simple-lambda-lazy main))
   (format t (compile-to-blc-lazy main)))
-
 
 ;; (format t (concatenate 'string "`"  (compile-to-ski-lazy main) (compile-to-ski-lazy string-generator)))
 ;; (format t (concatenate 'string "01" (compile-to-blc-lazy main) (compile-to-blc-lazy string-generator)))
