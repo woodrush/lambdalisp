@@ -1444,7 +1444,6 @@
 
 (defmacro-lazy b0 (x) `(cons t ,x))
 (defmacro-lazy b1 (x) `(cons nil ,x))
-(defmacro-lazy list4 (a b c d) `(list ,a ,b ,c ,d))
 
 (defun-lazy string-generator (stdin cont)
   (do

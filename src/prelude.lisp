@@ -44,6 +44,12 @@
   (defun not (p)
     (if p () t))
 
+  (defun <= (e r)
+    (not (> e r)))
+
+  (defun >= (e r)
+    (not (< e r)))
+
   (defun equal (p q)
     (or (eq p q) (= p q)))
 
