@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-sbcl --script <( printf "(defparameter lambdalisp-compile-latex t)\n"; cat lambdalisp.cl; ) \
+cd ./src; sbcl --script ./targets/main-latex.cl \
 | LC_ALL=C sed -e "s/^/$/g" \
 | LC_ALL=C sed -e "s/$/$ @/g" \
 | LC_ALL=C sed -e "s/(/@\\\\allowbreak(/g" \

@@ -1,10 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
-prelude_lisp="./src/prelude.lisp"
+cd ./src;
+prelude_lisp=./prelude.lisp
 
 # Count the number of occurrences of each character
-if [[ "$1" == "count-chars" ]; then
+if [[ "$1" == "count-chars" ]]; then
     cat $prelude_lisp \
         | sed -e 's/;.*$//g' \
         | tr "\n" " " \
@@ -17,7 +18,7 @@ if [[ "$1" == "count-chars" ]; then
         | sort | uniq -c | sort -n
 
 # Optimize for SKI combinator calculus
-elif [[ "$1" == "compile-lazyk" ]; then
+elif [[ "$1" == "compile-lazyk" ]]; then
     printf '(def-lazy **prelude** ((string-concatenator stdin) ';
 
     ( cat $prelude_lisp \
