@@ -26,11 +26,11 @@ all:
 	$(MAKE) $(target_ulamb)
 
 test: test-blc-uni test-compiler-hosting-blc-uni
-test-all: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-tromp
+test-all: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp
 
 # On x86-64-Linux, the interpreter 'Blc' can be used.
-test-linux: test-blc test-tromp test-compiler-hosting-blc test-compiler-hosting-blc-tromp
-test-all-linux: test-blc test-blc-tromp test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc test-compiler-hosting-blc-tromp
+test-linux: test-blc test-blc-tromp test-compiler-hosting-blc test-compiler-hosting-blc-uni
+test-all-linux: test-blc test-blc-tromp test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc test-compiler-hosting-blc-uni
 
 interpreters: $(UNI) $(ULAMB) $(LAZYK) $(TROMP) $(BLC)
 
@@ -80,39 +80,39 @@ out/%.cleaned: out/%
 # Remove the initial '> ' printed by LambdaLisp's REPL when comparing with SBCL's output
 	cat $< | sed -e '1s/> //' > $<.cleaned
 
-out/%.blc-out.diff: ./out/%.blc-out.cleaned ./out/%.sbcl-out
+out/%.blc-out.sbcl-diff: ./out/%.blc-out.cleaned ./out/%.sbcl-out
 	cmp $^ || exit 1
 
-out/%.blc-tromp-out.diff: ./out/%.blc-tromp-out.cleaned ./out/%.sbcl-out
+out/%.blc-tromp-out.sbcl-diff: ./out/%.blc-tromp-out.cleaned ./out/%.sbcl-out
 	cmp $^ || exit 1
 
-out/%.blc-uni-out.diff: ./out/%.blc-uni-out.cleaned ./out/%.sbcl-out
+out/%.blc-uni-out.sbcl-diff: ./out/%.blc-uni-out.cleaned ./out/%.sbcl-out
 	cmp $^ || exit 1
 
-out/%.ulamb-out.diff: ./out/%.ulamb-out.cleaned ./out/%.sbcl-out
+out/%.ulamb-out.sbcl-diff: ./out/%.ulamb-out.cleaned ./out/%.sbcl-out
 	cmp $^ || exit 1
 
-out/%.lazyk-out.diff: ./out/%.lazyk-out.cleaned ./out/%.sbcl-out
+out/%.lazyk-out.sbcl-diff: ./out/%.lazyk-out.cleaned ./out/%.sbcl-out
 	cmp $^ || exit 1
 
 .PHONY: test-blc
-test-blc: $(addsuffix .blc-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
+test-blc: $(addsuffix .blc-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for BLC with the interpreter 'Blc'."
 
 .PHONY: test-blc-tromp
-test-blc-tromp: $(addsuffix .blc-tromp-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
+test-blc-tromp: $(addsuffix .blc-tromp-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for BLC with the interpreter 'tromp'."
 
 .PHONY: test-blc-uni
-test-blc-uni: $(addsuffix .blc-uni-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
+test-blc-uni: $(addsuffix .blc-uni-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for BLC with the interpreter 'uni'."
 
 .PHONY: test-ulamb
-test-ulamb: $(addsuffix .ulamb-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
+test-ulamb: $(addsuffix .ulamb-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for Universal Lambda."
 
 .PHONY: test-lazyk
-test-lazyk: $(addsuffix .lazyk-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
+test-lazyk: $(addsuffix .lazyk-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for Lazy K."
 
 
