@@ -64,13 +64,16 @@ out/%.ulamb-out.diff: ./out/%.ulamb-out.cleaned ./out/%.sbcl-out
 out/%.lazyk-out.diff: ./out/%.lazyk-out.cleaned ./out/%.sbcl-out
 	cmp $^ || exit 1
 
+.PHONY: test-blc
 test-blc: $(addsuffix .blc-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for BLC with the Blc interpreter."
 
-test-ulamb: $(addsuffix .blc-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
+.PHONY: test-ulamb
+test-ulamb: $(addsuffix .ulamb-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for Universal Lambda."
 
-test-lazyk: $(addsuffix .blc-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
+.PHONY: test-lazyk
+test-lazyk: $(addsuffix .lazyk-out.diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
 	@echo "All tests have passed for Lazy K."
 
 
@@ -164,26 +167,8 @@ $(LAZYK): ./build/lazyk/lazyk.c
 	mv build/lazyk/lazyk ./bin
 	chmod 755 $(LAZYK)
 
-show_tromp.c_message:
-	@echo
-	@echo "    This procedure requires the binary lambda calculus interpreter 'tromp'."
-	@echo "    To compile it and proceed, please place tromp.c under ./build."
-	@echo "    Please see README.md for details."
-	@echo
-	@exit 1
 
-build/tromp.c:
-	mkdir -p ./build
-	if [ ! -f $@ ]; then $(MAKE) show_tromp.c_message; fi
-
-$(TROMP): ./build/tromp.c
-	mkdir -p ./bin
-	# Compile with the option -DM=9999999 (larger than the original -DM=999999) to execute large programs
-	cd build; cc -DM=9999999 -m64 -std=c99 tromp.c -o tromp
-	mv build/tromp ./bin
-	chmod 755 $(TROMP)
-
-
+.PHONY: show_Blc.S_message
 show_Blc.S_message:
 	@echo
 	@echo "    This procedure requires the binary lambda calculus interpreter 'Blc'."
@@ -210,3 +195,23 @@ $(BLC): build/Blc.S build/flat.lds
 	cd build; ld.bfd -o Blc Blc.o -T flat.lds
 	mv build/Blc ./bin
 	chmod 755 $(BLC)
+
+.PHONY: show_tromp.c_message
+show_tromp.c_message:
+	@echo
+	@echo "    This procedure requires the binary lambda calculus interpreter 'tromp'."
+	@echo "    To compile it and proceed, please place tromp.c under ./build."
+	@echo "    Please see README.md for details."
+	@echo
+	@exit 1
+
+build/tromp.c:
+	mkdir -p ./build
+	if [ ! -f $@ ]; then $(MAKE) show_tromp.c_message; fi
+
+$(TROMP): ./build/tromp.c
+	mkdir -p ./bin
+	# Compile with the option -DM=9999999 (larger than the original -DM=999999) to execute large programs
+	cd build; cc -DM=9999999 -m64 -std=c99 tromp.c -o tromp
+	mv build/tromp ./bin
+	chmod 755 $(TROMP)
