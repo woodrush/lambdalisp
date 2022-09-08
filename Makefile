@@ -8,35 +8,48 @@ def_prelude_lazyk=./src/build/def-prelude-lazyk.cl
 
 BASE_SRCS=./src/lambdalisp.cl ./src/lambdacraft.cl ./src/prelude.lisp
 
-BLC=../uni
-SBCL=sbcl
 
 all:
 	$(MAKE) $(target_blc)
 	$(MAKE) $(target_ulamb)
-	@echo "Compiling to Lazy K takes a lot of time - it can be run by 'make lazyk'."
 
-test:
-	$(MAKE) $(target_blc)
-	./tools/run-test.sh blc
-
-test-ulamb:
-	$(MAKE) $(target_blc)
-	./tools/run-test.sh ulamb
-
-test-lazyk:
-	$(MAKE) $(target_blc)
-	./tools/run-test.sh lazyk
+test: test-blc
 
 
-examples/%.test : examples/%.cl
+# Tests
+BLC=../uni
+ULAMB=../clamb/clamb
+LAZYK=../lazyk/lazyk
+SBCL=sbcl
+ASC2BIN=../asc2bin.com
+
+examples/%.blc.test : examples/%.cl
 	mkdir -p ./test
-	( cat ./lambdalisp.blc | ../asc2bin.com; cat $< ) | $(BLC) | sed -e '1s/> //' > ./test/$(notdir $<).blc.out
+	( cat ./lambdalisp.blc | $(ASC2BIN); cat $< ) | $(BLC) | sed -e '1s/> //' > ./test/$(notdir $<).blc.out
 	( $(SBCL) --script $<; echo ) > ./test/$(notdir $<).sbcl.out
 	cmp ./test/$(notdir $<).blc.out ./test/$(notdir $<).sbcl.out || (echo "Test failed at $<" && exit 1)
 
-test-blc : $(addsuffix .test, $(basename $(wildcard examples/*.cl)))
-	@echo "All tests have passed."
+test-blc : $(addsuffix .blc.test, $(basename $(wildcard examples/*.cl)))
+	@echo "All tests have passed for BLC."
+
+examples/%.ulamb.test : examples/%.cl
+	mkdir -p ./test
+	( cat ./lambdalisp.ulamb | $(ASC2BIN); cat $< ) | $(ULAMB) | sed -e '1s/> //' > ./test/$(notdir $<).ulamb.out
+	( $(SBCL) --script $<; echo ) > ./test/$(notdir $<).sbcl.out
+	cmp ./test/$(notdir $<).ulamb.out ./test/$(notdir $<).sbcl.out || (echo "Test failed at $<" && exit 1)
+
+test-ulamb : $(addsuffix .ulamb.test, $(basename $(wildcard examples/*.cl)))
+	@echo "All tests have passed for Universal Lambda."
+
+examples/%.lazyk.test : examples/%.cl
+	mkdir -p ./test
+	cat $< | $(LAZYK) ./lambdalisp.lazy -u | sed -e '1s/> //' > ./test/$(notdir $<).lazy.out
+	( $(SBCL) --script $<; echo ) > ./test/$(notdir $<).sbcl.out
+	cmp ./test/$(notdir $<).lazy.out ./test/$(notdir $<).sbcl.out || (echo "Test failed at $<" && exit 1)
+
+test-lazyk : $(addsuffix .lazyk.test, $(basename $(wildcard examples/*.cl)))
+	@echo "All tests have passed for Lazy K."
+
 
 # Compile the prelude
 $(def_prelude): ./src/prelude.lisp ./tools/compile-prelude.sh
