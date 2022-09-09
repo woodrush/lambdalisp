@@ -3,7 +3,7 @@ LambdaLisp is a Lisp interpreter written as a pure untyped lambda calculus term.
 The entire lambda calculus expression is viewable as a PDF here.
 LambdaLisp is tested by running `examples/*.cl` on both Common Lisp and LambdaLisp and comparing their outputs.
 The largest LambdaLisp-Common-Lisp polyglot program that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
-which is the Common-Lisp-to-lambda-calclus compiler LambdaCraft, used to compile LambdaLisp itself.
+which runs the lambda calculus compiler LambdaCraft that I wrote for this project, used to compile LambdaLisp itself.
 
 LambdaLisp is written as a function `LambdaLisp = λx. ...`
 which takes one string as an input and returns one string as an output.
@@ -201,8 +201,51 @@ cat [filepath] - | ./bin/lazyk lambdalisp.lazy -u # Run a LambdaLisp script, the
 ```
 
 
+## Building from Source
+LambdaLisp's source code is written using LambdaCraft, a DSL written in Common Lisp for compiling
+Common Lisp to lambda calculus terms which I wrote for this project.
+Building from source requires SBCL (Steel Bank Common Lisp), a Common Lisp interpreter.
+
+First install SBCL with:
+
+```sh
+sudo apt install sbcl
+```
+
+or on a Mac with:
+```sh
+brew install sbcl
+```
+
+To compile to the Binary Lambda Calculus source [lambdalisp.blc](./lambdalisp.blc):
+```sh
+make blc
+```
+
+To compile to the Universal Lambda source [lambdalisp.ulamb](./lambdalisp.ulamb):
+```sh
+make ulamb
+```
+
+To compile to the Lazy K Source [lambdalisp.lazy](./lambdalisp.lazy):
+```sh
+make lazyk
+```
+
+To compile to a plaintext lambda calculus file:
+```sh
+make lambda-plaintext
+```
+
+To compile [lambdalisp.pdf](./lambdalisp.pdf), first install LaTeX, and then run:
+```sh
+make pdf
+```
+
+
 ## Testing
 There are 3 types of tests for LambdaLisp.
+Each test requires SBCL (Steel Bank Common Lisp), a Common Lisp interpreter.
 
 ### Output Comparison Test
 Runs the programs in `./examples/`. Runnable with:
