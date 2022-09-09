@@ -32,23 +32,24 @@ In untyped lambda calculus, a method called the [Mogensen-Scott encoding](https:
 can be used to express a list in pure untyped lambda calculus terms, without the help of introducing a non-lambda-type object.
 Bits are encoded as `0 = λx.λy.x` and `1 = λx.λy.y`.
 Under these rules, the bit sequence `0101` can be expressed as a pure beta-normal lambda term
-`λf.(f (λx.λy.x) λg. (g (λx.λy.y λh. (h (λx.λy.x) λi.(i (λx.λy.x) (λx.λy.y))))))`,
+`λf.(f (λx.λy.x) λg.(g (λx.λy.y λh.(h (λx.λy.x) λi.(i (λx.λy.y) (λx.λy.y))))))`,
 where the last `λx.λy.y` is used as a list terminator having the same role as `nil` in Lisp.
-By defining the lambda terms `cons = λx.λy.λf.(f x y)`, `t = λx.λy.x`, and `nil = λx.λy.y`, this term can be rewritten as
-`(cons t (cons nil (cons t (cons nil nil))))`, which is exactly the same as how lists are constructed in Lisp.
+By defining the lambda terms `cons = λx.λy.λf.(f x y)` and `nil = λx.λy.y`, this term can be rewritten as
+`(cons 0 (cons 1 (cons 0 (cons 1 nil))))`, which is exactly the same as how lists are constructed in Lisp
+(note that `1 == nil`).
 Using this method, both the standard input and output strings can entirely be encoded into pure lambda calculus terms,
 allowing for LambdaLisp to operate with beta reduction of lambda terms as its sole rule of computation,
 without the requirement of introducing any non-lambda-type object.
 
-The LambdaLisp execution flow is thus as follows: one first encodes the input string (Lisp program and stdin)
-as lambda terms, applies it to `LambdaLisp = λx. ...`, beta-reduces it until it is in beta normal form,
-and parses the output lambda term as a Mogensen-Scott-encoded list of bits
+The LambdaLisp execution flow is thus as follows: you first encode the input string (Lisp program and stdin)
+as lambda terms, apply it to `LambdaLisp = λx. ...`, beta-reduce it until it is in beta normal form,
+and parse the output lambda term as a Mogensen-Scott-encoded list of bits
 (inspecting the equivalence of lambda terms is quite simple in this case since it is in beta normal form).
-This rather complex flow is supported exactly as is in 3 lambda-calculus-based programming languages,
-Binary Lambda Calculus (BLC), Universal Lambda (UL), and Lazy K.
+This rather complex flow is supported exactly as is in 3 lambda-calculus-based programming languages:
+Binary Lambda Calculus, Universal Lambda, and Lazy K.
 
 ### Lambda-Calculus-Based Programming Languages
-Binary Lambda Calculus and Universal Lambda are programming languages with the exact same I/O strategy described above -
+Binary Lambda Calculus (BLC) and Universal Lambda (UL) are programming languages with the exact same I/O strategy described above -
 a program is expressed as one pure lambda term that takes a Mogensen-Scott-encoded string and returns a Mogensen-Scott-encoded string.
 When the interpreters for these languages `Blc` and `clamb` are run on the terminal,
 the interpreter automatically encodes the input bytestream to lambda terms, performs beta-reduction,
@@ -75,6 +76,7 @@ This allows Lazy K's syntax to be astonishingly simple, where only 4 keywords ex
 As mentioned in the [original Lazy K design proposal](https://tromp.github.io/cl/lazy-k.html),
 if [BF](https://en.wikipedia.org/wiki/Brainfuck) captures the distilled essence of imperative programming,
 Lazy K captures the distilled essence of functional programming.
+It might as well be the assembly language of functional programming.
 With the simple syntax and rules orchestrating a Turing-complete language,
 I find Lazy K to be a very beautiful language being one of my all-time favorites.
 
@@ -139,9 +141,9 @@ When the make recipe is run, each recipe obtains these external source codes usi
 Blc only runs on x86-64-Linux.
 For other platforms, tromp or uni can be used.
 
-#### Building tromp on a Mac
+#### Building `tromp` on a Mac
 Mac has `gcc` installed by default or via Xcode Command Line Tools.
-However, `gcc` is actually installed as an alias to `clang`, which is a different compiler.
+However, `gcc` is actually installed as an alias to `clang`, which is a different compiler that doesn't compile `tromp`.
 This is confirmable by running `gcc --version`. On my Mac, running it shows:
 
 ```sh
@@ -153,7 +155,7 @@ Thread model: posix
 InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
 ```
 
-One way to circumvent this is to use `uni` instead, which is an unobfuscated version of `tromp` and is compilable by clang.
+A workaround for this is to use `uni` instead, which is an unobfuscated version of `tromp` compilable with clang.
 To build `tromp`, first install gcc via [Homebrew](https://brew.sh/):
 
 ```sh
@@ -178,19 +180,19 @@ will compile `tromp`.
 
 
 ### Running LambdaLisp
-
-Running LambdaLisp on the Binary Lambda Calculus interpreter `Blc` can be done as follows.
+#### On Binary Lambda Calculus
+After building all of the required tools and interpreters, running LambdaLisp on the Binary Lambda Calculus interpreter `Blc` can be done as follows.
 To run on `tromp` or `uni`, replace `Blc` with `tromp` or `uni`.
 ```sh
-# Prepare the binary
+# Pack the 01 bitstream to a bytestream
 cat lambdalisp.blc | ./bin/asc2bin > lambdalisp.blc.bin
 
-cat lambdalisp.blc.bin - | ./bin/Blc                   # Run the LambdaLisp REPL
-cat lambdalisp.blc.bin [filepath] | ./bin/Blc          # Run a LambdaLisp script and exit
-cat lambdalisp.blc.bin [filepath] - | ./bin/Blc        # Run a LambdaLisp script, then enter the REPL
+cat lambdalisp.blc.bin - | ./bin/Blc            # Run the LambdaLisp REPL
+cat lambdalisp.blc.bin [filepath] | ./bin/Blc   # Run a LambdaLisp script and exit
+cat lambdalisp.blc.bin [filepath] - | ./bin/Blc # Run a LambdaLisp script, then enter the REPL
 ```
 
-Running `cat -` connects the standard input after the specified input files,
+Running `cat -` with the hyphen connects the standard input after the specified input files,
 allowing the user to interact with the interpreter through the terminal after reading a file.
 If `cat -` does not work, the following command can be used instead:
 
@@ -198,24 +200,26 @@ If `cat -` does not work, the following command can be used instead:
 ( cat lambdalisp.blc.bin [filepath]; cat ) | ./bin/Blc
 ```
 
+#### On Universal Lambda
 Running LambdaLisp on the Universal Lambda interpreter `clamb` can be done as follows.
 Note that `lambdalisp.ulamb` and `lambdalisp.blc` are different files although they look similar,
 since they are different languages.
 This is since the I/O lambda term encoding is different for these languages.
 Otherwise, both languages are based entirely on untyped lambda calculus.
 ```sh
-# Prepare the binary
+# Pack the 01 bitstream to a bytestream
 cat lambdalisp.ulamb | ./bin/asc2bin > lambdalisp.ulamb.bin
 
-# The -u option is required for managing I/O properly
+# The -u option is required for handling I/O properly
 cat lambdalisp.ulamb.bin - | ./bin/clamb -u            # Run the LambdaLisp REPL
 cat lambdalisp.ulamb.bin [filepath] | ./bin/clamb -u   # Run a LambdaLisp script and exit
 cat lambdalisp.ulamb.bin [filepath] - | ./bin/clamb -u # Run a LambdaLisp script, then enter the REPL
 ```
 
-Running LambdaLisp on the Lazy K interpreter `lazyk`:
+#### On Lazy K
+Running LambdaLisp on the Lazy K interpreter `lazyk` can be done as follows:
 ```sh
-# The -u option is required for managing I/O properly
+# The -u option is required for handling I/O properly
 ./bin/lazyk lambdalisp.lazy -u                    # Run the LambdaLisp REPL
 cat [filepath] | ./bin/lazyk lambdalisp.lazy -u   # Run a LambdaLisp script and exit
 cat [filepath] - | ./bin/lazyk lambdalisp.lazy -u # Run a LambdaLisp script, then enter the REPL
