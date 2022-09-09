@@ -32,7 +32,7 @@ test-all-nonlinux: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-
 test-all: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp test-blc test-compiler-hosting-blc
 
 # Build all of the interpreters that support LambdaLisp
-interpreters: $(UNI) $(ULAMB) $(LAZYK) $(TROMP) $(BLC)
+interpreters: uni clamb lazyk tromp blc
 
 
 
@@ -216,6 +216,8 @@ $(ULAMB): ./build/clamb/clamb.c
 	mv build/clamb/clamb ./bin
 	chmod 755 $(ULAMB)
 
+.PHONY: clamb
+clamb: $(ULAMB)
 
 ./build/lazyk/lazyk.c:
 	mkdir -p ./build
@@ -227,6 +229,8 @@ $(LAZYK): ./build/lazyk/lazyk.c
 	mv build/lazyk/lazyk ./bin
 	chmod 755 $(LAZYK)
 
+.PHONY: lazyk
+lazyk: $(LAZYK)
 
 .PHONY: show_Blc.S_message
 show_Blc.S_message:
@@ -256,6 +260,8 @@ $(BLC): build/Blc.S build/flat.lds
 	mv build/Blc ./bin
 	chmod 755 $(BLC)
 
+.PHONY: blc
+blc: $(BLC)
 
 .PHONY: show_tromp.c_message
 show_tromp.c_message:
@@ -278,6 +284,8 @@ $(TROMP): ./build/tromp.c
 	mv build/tromp ./bin
 	chmod 755 $(TROMP)
 
+.PHONY: tromp
+tromp: $(TROMP)
 
 .PHONY: show_uni.c_message
 show_uni.c_message:
@@ -299,9 +307,14 @@ $(UNI): ./build/uni.c
 	mv build/uni ./bin
 	chmod 755 $(UNI)
 
+.PHONY: uni
+uni: $(UNI)
 
 $(ASC2BIN): ./tools/asc2bin.c
 	mkdir -p ./bin
 	cd build; $(CC) ../tools/asc2bin.c -O2 -o asc2bin
 	mv build/asc2bin ./bin
 	chmod 755 $(ASC2BIN)
+
+.PHONY: asc2bin
+asc2bin: $(ASC2BIN)
