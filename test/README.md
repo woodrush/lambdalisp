@@ -1,6 +1,6 @@
 # Tests
 There are 3 types of tests for LambdaLisp:
-- Output comparison test: `make test-blc test-blc-uni test-blc-tromp test-blc-ulamb test-blc-lazyk`
+- Output comparison test: `make test-blc test-blc-uni test-blc-tromp test-ulamb test-lazyk`
   - Runs the programs in `./examples/`.
     - The files `examples/*.cl` run both on Common Lisp and LambdaLisp producing identical results, except for the initial `> ` printed by the REPL in LambdaLisp. For programs with the extension `*.cl`, the programs are run in Steel Bank Common Lisp (SBCL) and LambdaLisp, and the outputs are compared.
     - The files `examples/*.lisp` are LambdaLisp-exclusive programs. The output of these files are compared with `test/*.lisp.out`.
