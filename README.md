@@ -105,10 +105,21 @@ cat lambdalisp.blc | asc2bin > lambdalisp.blc.bin
 cat lambdalisp.blc.bin - | ./bin/Blc                   # Run the LambdaLisp REPL
 cat lambdalisp.blc.bin [filepath] | ./bin/Blc          # Run a LambdaLisp script and exit
 cat lambdalisp.blc.bin [filepath] - | ./bin/Blc        # Run a LambdaLisp script, then enter the REPL
-( cat lambdalisp.blc.bin [filepath]; cat ) | ./bin/Blc # If `cat -` does not work, the following command can be used:
 ```
 
-Running LambdaLisp on the Universal Lambda interpreter `clamb`:
+Running `cat -` connects the standard input after the specified input files,
+allowing the user to interact with the interpreter through the terminal after reading a file.
+If `cat -` does not work, the following command can be used instead:
+
+```sh
+( cat lambdalisp.blc.bin [filepath]; cat ) | ./bin/Blc
+```
+
+Running LambdaLisp on the Universal Lambda interpreter `clamb` can be done as follows.
+Note that `lambdalisp.ulamb` and `lambdalisp.blc` are different files although they look similar,
+since they are different languages.
+This is since the I/O lambda term encoding is different for these languages.
+Otherwise, both languages are based entirely on untyped lambda calculus.
 ```sh
 # Prepare the binary
 cat lambdalisp.ulamb | asc2bin > lambdalisp.ulamb.bin
@@ -124,6 +135,3 @@ Running LambdaLisp on the Lazy K interpreter `lazyk`:
 cat [filepath] | ./bin/lazyk lambdalisp.lazy -u   # Run a LambdaLisp script and exit
 cat [filepath] - | ./bin/lazyk lambdalisp.lazy -u # Run a LambdaLisp script, then enter the REPL
 ```
-
-Running `cat -` connects the standard input after the specified input files,
-allowing the user to interact with the interpreter through the terminal after reading a file.
