@@ -44,7 +44,7 @@ interpreters: $(UNI) $(ULAMB) $(LAZYK) $(TROMP) $(BLC)
 # - Predefined expected output text, for examples/*.lisp, for LambdaLisp-exclusive programs
 .PHONY: test-%
 test-%: $(addsuffix .%-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl)))) \
-        $(addsuffix .%-out.expected-diff, $(addprefix out/, $(notdir $(wildcard examples/*.lisp))))
+        $(addsuffix .%-out.expected-diff, $(addprefix out/, $(notdir $(wildcard test/*.lisp.out))))
 	@echo "\n    All tests have passed for $(interpreter_name_$*).\n"
 interpreter_name_blc="BLC with the interpreter 'Blc'"
 interpreter_name_blc_tromp="BLC with the interpreter 'tromp'"
