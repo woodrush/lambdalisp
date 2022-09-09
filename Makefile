@@ -45,12 +45,12 @@ interpreters: $(UNI) $(ULAMB) $(LAZYK) $(TROMP) $(BLC)
 .PHONY: test-%
 test-%: $(addsuffix .%-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl)))) \
         $(addsuffix .%-out.expected-diff, $(addprefix out/, $(notdir $(wildcard test/*.lisp.out))))
-	@echo "\n    All tests have passed for $(interpreter_name_$*).\n"
-interpreter_name_blc="BLC with the interpreter 'Blc'"
-interpreter_name_blc_tromp="BLC with the interpreter 'tromp'"
-interpreter_name_blc_uni="BLC with the interpreter 'uni'"
-interpreter_name_ulamb="Universal Lambda"
-interpreter_name_lazyk="Lazy K"
+	@echo "\n    All tests have passed for $(interpreter-name-$*).\n"
+interpreter-name-blc="BLC with the interpreter 'Blc'"
+interpreter-name-blc-tromp="BLC with the interpreter 'tromp'"
+interpreter-name-blc-uni="BLC with the interpreter 'uni'"
+interpreter-name-ulamb="Universal Lambda"
+interpreter-name-lazyk="Lazy K"
 
 
 # Compiler hosting test - execute the output of examples/lambdacraft.cl as a binary lambda calculus program
