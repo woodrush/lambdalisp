@@ -31,9 +31,11 @@ Here are the key features:
 - Signed 32-bit integer literals
 - String literals
 - Lexical scopes and persistent bindings with `let`
+- Built-in object oriented programming feature with class inheritance
 - Reader macros with `set-macro-character`
-- Built-in backquote macro, comma, and comma-splice
 - Access to the interpreter's virtual heap memory with `malloc`, `memread`, and `memwrite`
+- Show the call stack trace when an error is invoked
+- Garbage collection for macro evaluation
 
 Here are the supported special forms, functions and features:
 
@@ -51,7 +53,7 @@ Here are the supported special forms, functions and features:
 - carstr, cdrstr, str, string comparison with =, >, <, string concatenation with +
 - defun-local, defglobal, type, macro
 - malloc, memread, memwrite
-- new, defclass, defmethod, `.`, field assignment by setf, class inheritance
+- new, defclass, defmethod, `.`, field assignment by setf
 
 
 ## Supported Lambda Calculus Reduction Engines
@@ -76,7 +78,7 @@ Here is a summary of the supported languages and interpreters:
 ## Usage
 Running LambdaLisp first requires building an untyped lambda calculus interpreter of your choice.
 
-### Building the Interpreters
+### Building the Lambda Calculus Interpreters
 Among the 3 BLC interpreters, `Blc` can be run on x86-64-Linux systems,
 and `tromp` may not compile on a Mac with the defualt gcc (which is actually an alias of clang - details are provided below).
 The most reliably compilable BLC interpreter is `uni`, which compiles and runs on both Linux and Mac.
@@ -195,6 +197,46 @@ cat [filepath] - | ./bin/lazyk lambdalisp.lazy -u # Run a LambdaLisp script, the
 
 
 ## Testing
+There are 3 types of tests for LambdaLisp.
+
+### Output Comparison Test
+Runs the programs in `./examples/`. Runnable with:
+
+```sh
+make test-blc test-blc-uni test-blc-tromp test-ulamb test-lazyk
+```
+
+- The files `examples/*.cl` run both on Common Lisp and LambdaLisp producing identical results, except for the initial `> ` printed by the REPL in LambdaLisp. For programs with the extension `*.cl`, the programs are run in Steel Bank Common Lisp (SBCL) and LambdaLisp, and the outputs are compared.
+- The files `examples/*.lisp` are LambdaLisp-exclusive programs. The output of these files are compared with `test/*.lisp.out`.
+- LambdaLisp runs on three lambda-calculus-based and SKI-combinator-calculus-based languages,
+  binary lambda calculus, Universal Lambda, and Lazy K.
+  For binary lambda calculus, there are three interpreters, Blc, uni, and tromp.
+  Each `make` command shown here runs this test in each of the languages and interpreters.
+
+### LambdaCraft Compiler Hosting Test
+`examples/lambdacraft.cl` runs LambdaCraft, a Common-Lisp-to-lambda-calculus compiler written in Common Lisp,
+used to compile the lambda calculus source for LambdaLisp.
+`examples/lambdacraft.cl` defines a binary lambda calculus (BLC) program that prints the letter `A` and exits, 
+and prints the BLC source code for the defined program.
+The output of `examples/lambdacraft.cl` is a lambda calculus term written in binary lambda calculus notation
+which represents a program that prints the letter `A`.
+The LambdaCraft compiler hosting test first executes `examples/lambdacraft.cl` on LambdaLisp, then runs the output BLC program on a BLC interpreter, and checks if it prints the letter `A` and exits.
+The test is run on binary lambda calculus, with either the interpreter Blc or uni.
+
+Runnable with:
+```sh
+make test-compiler-hosting-blc test-compiler-hosting-blc-uni
+```
+
+### Self-Hosting Test
+This test is currently theoretical, since it requires a lot of time and memory.
+This test extends the previous LambdaCraft compiler hosting test and checks if the Common Lisp source code for LambdaLisp runs on LambdaLisp itself. Since the LambdaCraft compiler hosting test runs properly, this test should theoretically run as well, although it requires a tremendous amount of memory and time. One concern is whether the 32-bit heap address space used internally in LambdaLisp is enough to compile this program. This can be circumvented by compiling LambdaLisp with an address space of 64-bit or larger, which can be done simply by replacing the literal `32` (which only appears once in `src/lambdalisp.cl`) with `64`, etc.
+The test is run on the binary lambda calculus interpreter Blc.
+
+Runnable with:
+```sh
+make test-self-host
+```
 
 
 ## How it Works
