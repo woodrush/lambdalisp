@@ -5,7 +5,7 @@ Common Lisp Compatible:
 - defun, defmacro, lambda (&rest can be used)
 - quote, atom, car, cdr, cons, eq
 - read, print, format, write-to-string
-- let, let*, labels, setq, setf, boundp, defparameter
+- let, let*, labels, setq, boundp, defparameter
 - progn, loop, block, return, return-from, if, cond, error
 - list, append, reverse, length, position, mapcar, reduce
 - make-hash-table, gethash (setf can be used)
@@ -22,6 +22,21 @@ LambdaLisp-exclusive:
 - new, defclass, defmethod, `.`, field rewriting by setf, class inheritance
 
 ## Supported Interpreters
+Since LambdaLisp is written in lambda calculus, it requires a lambda calculus interpreter for it to be run.
+When run on a lambda calculus interpreter that runs on a terminal,
+LambdaLisp provides a REPL for interactively defining and evaluating lambda terms,
+or can be used to load and run an interactive LambdaLisp program from a file.
+
+LambdaLisp currently runs on 3 lambda-calculus-based languages:
+Binary Lambda Calculus (BLC), Universal Lambda, and Lazy K.
+Lazy K is a language based on the [SKI combinator calculus](https://en.wikipedia.org/wiki/SKI_combinator_calculus)
+which is equivalent to lambda calculus, where lambda terms and SKI terms have a [consistent method](https://en.wikipedia.org/wiki/Combinatory_logic#Completeness_of_the_S-K_basis)
+of converting to and from each other.
+
+These 3 languages are supported by 5 interpreters:
+Blc, tromp, uni, clamb, and lazyk.
+Blc, tromp, uni are all interpreters for Binary Lambda Calculus and has the same I/O format.
+Here is a summary of the supported languages and interpreters:
 
 | Language               | Extension | Engine                  | Program Format               |
 |------------------------|-----------|-------------------------|------------------------------|
@@ -29,17 +44,24 @@ LambdaLisp-exclusive:
 | Universal Lambda       | *.ulamb   | Untyped Lambda Calculus | Binary (asc2bin can be used) |
 | Lazy K                 | *.lazy    | SKI Combinator Calculus | ASCII                        |
 
-| Interpreter      | Language               | Platforms    | Build Command | Notes                           |
-|------------------|------------------------|--------------|---------------|---------------------------------|
-| Blc              | Binary Lambda Calculus | x86-64-Linux | `make blc`    | 521-byte interpreter            |
-| tromp            | Binary Lambda Calculus | Any          | `make tromp`  | IOCCC 2012 "Most functional"    |
-| uni              | Binary Lambda Calculus | Any          | `make uni`    | Unobfuscated version of `tromp` |
-| clamb            | Universal Lambda       | Any          | `make clamb`  | Fast UL interpreter             |
-| lazyk            | Lazy K                 | Any          | `make lazyk`  | Fast Lazy K interpreter         |
+| Interpreter      | Language               | Platforms    | Build Command | Author                             | Notes                           |
+|------------------|------------------------|--------------|---------------|------------------------------------|---------------------------------|
+| Blc              | Binary Lambda Calculus | x86-64-Linux | `make blc`    | [@jart](https://github.com/jart)   | 521-byte interpreter            |
+| tromp            | Binary Lambda Calculus | Any          | `make tromp`  | [@tromp](https://github.com/tromp) | IOCCC 2012 "Most functional"    |
+| uni              | Binary Lambda Calculus | Any          | `make uni`    | [@tromp](https://github.com/tromp) | Unobfuscated version of `tromp` |
+| clamb            | Universal Lambda       | Any          | `make clamb`  | [@irori](https://github.com/irori) | Fast UL interpreter             |
+| lazyk            | Lazy K                 | Any          | `make lazyk`  | [@irori](https://github.com/irori) | Fast Lazy K interpreter         |
+
 
 ## Usage
+Running LambdaLisp first requires building an untyped lambda calculus interpreter of your choice.
 
 ### Building the Interpreters
+Among the 3 BLC interpreters, `Blc` can be run on x86-64-Linux systems,
+and `tromp` may not compile on a Mac with the defualt gcc (which is actually an alias of clang - details are provided below).
+The most reliably compilable BLC interpreter is `uni`, which compiles and runs on both Linux and Mac.
+The interpreters for Universal Lambda and Lazy K, `clamb` and `lazyk`, can be run on both of these systems as well.
+
 To build all interpreters:
 
 ```sh
@@ -48,8 +70,14 @@ make interpreters
 
 Or, to build them individually:
 ```sh
-make blc tromp uni clamb lazyk
+make blc tromp uni clamb lazyk asc2bin
 ```
+
+Here, asc2bin is a utility required to pack the ASCII 01 bitstream source of BLC and UL to a byte stream,
+which is the format accepted by the BLC and UL interpreters.
+
+The interpreters' source codes are obtained from an external source, each published by its authors mentioned in the previous section.
+When the make recipe is run, each recipe obtains these external source codes using the following commands:
 
 - `blc`
 - `tromp`
