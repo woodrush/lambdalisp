@@ -58,7 +58,12 @@ Here are the supported special forms, functions and features:
 
 ## Supported Lambda Calculus Reduction Engines
 
-Here is a summary of the supported languages and interpreters:
+Here is a summary of the supported languages and interpreters.
+Each language uses a different lambda term encoding for the I/O,
+and a different notation for providing the lambda term as an input to the interpreter.
+LambdaLisp is written natively as a lambda term that accepts and produces the I/O encoding of Binary Lambda Calculus,
+and is adapted to each of the languages by wrapping it with an encoder-decoder that
+absorbs the encoding differences in each environment.
 
 | Language               | Extension | Engine                  | Program Format               |
 |------------------------|-----------|-------------------------|------------------------------|
