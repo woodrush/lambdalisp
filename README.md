@@ -38,6 +38,8 @@ LambdaLisp-exclusive:
 | lazyk            | Lazy K                 | Any          | `make lazyk`  | Fast Lazy K interpreter         |
 
 ## Usage
+
+### Building the Interpreters
 To build all interpreters:
 
 ```sh
@@ -49,15 +51,53 @@ Or, to build them individually:
 make blc tromp uni clamb lazyk
 ```
 
+#### Building Blc
+Blc only runs on x86-64-Linux.
+For other platforms, tromp or uni can be used.
 
-Running `cat -` connects the standard input after the specified input files,
-allowing the user to interact with the interpreter through the terminal after reading a file.
-If `cat -` does not work, the following commands can be used instead:
+#### Building tromp on a Mac
+Mac has `gcc` installed by default or via Xcode Command Line Tools.
+However, `gcc` is actually installed as an alias to `clang`, which is a different compiler.
+This is confirmable by running `gcc --version`. On my Mac, running it shows:
+
 ```sh
+$ gcc --version
+Configured with: --prefix=/Applications/Xcode.app/Contents/Developer/usr --with-gxx-include-dir=/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include/c++/4.2.1
+Apple clang version 12.0.0 (clang-1200.0.32.29)
+Target: x86_64-apple-darwin19.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
 ```
 
+One way to circumvent this is to use `uni` instead, which is an unobfuscated version of `tromp` and is compilable by clang.
+To build `tromp`, first install gcc via [Homebrew](https://brew.sh/):
 
-Running LambdaLisp on Binary Lambda Calculus interpreters:
+```sh
+brew install gcc
+```
+
+Currently, this should install the command `gcc-11`.
+After installing gcc, check the command that it has installed.
+
+Then, edit the `Makefile`'s `CC` configuration:
+
+```diff
+- CC=cc
++ CC=gcc-11
+```
+
+Then, running
+```sh
+make tromp
+```
+will compile `tromp`.
+
+
+### Running LambdaLisp
+
+Running LambdaLisp on the Binary Lambda Calculus interpreter `Blc` can be done as follows.
+The following commands are for running on `Blc`.
+To run on `tromp` or `uni`, replace `Blc` with `tromp` or `uni`.
 ```sh
 # Prepare the binary
 cat lambdalisp.blc | asc2bin > lambdalisp.blc.bin
@@ -68,7 +108,7 @@ cat lambdalisp.blc.bin [filepath] - | ./bin/Blc        # Run a LambdaLisp script
 ( cat lambdalisp.blc.bin [filepath]; cat ) | ./bin/Blc # If `cat -` does not work, the following command can be used:
 ```
 
-Running LambdaLisp on Universal Lambda interpreters:
+Running LambdaLisp on the Universal Lambda interpreter `clamb`:
 ```sh
 # Prepare the binary
 cat lambdalisp.ulamb | asc2bin > lambdalisp.ulamb.bin
@@ -78,10 +118,12 @@ cat lambdalisp.ulamb.bin [filepath] | ./bin/clamb   # Run a LambdaLisp script an
 cat lambdalisp.ulamb.bin [filepath] - | ./bin/clamb # Run a LambdaLisp script, then enter the REPL
 ```
 
-Running LambdaLisp on Lazy K:
+Running LambdaLisp on the Lazy K interpreter `lazyk`:
 ```sh
 ./bin/lazyk lambdalisp.lazy -u                    # Run the LambdaLisp REPL. The -u option is required for interactive programs
 cat [filepath] | ./bin/lazyk lambdalisp.lazy -u   # Run a LambdaLisp script and exit
 cat [filepath] - | ./bin/lazyk lambdalisp.lazy -u # Run a LambdaLisp script, then enter the REPL
 ```
 
+Running `cat -` connects the standard input after the specified input files,
+allowing the user to interact with the interpreter through the terminal after reading a file.
