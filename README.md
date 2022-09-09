@@ -217,24 +217,11 @@ or on a Mac with:
 brew install sbcl
 ```
 
-To compile to the Binary Lambda Calculus source [lambdalisp.blc](./lambdalisp.blc):
+LambdaLisp can then be compiled with:
 ```sh
-make blc
-```
-
-To compile to the Universal Lambda source [lambdalisp.ulamb](./lambdalisp.ulamb):
-```sh
-make ulamb
-```
-
-To compile to the Lazy K Source [lambdalisp.lazy](./lambdalisp.lazy):
-```sh
-make lazyk
-```
-
-To compile to a plaintext lambda calculus file:
-```sh
-make lambda-plaintext
+make blc     # Builds lambdalisp.blc, for Binary Lambda Calculus
+make ulamb   # Builds lambdalisp.ulamb, for Universal Lambda
+make lazyk   # Builds lambdalisp.lazy, for Lazy K
 ```
 
 To compile [lambdalisp.pdf](./lambdalisp.pdf), first install LaTeX, and then run:
