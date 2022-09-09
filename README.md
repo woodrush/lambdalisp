@@ -51,6 +51,12 @@ Or, to build them individually:
 make blc tromp uni clamb lazyk
 ```
 
+- `blc`
+- `tromp`
+- `uni`
+- `clamb`: `git clone https://github.com/irori/clamb`
+- `lazyk`: `git clone https://github.com/irori/lazyk`
+
 #### Building Blc
 Blc only runs on x86-64-Linux.
 For other platforms, tromp or uni can be used.
@@ -100,7 +106,7 @@ The following commands are for running on `Blc`.
 To run on `tromp` or `uni`, replace `Blc` with `tromp` or `uni`.
 ```sh
 # Prepare the binary
-cat lambdalisp.blc | asc2bin > lambdalisp.blc.bin
+cat lambdalisp.blc | ./bin/asc2bin > lambdalisp.blc.bin
 
 cat lambdalisp.blc.bin - | ./bin/Blc                   # Run the LambdaLisp REPL
 cat lambdalisp.blc.bin [filepath] | ./bin/Blc          # Run a LambdaLisp script and exit
@@ -122,16 +128,18 @@ This is since the I/O lambda term encoding is different for these languages.
 Otherwise, both languages are based entirely on untyped lambda calculus.
 ```sh
 # Prepare the binary
-cat lambdalisp.ulamb | asc2bin > lambdalisp.ulamb.bin
+cat lambdalisp.ulamb | ./bin/asc2bin > lambdalisp.ulamb.bin
 
-cat lambdalisp.ulamb.bin - | ./bin/clamb            # Run the LambdaLisp REPL
-cat lambdalisp.ulamb.bin [filepath] | ./bin/clamb   # Run a LambdaLisp script and exit
-cat lambdalisp.ulamb.bin [filepath] - | ./bin/clamb # Run a LambdaLisp script, then enter the REPL
+# The -u option is required for managing I/O properly
+cat lambdalisp.ulamb.bin - | ./bin/clamb -u            # Run the LambdaLisp REPL
+cat lambdalisp.ulamb.bin [filepath] | ./bin/clamb -u   # Run a LambdaLisp script and exit
+cat lambdalisp.ulamb.bin [filepath] - | ./bin/clamb -u # Run a LambdaLisp script, then enter the REPL
 ```
 
 Running LambdaLisp on the Lazy K interpreter `lazyk`:
 ```sh
-./bin/lazyk lambdalisp.lazy -u                    # Run the LambdaLisp REPL. The -u option is required for interactive programs
+# The -u option is required for managing I/O properly
+./bin/lazyk lambdalisp.lazy -u                    # Run the LambdaLisp REPL
 cat [filepath] | ./bin/lazyk lambdalisp.lazy -u   # Run a LambdaLisp script and exit
 cat [filepath] - | ./bin/lazyk lambdalisp.lazy -u # Run a LambdaLisp script, then enter the REPL
 ```
