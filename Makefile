@@ -27,12 +27,11 @@ all:
 	$(MAKE) $(target_ulamb)
 
 test: test-blc-uni test-compiler-hosting-blc-uni
-test-all: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp
-
+test-platforms: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni
 # On x86-64-Linux, the interpreter 'Blc' can be used.
-test-linux: test-blc test-blc-tromp test-compiler-hosting-blc test-compiler-hosting-blc-uni
-test-all-linux: test-blc test-blc-tromp test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc test-compiler-hosting-blc-uni
+test-all: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp test-blc test-compiler-hosting-blc
 
+# Build all of the interpreters that support LambdaLisp
 interpreters: $(UNI) $(ULAMB) $(LAZYK) $(TROMP) $(BLC)
 
 
@@ -40,7 +39,51 @@ interpreters: $(UNI) $(ULAMB) $(LAZYK) $(TROMP) $(BLC)
 #================================================================
 # Tests
 #================================================================
-# SBCL comparison test - compare LambdaLisp outputs with Common Lisp outputs for examples/*.cl
+# Each basic test compares LambdaLisp outputs with:
+# - Outputs when executed on Common Lisp, for examples/*.cl, which run on both Common Lisp and LambdaLisp
+# - Predefined expected output text, for examples/*.lisp, for LambdaLisp-exclusive programs
+.PHONY: test-%
+test-%: $(addsuffix .%-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl)))) \
+        $(addsuffix .%-out.expected-diff, $(addprefix out/, $(notdir $(wildcard examples/*.lisp))))
+	@echo "\n    All tests have passed for $(interpreter_name_$*).\n"
+interpreter_name_blc="BLC with the interpreter 'Blc'"
+interpreter_name_blc_tromp="BLC with the interpreter 'tromp'"
+interpreter_name_blc_uni="BLC with the interpreter 'uni'"
+interpreter_name_ulamb="Universal Lambda"
+interpreter_name_lazyk="Lazy K"
+
+
+# Compiler hosting test - execute the output of examples/lambdacraft.cl as a binary lambda calculus program
+.PHONY: test-compiler-hosting-blc
+test-compiler-hosting-blc: out/lambdacraft.cl.blc-out $(BLC) $(ASC2BIN) examples/lambdacraft.cl
+# Remove non-01-characters and provide it to BLC
+	cat $< | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(BLC) > $@
+	printf 'A' > out/lambdacraft.cl.blc-expected
+	diff $@ out/lambdacraft.cl.blc-expected || ( rm $@; exit 1)
+	@echo "\n    LambdaCraft-compiler-hosting-on-LambdaLisp test passed.\n"
+
+.PHONY: test-compiler-hosting-blc-uni
+test-compiler-hosting-blc-uni: out/lambdacraft.cl.blc-uni-out $(UNI) $(ASC2BIN) examples/lambdacraft.cl
+# Remove non-01-characters and provide it to BLC
+	cat $< | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(UNI) > $@
+	printf 'A' > out/lambdacraft.cl.blc-expected
+	diff $@ out/lambdacraft.cl.blc-expected || ( rm $@; exit 1)
+	@echo "\n    LambdaCraft-compiler-hosting-on-LambdaLisp test passed.\n"
+
+
+# Self-hosting test - compile LambdaLisp's own source code written in Common Lisp using LambdaLisp (currently theoretical - requires a lot of time and memory)
+.PHONY: test-self-host
+test-self-host: $(BASE_SRCS) $(def_prelude) ./src/main.cl $(target_blc) $(BLC) $(ASC2BIN)
+	mkdir -p ./test
+	( echo '(defparameter **lambdalisp-suppress-repl** t)'; \
+	  cat ./src/lambdacraft.cl ./src/build/def-prelude.cl ./src/lambdalisp.cl ./src/main.cl ) > ./out/lambdalisp-src-cat.cl
+	( cat $(target_blc) | $(ASC2BIN); cat ./out/lambdalisp-src-cat.cl ) | $(BLC) > ./out/lambdalisp.cl.blc.repl.out
+	cat ./out/lambdalisp.cl.blc.repl.out | sed -e '1s/> //' | ./out/lambdalisp.cl.blc.script.out
+	diff ./out/lambdalisp.cl.blc.script.out $(target_blc) || (echo "The LambdaLisp output does not match with the Common Lisp output." && exit 1)
+	@echo "\n    LambdaLisp self-hosting test passed.\n"
+
+
+# How to execute the programs in each platform
 .PRECIOUS: out/%.cl.sbcl-out
 out/%.cl.sbcl-out: examples/%.cl
 	mkdir -p ./out
@@ -77,75 +120,43 @@ out/%.lazyk-out: examples/% $(target_lazy) $(LAZYK)
 	cat $< | $(LAZYK) $(target_lazy) -u > $@.tmp
 	mv $@.tmp $@
 
-out/%.cleaned: out/%
-# Remove the initial '> ' printed by LambdaLisp's REPL when comparing with SBCL's output
-	cat $< | sed -e '1s/> //' > $<.cleaned
 
+# SBCL comparison test - compare LambdaLisp outputs with Common Lisp outputs for examples/*.cl
 out/%.blc-out.sbcl-diff: ./out/%.blc-out.cleaned ./out/%.sbcl-out
-	cmp $^ || exit 1
+	diff $^ || exit 1
 
 out/%.blc-tromp-out.sbcl-diff: ./out/%.blc-tromp-out.cleaned ./out/%.sbcl-out
-	cmp $^ || exit 1
+	diff $^ || exit 1
 
 out/%.blc-uni-out.sbcl-diff: ./out/%.blc-uni-out.cleaned ./out/%.sbcl-out
-	cmp $^ || exit 1
+	diff $^ || exit 1
 
 out/%.ulamb-out.sbcl-diff: ./out/%.ulamb-out.cleaned ./out/%.sbcl-out
-	cmp $^ || exit 1
+	diff $^ || exit 1
 
 out/%.lazyk-out.sbcl-diff: ./out/%.lazyk-out.cleaned ./out/%.sbcl-out
-	cmp $^ || exit 1
+	diff $^ || exit 1
 
-.PHONY: test-blc
-test-blc: $(addsuffix .blc-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
-	@echo "All tests have passed for BLC with the interpreter 'Blc'."
-
-.PHONY: test-blc-tromp
-test-blc-tromp: $(addsuffix .blc-tromp-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
-	@echo "All tests have passed for BLC with the interpreter 'tromp'."
-
-.PHONY: test-blc-uni
-test-blc-uni: $(addsuffix .blc-uni-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
-	@echo "All tests have passed for BLC with the interpreter 'uni'."
-
-.PHONY: test-ulamb
-test-ulamb: $(addsuffix .ulamb-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
-	@echo "All tests have passed for Universal Lambda."
-
-.PHONY: test-lazyk
-test-lazyk: $(addsuffix .lazyk-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
-	@echo "All tests have passed for Lazy K."
+# Remove the initial '> ' printed by LambdaLisp's REPL when comparing with SBCL's output
+out/%.cleaned: out/%
+	cat $< | sed -e '1s/> //' > $<.cleaned
 
 
-# Compiler hosting test - execute the output of examples/lambdacraft.cl as a binary lambda calculus program
-.PHONY: test-compiler-hosting-blc
-test-compiler-hosting-blc: out/lambdacraft.cl.blc-out $(BLC) $(ASC2BIN) examples/lambdacraft.cl
-# Remove non-01-characters and provide it to BLC
-	cat $< | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(BLC) > $@
-	printf 'A' > out/lambdacraft.cl.blc-expected
-	cmp $@ out/lambdacraft.cl.blc-expected || ( rm $@; exit 1)
-	@echo "LambdaCraft-compiler-hosting-on-LambdaLisp test passed."
+# Expected text comparison test - compare LambdaLisp outputs with a predefined expected output
+out/%.blc-out.expected-diff: ./out/%.blc-out ./test/%.out
+	diff $^ || exit 1
 
-.PHONY: test-compiler-hosting-blc-uni
-test-compiler-hosting-blc-uni: out/lambdacraft.cl.blc-uni-out $(UNI) $(ASC2BIN) examples/lambdacraft.cl
-# Remove non-01-characters and provide it to BLC
-	cat $< | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(UNI) > $@
-	printf 'A' > out/lambdacraft.cl.blc-expected
-	cmp $@ out/lambdacraft.cl.blc-expected || ( rm $@; exit 1)
-	@echo "LambdaCraft-compiler-hosting-on-LambdaLisp test passed."
+out/%.blc-tromp-out.expected-diff: ./out/%.blc-tromp-out ./test/%.out
+	diff $^ || exit 1
 
+out/%.blc-uni-out.expected-diff: ./out/%.blc-uni-out ./test/%.out
+	diff $^ || exit 1
 
-# Self-hosting test - compile LambdaLisp's own source code written in Common Lisp using the LambdaLisp interpreter (currently theoretical - requires a lot of time and memory)
-.PHONY: test-self-host
-test-self-host: $(BASE_SRCS) $(def_prelude) ./src/main.cl $(target_blc) $(BLC) $(ASC2BIN)
-	mkdir -p ./test
-	( echo '(defparameter **lambdalisp-suppress-repl** t)'; \
-	  cat ./src/lambdacraft.cl ./src/build/def-prelude.cl ./src/lambdalisp.cl ./src/main.cl ) > ./out/lambdalisp-src-cat.cl
-	( cat $(target_blc) | $(ASC2BIN); cat ./out/lambdalisp-src-cat.cl ) | $(BLC) > ./out/lambdalisp.cl.blc.repl.out
-	cat ./out/lambdalisp.cl.blc.repl.out | sed -e '1s/> //' | ./out/lambdalisp.cl.blc.script.out
-	cmp ./out/lambdalisp.cl.blc.script.out $(target_blc) || (echo "The LambdaLisp output does not match with the Common Lisp output." && exit 1)
-	@echo "LambdaLisp self-hosting test passed."
+out/%.ulamb-out.expected-diff: ./out/%.ulamb-out ./test/%.out
+	diff $^ || exit 1
 
+out/%.lazyk-out.expected-diff: ./out/%.lazyk-out ./test/%.out
+	diff $^ || exit 1
 
 
 #================================================================
@@ -175,7 +186,7 @@ $(target_ulamb): $(BASE_SRCS) $(def_prelude) ./src/main-ulamb.cl ./src/lazyk-ula
 	mv $(target_ulamb).tmp $(target_ulamb)
 
 lazyk: $(target_lazy)
-$(target_lazy): $(BASE_SRCS) $(def_prelude_lazyk) ./src/lazyk-chars.cl ./src/main-lazyk.cl ./src/lazyk-ulamb-blc-wrapper.cl
+$(target_lazy): $(BASE_SRCS) $(def_prelude_lazyk) ./src/main-lazyk.cl ./src/lazyk-ulamb-blc-wrapper.cl ./src/lazyk-chars.cl
 	@echo "Compiling to Lazy K takes a while (several minutes)."
 	cd src; sbcl --script ./main-lazyk.cl > ../$(target_lazy).tmp
 
