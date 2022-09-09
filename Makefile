@@ -32,7 +32,7 @@ test-all-nonlinux: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-
 test-all: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp test-blc test-compiler-hosting-blc
 
 # Build all of the interpreters that support LambdaLisp
-interpreters: uni clamb lazyk tromp blc
+interpreters: uni clamb lazyk tromp blc asc2bin
 
 
 
@@ -111,7 +111,7 @@ out/%.blc-uni-out: examples/% $(target_blc) $(UNI) $(ASC2BIN)
 .PRECIOUS: out/%.ulamb-out
 out/%.ulamb-out: examples/% $(target_ulamb) $(ULAMB) $(ASC2BIN)
 	mkdir -p ./out
-	( cat $(target_ulamb) | $(ASC2BIN); cat $< ) | $(ULAMB) > $@.tmp
+	( cat $(target_ulamb) | $(ASC2BIN); cat $< ) | $(ULAMB) -u > $@.tmp
 	mv $@.tmp $@
 
 .PRECIOUS: out/%.lazyk-out
