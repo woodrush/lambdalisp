@@ -27,7 +27,7 @@ all:
 	$(MAKE) $(target_ulamb)
 
 test: test-blc-uni test-compiler-hosting-blc-uni
-test-platforms: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni
+test-all-nonlinux: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp
 # On x86-64-Linux, the interpreter 'Blc' can be used.
 test-all: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp test-blc test-compiler-hosting-blc
 
@@ -41,7 +41,7 @@ interpreters: $(UNI) $(ULAMB) $(LAZYK) $(TROMP) $(BLC)
 #================================================================
 # Each basic test compares LambdaLisp outputs with:
 # - Outputs when executed on Common Lisp, for examples/*.cl, which run on both Common Lisp and LambdaLisp
-# - Predefined expected output text, for examples/*.lisp, for LambdaLisp-exclusive programs
+# - Predefined expected output text in ./test/, for examples/*.lisp, which are LambdaLisp-exclusive programs
 .PHONY: test-%
 test-%: $(addsuffix .%-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl)))) \
         $(addsuffix .%-out.expected-diff, $(addprefix out/, $(notdir $(wildcard test/*.lisp.out))))
