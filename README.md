@@ -81,9 +81,28 @@ absorbs the encoding differences in each environment.
 
 
 ## Usage
-Running LambdaLisp first requires building an untyped lambda calculus interpreter of your choice.
+To run the LambdaLisp REPL, run:
+
+```sh
+make run-repl
+```
+
+This will build all the required tools and run LambdaLisp on the lambda calculus interpreter `clamb`,
+presenting a REPL for interacting with LambdaLisp.
+
+In order to build `clamb` when `make run-repl` is first run, the interpreter runs `git clone https://github.com/irori/clamb`
+to clone the source code of `clamb`. The make procedure prompts if this is OK, so type `y` when the prompt is shown to proceed.
+
+Once `make run-repl` is run, the REPL can also be run with:
+
+```sh
+( cat lambdalisp.ulamb | ./bin/asc2bin; cat ) | ./bin/clamb -u
+```
+
 
 ### Building the Lambda Calculus Interpreters
+LambdaLisp can be run on other lambda calculus interpreters as well.
+
 Several notes about the interpreters:
 
 - The BLC intepreter `Blc` only runs on x86-64-Linux systems.
@@ -147,9 +166,9 @@ Otherwise, both languages are based entirely on untyped lambda calculus.
 cat lambdalisp.ulamb | ./bin/asc2bin > lambdalisp.ulamb.bin
 
 # The -u option is required for handling I/O properly
-cat lambdalisp.ulamb.bin -            | ./bin/clamb -u # Run the LambdaLisp REPL
-cat lambdalisp.ulamb.bin [filepath]   | ./bin/clamb -u # Run a LambdaLisp script and exit
-cat lambdalisp.ulamb.bin [filepath] - | ./bin/clamb -u # Run a LambdaLisp script, then enter the REPL
+./bin/clamb lambdalisp.ulamb.bin -u                    # Run the LambdaLisp REPL
+cat [filepath]   | ./bin/clamb -u lambdalisp.ulamb.bin # Run a LambdaLisp script and exit
+cat [filepath] - | ./bin/clamb -u lambdalisp.ulamb.bin # Run a LambdaLisp script, then enter the REPL
 ```
 
 #### On Lazy K
