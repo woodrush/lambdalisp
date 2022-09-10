@@ -1327,6 +1327,11 @@
             (do
               (<- (mapped-base state) (map-eval tail state))
               (<- (car-mapped cdr-mapped) (mapped-base))
+              (<- (car-tail cdr-tail) (d-carcdr-data tail))
+              (if-then-return (isnil-data cdr-tail)
+                (do
+                  (<- (n) (negate (valueof car-mapped)))
+                  (cont (int* n) state)))
               (<- (sum)
                 (reduce-base
                   (lambda (arg1 arg2 cont)
