@@ -6,9 +6,9 @@ LambdaLisp is tested by running `examples/*.cl` on both Common Lisp and LambdaLi
 The largest LambdaLisp-Common-Lisp polyglot program that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
 which runs the lambda calculus compiler LambdaCraft that I wrote for this project, used to compile LambdaLisp itself.
 
-LambdaLisp is written as a function `LambdaLisp = λx. ...`
-which takes one string as an input and returns one string as an output.
-The input represents the Lisp program and the user's standard input (the `x` is the input string),
+LambdaLisp is written as a lambda calculus term `LambdaLisp = λx. ...`
+which takes one string `x` as an input and returns one string as an output.
+The input `x` represents the Lisp program and the user's standard input,
 and the output represents the standard output.
 Strings are encoded to pure lambda terms using the [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding),
 so the entire computation process solely consists of the beta-reduction of lambda calculus terms,
@@ -16,6 +16,12 @@ without the need of introducing any non-lambda-type object.
 
 When run on a lambda calculus interpreter that runs on the terminal,
 LambdaLisp presents a REPL where you can interactively define and evaluate Lisp expressions.
+Supported interpreters are:
+
+- The [521-byte lambda calculus interpreter](https://justine.lol/lambda/) written by Justine Tunney
+- The [IOCCC](https://www.ioccc.org/) 2012 ["Most functional"](https://www.ioccc.org/2012/tromp/hint.html) interpreter written by John Tromp
+- Universal Lambda interpreter [clamb](https://github.com/irori/clamb) and Lazy K interpreter [lazyk](https://github.com/irori/lazyk) written by Kunihiko Sakamoto
+
 Further details are described in the How it Works section.
 
 
