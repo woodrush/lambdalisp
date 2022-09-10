@@ -257,8 +257,10 @@ build/flat.lds:
 $(BLC): build/Blc.S build/flat.lds
 	mkdir -p ./bin
 	# Extend the maximum memory limit to execute large programs
-	cd build; cat Blc.S | sed -e 's/#define TERMS	5000000/#define TERMS	50000000/' > Blc.ext.S
-	cd build; $(CC) -c -o Blc.o Blc.ext.S
+	# Make TERMS configurable
+	cd build; cat Blc.S | sed -e 's/#define.*TERMS.*//' > Blc.ext.S
+	# Compile with the option -DTERMS=50000000 (larger than the original -DTERMS=5000000) to execute large programs
+	cd build; $(CC) -c -DTERMS=50000000 -o Blc.o Blc.ext.S
 	cd build; ld.bfd -o Blc Blc.o -T flat.lds
 	mv build/Blc ./bin
 	chmod 755 $(BLC)
