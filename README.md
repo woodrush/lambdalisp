@@ -117,8 +117,8 @@ To run on `tromp` or `uni`, replace `Blc` with `tromp` or `uni`.
 # Pack the 01 bitstream to a bytestream
 cat lambdalisp.blc | ./bin/asc2bin > lambdalisp.blc.bin
 
-cat lambdalisp.blc.bin - | ./bin/Blc            # Run the LambdaLisp REPL
-cat lambdalisp.blc.bin [filepath] | ./bin/Blc   # Run a LambdaLisp script and exit
+cat lambdalisp.blc.bin -            | ./bin/Blc # Run the LambdaLisp REPL
+cat lambdalisp.blc.bin [filepath]   | ./bin/Blc # Run a LambdaLisp script and exit
 cat lambdalisp.blc.bin [filepath] - | ./bin/Blc # Run a LambdaLisp script, then enter the REPL
 ```
 
@@ -141,8 +141,8 @@ Otherwise, both languages are based entirely on untyped lambda calculus.
 cat lambdalisp.ulamb | ./bin/asc2bin > lambdalisp.ulamb.bin
 
 # The -u option is required for handling I/O properly
-cat lambdalisp.ulamb.bin - | ./bin/clamb -u            # Run the LambdaLisp REPL
-cat lambdalisp.ulamb.bin [filepath] | ./bin/clamb -u   # Run a LambdaLisp script and exit
+cat lambdalisp.ulamb.bin -            | ./bin/clamb -u # Run the LambdaLisp REPL
+cat lambdalisp.ulamb.bin [filepath]   | ./bin/clamb -u # Run a LambdaLisp script and exit
 cat lambdalisp.ulamb.bin [filepath] - | ./bin/clamb -u # Run a LambdaLisp script, then enter the REPL
 ```
 
@@ -151,7 +151,7 @@ Running LambdaLisp on the Lazy K interpreter `lazyk` can be done as follows:
 ```sh
 # The -u option is required for handling I/O properly
 ./bin/lazyk lambdalisp.lazy -u                    # Run the LambdaLisp REPL
-cat [filepath] | ./bin/lazyk lambdalisp.lazy -u   # Run a LambdaLisp script and exit
+cat [filepath]   | ./bin/lazyk lambdalisp.lazy -u # Run a LambdaLisp script and exit
 cat [filepath] - | ./bin/lazyk lambdalisp.lazy -u # Run a LambdaLisp script, then enter the REPL
 ```
 
