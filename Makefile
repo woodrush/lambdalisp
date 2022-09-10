@@ -8,13 +8,16 @@ TROMP=./bin/tromp
 ULAMB=./bin/clamb
 LAZYK=./bin/lazyk
 SBCL=sbcl
+LATEX=latex
+DVIPDFMX=dvipdfmx
 
 ASC2BIN=./bin/asc2bin
 
 target_blc=lambdalisp.blc
 target_ulamb=lambdalisp.ulamb
 target_lazy=lambdalisp.lazy
-target_latex=lambdalisp.tex
+target_latex=out/lambdalisp.tex
+target_pdf=lambdalisp.pdf
 
 def_prelude=./src/build/def-prelude.cl
 def_prelude_lazyk=./src/build/def-prelude-lazyk.cl
@@ -34,6 +37,9 @@ test-all: interpreters test-blc-uni test-ulamb test-lazyk test-compiler-hosting-
 # Build all of the interpreters that support LambdaLisp
 interpreters: uni clamb lazyk tromp blc asc2bin
 interpreters-nonlinux: uni clamb lazyk tromp asc2bin
+
+# Build the PDF file
+pdf: $(target_pdf)
 
 
 #================================================================
@@ -200,10 +206,17 @@ $(target_lazy): $(BASE_SRCS) $(def_prelude_lazyk) ./src/main-lazyk.cl ./src/lazy
 
 
 # Additional targets
-latex: $(target_latex)
-$(target_latex): $(BASE_SRCS) $(def_prelude) ./src/main-latex.cl
+.PRECIOUS: $(target_latex)
+$(target_latex): $(BASE_SRCS) $(def_prelude) ./src/main-latex.cl ./tools/main.tex ./tools/make-latex.sh
 	./tools/make-latex.sh
+	mv lambdalisp.tex out
 
+.PHONY: pdf
+$(target_pdf): $(target_latex)
+	cp ./tools/main.tex out
+	cd out; $(LATEX) main.tex
+	cd out; $(DVIPDFMX) main.dvi -o lambdalisp.pdf
+	mv out/lambdalisp.pdf .
 
 
 #================================================================

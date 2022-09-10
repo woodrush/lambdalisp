@@ -4,8 +4,8 @@ set -e
 cd ./src; sbcl --script ./main-latex.cl \
 | LC_ALL=C sed -e "s/^/$/g" \
 | LC_ALL=C sed -e "s/$/$ @/g" \
-| LC_ALL=C sed -e "s/(/@\\\\allowbreak(/g" \
-| LC_ALL=C sed -e "s/)/@\\\\allowbreak)/g" \
+| LC_ALL=C sed -e "s/(/@\\\\allowbreak (/g" \
+| LC_ALL=C sed -e "s/)/@) \\\\allowbreak /g" \
 | LC_ALL=C sed -e "s/\./.\\\\allowbreak /g" \
 | LC_ALL=C sed -e "s/α/@\\\\allowbreak \\\\alpha /g" \
 | LC_ALL=C sed -e "s/β/@\\\\allowbreak \\\\beta /g" \
@@ -30,4 +30,4 @@ cd ./src; sbcl --script ./main-latex.cl \
 | LC_ALL=C sed -e "s/ω/@\\\\allowbreak \\\\omega /g" \
 | LC_ALL=C sed -e "s/λ/@\\\\allowbreak \\\\lambda /g" \
 | LC_ALL=C tr "@" "\n" \
-> lambdalisp.tex
+> ../lambdalisp.tex
