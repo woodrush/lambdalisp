@@ -59,19 +59,19 @@ LambdaLisp is written natively as a lambda term that accepts and produces the I/
 and is adapted to each of the languages by wrapping it with an encoder-decoder that
 absorbs the encoding differences in each environment.
 
-| Language               | Extension | Engine                  | Program Format               |
-|------------------------|-----------|-------------------------|------------------------------|
-| Binary Lambda Calculus | *.blc     | Untyped Lambda Calculus | Binary (asc2bin can be used) |
-| Universal Lambda       | *.ulamb   | Untyped Lambda Calculus | Binary (asc2bin can be used) |
-| Lazy K                 | *.lazy    | SKI Combinator Calculus | ASCII                        |
+| Language                                                     | Extension | Engine                  | Program Format               |
+|--------------------------------------------------------------|-----------|-------------------------|------------------------------|
+| [Binary Lambda Calculus](https://tromp.github.io/cl/cl.html) | *.blc     | Untyped Lambda Calculus | Binary (asc2bin can be used) |
+| [Universal Lambda](http://www.golfscript.com/lam/)           | *.ulamb   | Untyped Lambda Calculus | Binary (asc2bin can be used) |
+| [Lazy K](https://tromp.github.io/cl/lazy-k.html)             | *.lazy    | SKI Combinator Calculus | ASCII                        |
 
-| Interpreter      | Language               | Platforms    | Build Command | Author                             | Notes                                                                                                  |
-|------------------|------------------------|--------------|---------------|------------------------------------|--------------------------------------------------------------------------------------------------------|
-| Blc              | Binary Lambda Calculus | x86-64-Linux | `make blc`    | [@jart](https://github.com/jart)   | [521-byte interpreter](https://justine.lol/lambda/)                                                    |
-| tromp            | Binary Lambda Calculus | Any          | `make tromp`  | [@tromp](https://github.com/tromp) | [IOCCC](https://www.ioccc.org/) 2012 ["Most functional"](https://www.ioccc.org/2012/tromp/hint.html)   |
-| uni              | Binary Lambda Calculus | Any          | `make uni`    | [@tromp](https://github.com/tromp) | [Unobfuscated version](https://tromp.github.io/cl/cl.html) of `tromp`                                  |
-| clamb            | Universal Lambda       | Any          | `make clamb`  | [@irori](https://github.com/irori) | Fast UL interpreter                                                                                    |
-| lazyk            | Lazy K                 | Any          | `make lazyk`  | [@irori](https://github.com/irori) | Fast Lazy K interpreter                                                                                |
+| Interpreter                                         | Language               | Platforms    | Build Command | Author                             | Notes                                                                                                  |
+|-----------------------------------------------------|------------------------|--------------|---------------|------------------------------------|--------------------------------------------------------------------------------------------------------|
+| [Blc](https://justine.lol/lambda/)                  | Binary Lambda Calculus | x86-64-Linux | `make blc`    | [@jart](https://github.com/jart)   | [521-byte interpreter](https://justine.lol/lambda/)                                                    |
+| [tromp](https://www.ioccc.org/2012/tromp/hint.html) | Binary Lambda Calculus | Any          | `make tromp`  | [@tromp](https://github.com/tromp) | [IOCCC](https://www.ioccc.org/) 2012 ["Most functional"](https://www.ioccc.org/2012/tromp/hint.html)   |
+| [uni](https://tromp.github.io/cl/cl.html)           | Binary Lambda Calculus | Any          | `make uni`    | [@tromp](https://github.com/tromp) | Unobfuscated version of `tromp`                                                                        |
+| [clamb](https://github.com/irori/clamb)             | Universal Lambda       | Any          | `make clamb`  | [@irori](https://github.com/irori) | Fast UL interpreter                                                                                    |
+| [lazyk](https://github.com/irori/lazyk)             | Lazy K                 | Any          | `make lazyk`  | [@irori](https://github.com/irori) | Fast Lazy K interpreter                                                                                |
 
 
 ## Usage
@@ -312,7 +312,7 @@ The differences in BLC and UL are in a slight difference in the method for encod
 Otherwise, both of these languages follow the same principle, where lambda terms are the solely avalable object types in the language.
 
 In BLC and UL, lambda terms are written in a notation called [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html).
-In a nutshell, the BLC notation for a lambda term can be obtained by first rewriting it in [De Bruijn notation](https://en.wikipedia.org/wiki/De_Bruijn_index),
+The BLC notation for a lambda term can be obtained by first rewriting it in [De Bruijn notation](https://en.wikipedia.org/wiki/De_Bruijn_index),
 then encoding `λ = 00`, `apply = 01`, and `i = 1^i0`. For example, `λx.λy.λz.λt.y -> λλλλ3 -> 000000001110`, `(λx.x)(λx.x) -> apply λ1 λ1 -> 0100100010`.
 The bitstream in [lambdalisp.blc](./lambdalisp.blc) decodes into the lambda term shown in [lambdalisp.pdf](lambdalisp.pdf) this way.
 
