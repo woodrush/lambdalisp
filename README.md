@@ -1,6 +1,7 @@
 # LambdaLisp
 LambdaLisp is a Lisp interpreter written as a pure untyped lambda calculus term.
 The entire lambda calculus expression is viewable as a PDF here.
+
 LambdaLisp is tested by running `examples/*.cl` on both Common Lisp and LambdaLisp and comparing their outputs.
 The largest LambdaLisp-Common-Lisp polyglot program that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
 which runs the lambda calculus compiler LambdaCraft that I wrote for this project, used to compile LambdaLisp itself.
@@ -9,35 +10,28 @@ LambdaLisp is written as a function `LambdaLisp = λx. ...`
 which takes one string as an input and returns one string as an output.
 The input represents the Lisp program and the user's standard input (the `x` is the input string),
 and the output represents the standard output.
-A string is represented as a list of bits of its ASCII representation.
-In untyped lambda calculus, a method called the [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding)
-can be used to express a list of lambda terms as a pure untyped lambda calculus term, without the help of introducing a non-lambda-type object.
-Bits are encoded as `0 = λx.λy.x` and `1 = λx.λy.y`.
+Strings are encoded to pure lambda terms using the [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding),
+so the entire computation process solely consists of the beta-reduction of lambda calculus terms,
+without the need of introducing any non-lambda-type object.
 
-LambdaLisp can be run on a terminal in the following 5 lambda calculus (and SKI combinator calculus) reduction engines:
-Blc, tromp, uni, clamb, and lazyk.
-When run on the terminal with these lambda calculus reduction engines,
+When run on a lambda calculus interpreter that runs on the terminal,
 LambdaLisp presents a REPL where you can interactively define and evaluate Lisp expressions.
-Since the lambda calculus engines support monadic I/O,
-you can even write LambdaLisp scripts that handle interactive imperative programs such as games.
-Such a flexible management of the control flow in lambda calculus is possible by
-writing LambdaLisp's source lambda term in continuation passing style.
 Further details are described in the How it Works section.
 
 
 ## Features
-Here are the key features:
+Key features are:
 
 - Signed 32-bit integer literals
 - String literals
 - Lexical scopes and persistent bindings with `let`
-- Built-in object oriented programming feature with class inheritance
+- Object oriented programming feature with class inheritance (as pre-loaded macros)
 - Reader macros with `set-macro-character`
 - Access to the interpreter's virtual heap memory with `malloc`, `memread`, and `memwrite`
 - Show the call stack trace when an error is invoked
 - Garbage collection for macro evaluation
 
-Here are the supported special forms, functions and features:
+Supported special forms, functions and features are:
 
 - defun, defmacro, lambda (&rest can be used)
 - quote, atom, car, cdr, cons, eq
@@ -71,13 +65,13 @@ absorbs the encoding differences in each environment.
 | Universal Lambda       | *.ulamb   | Untyped Lambda Calculus | Binary (asc2bin can be used) |
 | Lazy K                 | *.lazy    | SKI Combinator Calculus | ASCII                        |
 
-| Interpreter      | Language               | Platforms    | Build Command | Author                             | Notes                           |
-|------------------|------------------------|--------------|---------------|------------------------------------|---------------------------------|
-| Blc              | Binary Lambda Calculus | x86-64-Linux | `make blc`    | [@jart](https://github.com/jart)   | 521-byte interpreter            |
-| tromp            | Binary Lambda Calculus | Any          | `make tromp`  | [@tromp](https://github.com/tromp) | IOCCC 2012 "Most functional"    |
-| uni              | Binary Lambda Calculus | Any          | `make uni`    | [@tromp](https://github.com/tromp) | Unobfuscated version of `tromp` |
-| clamb            | Universal Lambda       | Any          | `make clamb`  | [@irori](https://github.com/irori) | Fast UL interpreter             |
-| lazyk            | Lazy K                 | Any          | `make lazyk`  | [@irori](https://github.com/irori) | Fast Lazy K interpreter         |
+| Interpreter      | Language               | Platforms    | Build Command | Author                             | Notes                                                                                                  |
+|------------------|------------------------|--------------|---------------|------------------------------------|--------------------------------------------------------------------------------------------------------|
+| Blc              | Binary Lambda Calculus | x86-64-Linux | `make blc`    | [@jart](https://github.com/jart)   | [521-byte interpreter](https://justine.lol/lambda/)                                                    |
+| tromp            | Binary Lambda Calculus | Any          | `make tromp`  | [@tromp](https://github.com/tromp) | [IOCCC](https://www.ioccc.org/) 2012 ["Most functional"](https://www.ioccc.org/2012/tromp/hint.html)   |
+| uni              | Binary Lambda Calculus | Any          | `make uni`    | [@tromp](https://github.com/tromp) | [Unobfuscated version](https://tromp.github.io/cl/cl.html) of `tromp`                                  |
+| clamb            | Universal Lambda       | Any          | `make clamb`  | [@irori](https://github.com/irori) | Fast UL interpreter                                                                                    |
+| lazyk            | Lazy K                 | Any          | `make lazyk`  | [@irori](https://github.com/irori) | Fast Lazy K interpreter                                                                                |
 
 
 ## Usage
@@ -113,8 +107,9 @@ When the make recipe is run, each recipe obtains these external source codes usi
 - `lazyk`: `git clone https://github.com/irori/lazyk`
 
 #### Building Blc
-Blc only runs on x86-64-Linux.
-For other platforms, tromp or uni can be used.
+Blc only runs on x86-64-Linux. For other platforms, tromp or uni can be used.
+
+When building Blc from its source Blc.S, the Makefile 
 
 #### Building `tromp` on a Mac
 Mac has `gcc` installed by default or via Xcode Command Line Tools.
@@ -312,7 +307,7 @@ Otherwise, both of these languages follow the same principle, where lambda terms
 
 In BLC and UL, lambda terms are written in a notation called [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html).
 In a nutshell, the BLC notation for a lambda term can be obtained by first rewriting it in [De Bruijn notation](https://en.wikipedia.org/wiki/De_Bruijn_index),
-and encoding `λ = 00`, `( = 01`, and `i = 1^i0`. For example, `λx.λy.λz.y -> λλλ2 -> 0000110`, `(λx.x)(λx.x) -> 0100100010`.
+then encoding `λ = 00`, `apply = 01`, and `i = 1^i0`. For example, `λx.λy.λz.λt.y -> λλλλ3 -> 000000001110`, `(λx.x)(λx.x) -> apply λ1 λ1 -> 0100100010`.
 The bitstream in [lambdalisp.blc](./lambdalisp.blc) decodes into the lambda term shown in [lambdalisp.pdf](lambdalisp.pdf) this way.
 
 Lazy K is a language with the same I/O strategy with BLC and UL except programs are written as
@@ -332,7 +327,7 @@ so the computation flow and the I/O strategy for Lazy K is the same as BLC and U
 all programs can be written purely in SKI combinator calculus terms without the need of introducing any function other than `S`, `K`, and `I`.
 This allows Lazy K's syntax to be astonishingly simple, where only 4 keywords exist - `s`, `k`, `i`, and `` ` `` for function application.
 As mentioned in the [original Lazy K design proposal](https://tromp.github.io/cl/lazy-k.html),
-if [BF](https://en.wikipedia.org/wiki/Brainfuck) captures the distilled essence of imperative programming,
+if [BF](https://en.wikipedia.org/wiki/Brainfuck) captures the distilled essence of structured imperative programming,
 Lazy K captures the distilled essence of functional programming.
 It might as well be the assembly language of lazily evaluated functional programming.
 With the simple syntax and rules orchestrating a Turing-complete language,
