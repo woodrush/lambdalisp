@@ -227,9 +227,6 @@ $(target_pdf): $(target_latex)
 #================================================================
 ./build/clamb/clamb.c:
 	mkdir -p ./build
-	@echo "\nThis will run the following command:\n"
-	@echo "    git clone https://github.com/irori/clamb"
-	@printf "\nProceed? [y/N] " && read ans && [ $${ans:-N} = y ]
 	cd build; git clone https://github.com/irori/clamb
 
 $(ULAMB): ./build/clamb/clamb.c
@@ -243,9 +240,6 @@ clamb: $(ULAMB)
 
 ./build/lazyk/lazyk.c:
 	mkdir -p ./build
-	@echo "\nThis will run the following command:\n"
-	@echo "    git clone https://github.com/irori/lazyk"
-	@printf "\nProceed? [y/N] " && read ans && [ $${ans:-N} = y ]
 	cd build; git clone https://github.com/irori/lazyk
 
 $(LAZYK): ./build/lazyk/lazyk.c
