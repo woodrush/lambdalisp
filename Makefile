@@ -27,13 +27,13 @@ all:
 	$(MAKE) $(target_ulamb)
 
 test: test-blc-uni test-compiler-hosting-blc-uni
-test-all-nonlinux: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp
+test-all-nonlinux: interpreters-nonlinux test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp
 # On x86-64-Linux, the interpreter 'Blc' can be used.
-test-all: test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp test-blc test-compiler-hosting-blc
+test-all: interpreters test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp test-blc test-compiler-hosting-blc
 
 # Build all of the interpreters that support LambdaLisp
 interpreters: uni clamb lazyk tromp blc asc2bin
-
+interpreters-nonlinux: uni clamb lazyk tromp asc2bin
 
 
 #================================================================
@@ -211,6 +211,9 @@ $(target_latex): $(BASE_SRCS) $(def_prelude) ./src/main-latex.cl
 #================================================================
 ./build/clamb/clamb.c:
 	mkdir -p ./build
+	@echo "\nThis will run the following command:\n"
+	@echo "    git clone https://github.com/irori/clamb"
+	@printf "\nProceed? [y/N] " && read ans && [ $${ans:-N} = y ]
 	cd build; git clone https://github.com/irori/clamb
 
 $(ULAMB): ./build/clamb/clamb.c
@@ -224,6 +227,9 @@ clamb: $(ULAMB)
 
 ./build/lazyk/lazyk.c:
 	mkdir -p ./build
+	@echo "\nThis will run the following command:\n"
+	@echo "    git clone https://github.com/irori/lazyk"
+	@printf "\nProceed? [y/N] " && read ans && [ $${ans:-N} = y ]
 	cd build; git clone https://github.com/irori/lazyk
 
 $(LAZYK): ./build/lazyk/lazyk.c
