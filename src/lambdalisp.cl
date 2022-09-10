@@ -575,7 +575,7 @@
       ((=-bit ")" c)
         (do
           (<- (reg heap) (reg-heap))
-          (error str-unexpected-paren (cons3 reg heap cdr-stdin))))
+          (error str-Unexpected-paren (cons3 reg heap cdr-stdin))))
       ((=-bit "\"" c)
         (do
           (<- (str stdin) (read-string cdr-stdin))
@@ -643,7 +643,7 @@
 
 (defun-lazy error (message state)
   (do
-    (printstring kError)
+    (printstring str-Error)
     (cons " ")
     (cons "-")
     (cons " ")
@@ -915,7 +915,15 @@
     (<- (cur-stack-trace) (lookup-tree* reg reg-stack-trace))
     (<- (reg) (memory-write* reg reg-stack-trace (cons (cons-data@ head tail) cur-stack-trace)))
     (<- (maybelambda state) (eval head (cons3 reg heap stdin)))
-    (let* error (error (printexpr head nil) state))
+    (let* error
+      (error
+        (do
+          (printstring str-Unapplicable)
+          (cons " ")
+          (printstring str-object)
+          (cons " ")
+          (printexpr head nil))
+        state))
     ;; TODO: show error message for non-lambdas
     (typematch maybelambda
       ;; atom
@@ -986,8 +994,14 @@
       (<- (val val*) (assoc expr reg heap))
       ;; If the variable is unbound, interrupt with an error
       (if-then-return (isnil val*)
-        ;; TODO: refine error message
-        (error (printexpr expr nil) state))
+        (error
+          (do
+            (printstring str-Unbound)
+            (cons " ")
+            (printstring str-variable)
+            (cons " ")
+            (printexpr expr nil))
+          state))
       (cont val state))
     ;; list
     (do
@@ -1472,6 +1486,9 @@
 
 (defun-lazy string-generator (stdin cont)
   (do
+    (let* "j"     (do (b0) (b1) (b1) (b0) (b1) (b0) (b1) (b0) nil))
+    (let* "U"     (do (b0) (b1) (b0) (b1) (b0) (b1) (b0) (b1) nil))
+    (let* "E"     (do (b0) (b1) (b0) (b0) (b0) (b1) (b0) (b1) nil))
     (let* "x"     (do (b0) (b1) (b1) (b1) (b1) (b0) (b0) (b0) nil))
     (let* "\\"    (do (b0) (b1) (b0) (b1) (b1) (b1) (b0) (b0) nil))
     (let* "\\n"   (do (b0) (b0) (b0) (b0) (b1) (b0) (b1) (b0) nil))
@@ -1522,7 +1539,12 @@
     (let* ")"     (do (b0) (b0) (b1) (b0) (b1) (b0) (b0) (b1) nil))
     (cont
       **prelude**
-      (list "u" "n" "e" "x" "p" "e" "c" "t" "e" "d" " " ")")
+      (list "o" "b" "j" "e" "c" "t")
+      (list "U" "n" "a" "p" "p" "l" "i" "c" "a" "b" "l" "e")
+      (list "U" "n" "b" "o" "u" "n" "d")
+      (list "v" "a" "r" "i" "a" "b" "l" "e")
+      (list "E" "r" "r" "o" "r")
+      (list "U" "n" "e" "x" "p" "e" "c" "t" "e" "d" " " ")")
       (list "p" "r" "i" "n" "t")
       (list "r" "e" "a" "d")
       (list "q" "u" "o" "t" "e") ;kQuote
@@ -1620,7 +1642,12 @@
 (defun-lazy init (string-generator stdin)
   (do
     (<- (prelude-str
-         str-unexpected-paren
+         str-object
+         str-Unapplicable
+         str-Unbound
+         str-variable
+         str-Error
+         str-Unexpected-paren
          kPrint
          kRead
          kQuote
