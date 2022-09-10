@@ -330,21 +330,34 @@
   (flatten-ski (t-rewrite (curry expr))))
 
 
+(defun rewrite-ski (expr)
+  (if (atom expr)
+      (cond
+        ((eq expr 'S-comb**) "S")
+        ((eq expr 'K-comb**) "K")
+        ((eq expr 'I-comb**) "I")
+        (t (decorate-varname expr)))
+      (concatenate `string "(" (rewrite-ski (car expr)) (rewrite-ski (car (cdr expr))) ")")))
+
+(defun compile-to-ski-parens (expr)
+  (rewrite-ski (t-rewrite (curry expr))))
+
+
 ;;================================================================
 ;; Additional compilers
 ;;================================================================
-(defparameter simple-lambda-env-vars
+(defparameter plaintext-lambda-env-vars
   (list
     "x" "y" "z" "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w"
     "α" "β" "γ" "δ" "ε" "ζ" "η" "θ" "κ" "μ" "ν" "ξ" "π" "ρ" "σ" "τ" "υ" "φ" "χ" "ψ" "ω"
     "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z"))
 
 (defun int-to-alphabet (i)
-  (if (< i (length simple-lambda-env-vars))
-    (nth i simple-lambda-env-vars)
+  (if (< i (length plaintext-lambda-env-vars))
+    (nth i plaintext-lambda-env-vars)
     (format nil "~a_~a"
-      (nth (mod i (length simple-lambda-env-vars)) simple-lambda-env-vars)
-      (floor i (length simple-lambda-env-vars)))))
+      (nth (mod i (length plaintext-lambda-env-vars)) plaintext-lambda-env-vars)
+      (floor i (length plaintext-lambda-env-vars)))))
 
 (defun lambda-compiler-builder (app-format-var app-format-app abs-format)
   (let ((compiler ())
@@ -369,9 +382,9 @@
                   (lookup (cons (lambdaarg-top body) env) (lambdaarg-top body))
                   (funcall compiler (lambdabody body) (cons (lambdaarg-top body) env))))))))))
 
-(defparameter to-simple-lambda* (lambda-compiler-builder "(~a ~a)" "(~a ~a)" "λ~a.~a"))
-(defun to-simple-lambda (&rest args)
-  (apply to-simple-lambda* args))
+(defparameter to-plaintext-lambda* (lambda-compiler-builder "(~a ~a)" "(~a ~a)" "λ~a.~a"))
+(defun to-plaintext-lambda (&rest args)
+  (apply to-plaintext-lambda* args))
 
 (defparameter to-js-arrow* (lambda-compiler-builder "~a(~a)" "(~a)(~a)" "(~a) => ~a"))
 (defun to-js-arrow (&rest args)
@@ -394,19 +407,24 @@
 (defun compile-to-python (expr)
   (to-python (curry expr)))
 
-(defun compile-to-simple-lambda (expr)
-  (to-simple-lambda (curry expr)))
-
+(defun compile-to-plaintext-lambda (expr)
+  (to-plaintext-lambda (curry expr)))
 
 
 ;;================================================================
 ;; Utilities
 ;;================================================================
+(defmacro compile-to-plaintext-lambda-lazy (expr-lazy)
+  `(compile-to-plaintext-lambda (macroexpand-lazy ,expr-lazy)))
+
 (defmacro compile-to-blc-lazy (expr-lazy)
   `(compile-to-blc (macroexpand-lazy ,expr-lazy)))
 
 (defmacro compile-to-ski-lazy (expr-lazy)
   `(compile-to-ski (macroexpand-lazy ,expr-lazy)))
+
+(defmacro compile-to-ski-parens-lazy (expr-lazy)
+  `(compile-to-ski-parens (macroexpand-lazy ,expr-lazy)))
 
 (defmacro compile-to-js-lazy (expr-lazy)
   `(compile-to-js (macroexpand-lazy ,expr-lazy)))
@@ -417,5 +435,12 @@
 (defmacro compile-to-python-lazy (expr-lazy)
   `(compile-to-python (macroexpand-lazy ,expr-lazy)))
 
-(defmacro compile-to-simple-lambda-lazy (expr-lazy)
-  `(compile-to-simple-lambda (macroexpand-lazy ,expr-lazy)))
+(defmacro compile-to-lisp-lazy (expr-lazy)
+  `(progn
+    (setq *print-pretty* nil)
+    (write-to-string (macroexpand-lazy ,expr-lazy))))
+
+(defmacro compile-to-lisp-pretty-lazy (expr-lazy)
+  `(progn
+    (setq *print-pretty* t)
+    (write-to-string (macroexpand-lazy ,expr-lazy))))
