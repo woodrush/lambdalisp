@@ -636,6 +636,7 @@
       cont)
     (cons ".")
     (cons ".")
+    (cons ".")
     (cons " ")
     (<- (expr cdr-stack-trace) (stack-trace))
     (printexpr expr)
@@ -650,6 +651,13 @@
     (printstring message)
     (<- (reg heap stdin) (state))
     (<- (stack-trace) (lookup-tree* reg reg-stack-trace))
+    (cons "\\n")
+    (if-then-return (isnil stack-trace)
+      (do
+        (cons ">")
+        (cons " ")
+        (repl (cons3 reg heap stdin))))
+    (printstring str-Stack-trace)
     (print-stack-trace stack-trace)
     (<- (reg) (memory-write* reg reg-stack-trace nil))
     (cons ">")
@@ -776,11 +784,11 @@
       (<- (car-e state) (eval-backquote car-e state depth))
       (<- (cdr-e state) (eval-backquote cdr-e state depth))
       (cont (cons-data@ car-e cdr-e) state))
-    ;; lambda (TODO)
+    ;; lambda
     (cont expr state)
-    ;; string (TODO)
+    ;; string
     (cont expr state)
-    ;; int (TODO)
+    ;; int
     (cont expr state)))
 
 (defrec-lazy eval-progn (expr state cont)
@@ -794,11 +802,11 @@
       (if-then-return (isnil-data cdr-e)
         (cont expr state))
       (eval-progn cdr-e state cont))
-    ;; lambda (TODO)
+    ;; lambda
     (cont expr state)
-    ;; string (TODO)
+    ;; string
     (cont expr state)
-    ;; int (TODO)
+    ;; int
     (cont expr state)))
 
 (defrec-lazy eval-letbind (*initenv expr state cont)
@@ -924,7 +932,6 @@
           (cons " ")
           (printexpr head nil))
         state))
-    ;; TODO: show error message for non-lambdas
     (typematch maybelambda
       ;; atom
       error
@@ -1257,7 +1264,7 @@
               (<- (arg1) (car-data tail))
               (<- (reg heap stdin) (state))
               (<- (_ *val) (assoc arg1 reg heap))
-              ;; If *val is nil, write to the current environment (TODO: is different from Common Lisp)
+              ;; If *val is nil, write to the current environment
               (<- (*outerenv) (lookup-tree* reg reg-curenv))
               (let* *val (if (isnil *val) *outerenv *val))
               (<- (valenv) (lookup-tree* heap *val))
@@ -1486,10 +1493,12 @@
 
 (defun-lazy string-generator (stdin cont)
   (do
-    (let* "j"     (do (b0) (b1) (b1) (b0) (b1) (b0) (b1) (b0) nil))
-    (let* "U"     (do (b0) (b1) (b0) (b1) (b0) (b1) (b0) (b1) nil))
+    (let* ":"     (do (b0) (b0) (b1) (b1) (b1) (b0) (b1) (b0) nil))
     (let* "E"     (do (b0) (b1) (b0) (b0) (b0) (b1) (b0) (b1) nil))
+    (let* "S"     (do (b0) (b1) (b0) (b1) (b0) (b0) (b1) (b1) nil))
+    (let* "U"     (do (b0) (b1) (b0) (b1) (b0) (b1) (b0) (b1) nil))
     (let* "x"     (do (b0) (b1) (b1) (b1) (b1) (b0) (b0) (b0) nil))
+    (let* "j"     (do (b0) (b1) (b1) (b0) (b1) (b0) (b1) (b0) nil))
     (let* "\\"    (do (b0) (b1) (b0) (b1) (b1) (b1) (b0) (b0) nil))
     (let* "\\n"   (do (b0) (b0) (b0) (b0) (b1) (b0) (b1) (b0) nil))
     (let* "tilde" (do (b0) (b1) (b1) (b1) (b1) (b1) (b1) (b0) nil))
@@ -1539,6 +1548,7 @@
     (let* ")"     (do (b0) (b0) (b1) (b0) (b1) (b0) (b0) (b1) nil))
     (cont
       **prelude**
+      (list "S" "t" "a" "c" "k" " " "t" "r" "a" "c" "e" ":")
       (list "o" "b" "j" "e" "c" "t")
       (list "U" "n" "a" "p" "p" "l" "i" "c" "a" "b" "l" "e")
       (list "U" "n" "b" "o" "u" "n" "d")
@@ -1642,6 +1652,7 @@
 (defun-lazy init (string-generator stdin)
   (do
     (<- (prelude-str
+         str-Stack-trace
          str-object
          str-Unapplicable
          str-Unbound
