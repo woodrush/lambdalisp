@@ -35,13 +35,13 @@ Key features are:
 - Reader macros with `set-macro-character`
 - Access to the interpreter's virtual heap memory with `malloc`, `memread`, and `memwrite`
 - Show the call stack trace when an error is invoked
-- Garbage collection for macro evaluation
+- Garbage collection during macro evaluation
 
-Supported special forms, functions and features are:
+Supported special forms and functions are:
 
 - defun, defmacro, lambda (&rest can be used)
 - quote, atom, car, cdr, cons, eq
-- +, -, *, /, mod, =, >, <
+- +, -, *, /, mod, =, >, <, >=, <=
 - read (reads Lisp expressions), print, format, write-to-string, intern, stringp
 - let, let*, labels, setq, boundp
 - progn, loop, block, return, return-from, if, cond, error
@@ -50,15 +50,39 @@ Supported special forms, functions and features are:
 - equal, and, or, not
 - eval, apply
 - set-macro-character, peek-char, read-char, `` ` ``   `,`   `,@`   `'`   `#\`
-- carstr, cdrstr, str, string comparison with =, >, <, string concatenation with +
+- carstr, cdrstr, str, string comparison with =, >, <, >=, <=, string concatenation with +
 - defun-local, defglobal, type, macro
 - malloc, memread, memwrite
 - new, defclass, defmethod, `.`, field assignment by setf
 
 
-## Supported Lambda Calculus Reduction Engines
+## Usage
+You can try the LambdaLisp REPL by simply running:
 
-Here is a summary of the supported languages and interpreters.
+```sh
+git clone https://github.com/woodrush/lambdalisp
+cd lambdalisp
+make run-repl
+```
+
+This will build all the required tools and run LambdaLisp on the lambda calculus interpreter `clamb`,
+presenting a REPL for interacting with LambdaLisp.
+The requirement for building these tools are `gcc`.
+
+When building `clamb`, Make runs `git clone https://github.com/irori/clamb` to clone `clamb`'s source code.
+The make procedure prompts if this is OK, so to proceed type `y` when the prompt is shown.
+
+Once `make run-repl` is run, the REPL can also be run with:
+
+```sh
+( cat lambdalisp.ulamb | ./bin/asc2bin; cat ) | ./bin/clamb -u
+```
+
+
+### Supported Lambda Calculus Reduction Engines
+LambdaLisp can be run on other lambda calculus interpreters as well.
+Below is a summary of the supported languages and interpreters.
+
 Each language uses a different lambda term encoding for the I/O,
 and a different notation for providing the lambda term as an input to the interpreter.
 LambdaLisp is written natively as a lambda term that accepts and produces the I/O encoding of Binary Lambda Calculus,
@@ -79,30 +103,7 @@ absorbs the encoding differences in each environment.
 | [clamb](https://github.com/irori/clamb)             | Universal Lambda       | Any          | `make clamb`  | [@irori](https://github.com/irori) | Fast UL interpreter                                                                                    |
 | [lazyk](https://github.com/irori/lazyk)             | Lazy K                 | Any          | `make lazyk`  | [@irori](https://github.com/irori) | Fast Lazy K interpreter                                                                                |
 
-
-## Usage
-To run the LambdaLisp REPL, run:
-
-```sh
-make run-repl
-```
-
-This will build all the required tools and run LambdaLisp on the lambda calculus interpreter `clamb`,
-presenting a REPL for interacting with LambdaLisp.
-
-In order to build `clamb` when `make run-repl` is first run, the interpreter runs `git clone https://github.com/irori/clamb`
-to clone the source code of `clamb`. The make procedure prompts if this is OK, so type `y` when the prompt is shown to proceed.
-
-Once `make run-repl` is run, the REPL can also be run with:
-
-```sh
-( cat lambdalisp.ulamb | ./bin/asc2bin; cat ) | ./bin/clamb -u
-```
-
-
 ### Building the Lambda Calculus Interpreters
-LambdaLisp can be run on other lambda calculus interpreters as well.
-
 Several notes about the interpreters:
 
 - The BLC intepreter `Blc` only runs on x86-64-Linux systems.
@@ -149,7 +150,7 @@ cat lambdalisp.blc.bin [filepath] - | ./bin/Blc # Run a LambdaLisp script, then 
 
 Running `cat -` with the hyphen connects the standard input after the specified input files,
 allowing the user to interact with the interpreter through the terminal after reading a file.
-If `cat -` does not work, the following command can be used instead:
+If `cat -` doesn't work, the following command can be used instead:
 
 ```sh
 ( cat lambdalisp.blc.bin [filepath]; cat ) | ./bin/Blc
@@ -249,14 +250,14 @@ make pdf
 
 
 ## Testing
-There are 3 types of tests for LambdaLisp.
+There are 2 types of tests for LambdaLisp.
 Each test requires SBCL (Steel Bank Common Lisp), a Common Lisp interpreter.
 
-To run tests:
+To run the tests, run:
 
 ```sh
-make test      # Runs the first two tests on the BLC interpreter `uni`
-make test-all  # Runs the first two tests on all of the available interpreters
+make test      # Runs the tests on the BLC interpreter `uni`
+make test-all  # Runs the tests on all of the available interpreters
 ```
 
 
@@ -275,22 +276,20 @@ make test-blc test-blc-uni test-blc-tromp test-ulamb test-lazyk
   Each `make` command shown here runs this test in each of the languages and interpreters.
 
 ### LambdaCraft Compiler Hosting Test
-`examples/lambdacraft.cl` runs LambdaCraft, a Common-Lisp-to-lambda-calculus compiler written in Common Lisp,
-used to compile the lambda calculus source for LambdaLisp.
-`examples/lambdacraft.cl` defines a binary lambda calculus (BLC) program that prints the letter `A` and exits, 
-and prints the BLC source code for the defined program.
-The output of `examples/lambdacraft.cl` is a lambda calculus term written in binary lambda calculus notation
-which represents a program that prints the letter `A`.
-The LambdaCraft compiler hosting test first executes `examples/lambdacraft.cl` on LambdaLisp, then runs the output BLC program on a BLC interpreter, and checks if it prints the letter `A` and exits.
-The test is run on binary lambda calculus, with either the interpreter Blc or uni.
+- `examples/lambdacraft.cl` runs LambdaCraft, a Common-Lisp-to-lambda-calculus compiler written in Common Lisp,
+  used to compile the lambda calculus source for LambdaLisp.
+  It defines a binary lambda calculus (BLC) program that prints the letter `A` and exits, 
+  and prints the BLC source code for the defined program.
+- The LambdaCraft compiler hosting test first executes `examples/lambdacraft.cl` on LambdaLisp, then runs the output BLC program on a BLC interpreter, and checks if it prints the letter `A` and exits.
+- The test is run on binary lambda calculus, with either the interpreter Blc or uni.
 
 Runnable with:
 ```sh
 make test-compiler-hosting-blc test-compiler-hosting-blc-uni
 ```
 
-### Self-Hosting Test
-This test is currently theoretical, since it requires a lot of time and memory.
+### Experimental: Self-Hosting Test
+This test is currently theoretical since it requires a lot of time and memory, and is unused in `make test-all`.
 This test extends the previous LambdaCraft compiler hosting test and checks if the Common Lisp source code for LambdaLisp runs on LambdaLisp itself. Since the LambdaCraft compiler hosting test runs properly, this test should theoretically run as well, although it requires a tremendous amount of memory and time. One concern is whether the 32-bit heap address space used internally in LambdaLisp is enough to compile this program. This can be circumvented by compiling LambdaLisp with an address space of 64-bit or larger, which can be done simply by replacing the literal `32` (which only appears once in `src/lambdalisp.cl`) with `64`, etc.
 The test is run on the binary lambda calculus interpreter Blc.
 
