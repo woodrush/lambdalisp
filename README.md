@@ -78,10 +78,12 @@ absorbs the encoding differences in each environment.
 Running LambdaLisp first requires building an untyped lambda calculus interpreter of your choice.
 
 ### Building the Lambda Calculus Interpreters
-Among the 3 BLC interpreters, `Blc` can be run on x86-64-Linux systems,
-and `tromp` may not compile on a Mac with the defualt gcc (which is actually an alias of clang - details are provided below).
-The most reliably compilable BLC interpreter is `uni`, which compiles and runs on both Linux and Mac.
-The interpreters for Universal Lambda and Lazy K, `clamb` and `lazyk`, can be run on both of these systems as well.
+Several notes about the interpreters:
+
+- The BLC intepreter `Blc` only runs on x86-64-Linux systems.
+- The BLC interpreter `tromp` may not compile on a Mac with the defualt gcc (which is actually an alias of clang). Details are provided below.
+- The most reliably compilable BLC interpreter is `uni`, which compiles and runs on both Linux and Mac.
+- The interpreters for Universal Lambda and Lazy K, `clamb` and `lazyk`, can be built and run on both of these systems.
 
 To build all interpreters:
 
@@ -105,48 +107,6 @@ When the make recipe is run, each recipe obtains these external source codes usi
 - `uni`
 - `clamb`: `git clone https://github.com/irori/clamb`
 - `lazyk`: `git clone https://github.com/irori/lazyk`
-
-#### Building Blc
-Blc only runs on x86-64-Linux. For other platforms, tromp or uni can be used.
-
-When building Blc from its source Blc.S, the Makefile 
-
-#### Building `tromp` on a Mac
-Mac has `gcc` installed by default or via Xcode Command Line Tools.
-However, `gcc` is actually installed as an alias to `clang`, which is a different compiler that doesn't compile `tromp`.
-This is confirmable by running `gcc --version`. On my Mac, running it shows:
-
-```sh
-$ gcc --version
-Configured with: --prefix=/Applications/Xcode.app/Contents/Developer/usr --with-gxx-include-dir=/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include/c++/4.2.1
-Apple clang version 12.0.0 (clang-1200.0.32.29)
-Target: x86_64-apple-darwin19.6.0
-Thread model: posix
-InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
-```
-
-A workaround for this is to use `uni` instead, which is an unobfuscated version of `tromp` compilable with clang.
-To build `tromp`, first install gcc via [Homebrew](https://brew.sh/):
-
-```sh
-brew install gcc
-```
-
-Currently, this should install the command `gcc-11`.
-After installing gcc, check the command that it has installed.
-
-Then, edit the `Makefile`'s `CC` configuration:
-
-```diff
-- CC=cc
-+ CC=gcc-11
-```
-
-Then, running
-```sh
-make tromp
-```
-will compile `tromp`.
 
 
 ### Running LambdaLisp
@@ -195,6 +155,44 @@ cat [filepath] | ./bin/lazyk lambdalisp.lazy -u   # Run a LambdaLisp script and 
 cat [filepath] - | ./bin/lazyk lambdalisp.lazy -u # Run a LambdaLisp script, then enter the REPL
 ```
 
+### Building 'tromp' on a Mac
+Mac has `gcc` installed by default or via Xcode Command Line Tools.
+However, `gcc` is actually installed as an alias to `clang`, which is a different compiler that doesn't compile `tromp`.
+This is confirmable by running `gcc --version`. On my Mac, running it shows:
+
+```sh
+$ gcc --version
+Configured with: --prefix=/Applications/Xcode.app/Contents/Developer/usr --with-gxx-include-dir=/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include/c++/4.2.1
+Apple clang version 12.0.0 (clang-1200.0.32.29)
+Target: x86_64-apple-darwin19.6.0
+Thread model: posix
+InstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin
+```
+
+A workaround for this is to use `uni` instead, which is an unobfuscated version of `tromp` compilable with clang.
+To build `tromp`, first install gcc via [Homebrew](https://brew.sh/):
+
+```sh
+brew install gcc
+```
+
+Currently, this should install the command `gcc-11`.
+After installing gcc, check the command that it has installed.
+
+Then, edit the `Makefile`'s `CC` configuration:
+
+```diff
+- CC=cc
++ CC=gcc-11
+```
+
+Then, running
+```sh
+make tromp
+```
+will compile `tromp`.
+
+
 
 ## Building from Source
 LambdaLisp's source code is written using LambdaCraft, a DSL written in Common Lisp for compiling
@@ -228,6 +226,14 @@ make pdf
 ## Testing
 There are 3 types of tests for LambdaLisp.
 Each test requires SBCL (Steel Bank Common Lisp), a Common Lisp interpreter.
+
+To run tests:
+
+```sh
+make test      # Runs the first two tests on the BLC interpreter `uni`
+make test-all  # Runs the first two tests on all of the available interpreters
+```
+
 
 ### Output Comparison Test
 Runs the programs in `./examples/`. Runnable with:
