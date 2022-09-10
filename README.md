@@ -4,7 +4,7 @@ The entire lambda calculus expression is viewable as a PDF here.
 
 LambdaLisp is tested by running `examples/*.cl` on both Common Lisp and LambdaLisp and comparing their outputs.
 The largest LambdaLisp-Common-Lisp polyglot program that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
-which runs the lambda calculus compiler LambdaCraft that I wrote for this project, used to compile LambdaLisp itself.
+which runs the lambda calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) that I wrote for this project, used to compile LambdaLisp itself.
 
 LambdaLisp is written as a lambda calculus term `LambdaLisp = λx. ...`
 which takes one string `x` as an input and returns one string as an output.
@@ -221,7 +221,7 @@ will compile `tromp`.
 
 
 ## Building from Source
-LambdaLisp's source code is written using LambdaCraft, a DSL written in Common Lisp for compiling
+LambdaLisp's source code is written using [LambdaCraft](https://github.com/woodrush/lambdacraft), a DSL written in Common Lisp for compiling
 Common Lisp to lambda calculus terms which I wrote for this project.
 Building from source requires SBCL (Steel Bank Common Lisp), a Common Lisp interpreter.
 
@@ -276,7 +276,7 @@ make test-blc test-blc-uni test-blc-tromp test-ulamb test-lazyk
   Each `make` command shown here runs this test in each of the languages and interpreters.
 
 ### LambdaCraft Compiler Hosting Test
-- `examples/lambdacraft.cl` runs LambdaCraft, a Common-Lisp-to-lambda-calculus compiler written in Common Lisp,
+- `examples/lambdacraft.cl` runs [LambdaCraft](https://github.com/woodrush/lambdacraft), a Common-Lisp-to-lambda-calculus compiler written in Common Lisp,
   used to compile the lambda calculus source for LambdaLisp.
   It defines a binary lambda calculus (BLC) program that prints the letter `A` and exits, 
   and prints the BLC source code for the defined program.
