@@ -7,7 +7,7 @@ The largest LambdaLisp-Common-Lisp polyglot program that has been tested is [lam
 which runs the lambda calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) that I wrote for this project, used to compile LambdaLisp itself.
 
 LambdaLisp is written as a lambda calculus term `LambdaLisp = λx. ...`
-which takes one string `x` as an input and returns one string as an output.
+which takes a string `x` as an input and returns a string as an output.
 The input `x` represents the Lisp program and the user's standard input,
 and the output represents the standard output.
 Strings are encoded to pure lambda terms using the [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding),
@@ -16,6 +16,7 @@ without the need of introducing any non-lambda-type object.
 
 When run on a lambda calculus interpreter that runs on the terminal,
 LambdaLisp presents a REPL where you can interactively define and evaluate Lisp expressions.
+These interpreters automatically process the Mogensen-Scott string-to-lambda encoding for handling I/O through the terminal.
 Supported interpreters are:
 
 - The [521-byte lambda calculus interpreter](https://justine.lol/lambda/) written by Justine Tunney
@@ -340,7 +341,7 @@ make test-self-host
 ## How it Works
 ### Handling I/O in Lambda Calculus
 LambdaLisp is written as a function `LambdaLisp = λx. ...`
-which takes one string as an input and returns one string as an output.
+which takes a string as an input and returns a string as an output.
 The input represents the Lisp program and the user's standard input (the `x` is the input string),
 and the output represents the standard output.
 A string is represented as a list of bits of its ASCII representation.
@@ -366,7 +367,7 @@ Binary Lambda Calculus, Universal Lambda, and Lazy K.
 
 ### Lambda-Calculus-Based Programming Languages
 Binary Lambda Calculus (BLC) and Universal Lambda (UL) are programming languages with the exact same I/O strategy described above -
-a program is expressed as one pure lambda term that takes a Mogensen-Scott-encoded string and returns a Mogensen-Scott-encoded string.
+a program is expressed as a pure lambda term that takes a Mogensen-Scott-encoded string and returns a Mogensen-Scott-encoded string.
 When the interpreters for these languages `Blc` and `clamb` are run on the terminal,
 the interpreter automatically encodes the input bytestream to lambda terms, performs beta-reduction,
 parses the output lambda term as a list of bits, and prints the output as a string in the terminal.
@@ -402,6 +403,6 @@ With the simple syntax and rules orchestrating a Turing-complete language,
 I find Lazy K to be a very beautiful language being one of my all-time favorites.
 
 LambdaLisp is written in these 3 languages - Binary Lambda Calculus, Universal Lambda, and Lazy K.
-In each of these languages, LambdaLisp is expressed as one lambda term or SKI combinator calculus term.
+In each of these languages, LambdaLisp is expressed as a lambda term or SKI combinator calculus term.
 Therefore, to run LambdaLisp, an interpreter for one of these languages is required.
 To put in a rather convoluted way, LambdaLisp is a Lisp interpreter that runs on another language's interpreter.
