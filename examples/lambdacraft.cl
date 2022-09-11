@@ -486,4 +486,4 @@
   (cons "A" nil))
 
 ;; Compile to binary lambda calculus notation and print the program
-(print (compile-to-blc-lazy main))
+(format t (compile-to-blc-lazy main))
