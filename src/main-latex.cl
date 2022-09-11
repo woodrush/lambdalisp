@@ -1,3 +1,3 @@
 (load "./lambdalisp.cl")
 
-(format t (compile-to-simple-lambda-lazy main))
+(format t (compile-to-plaintext-lambda-lazy main))
