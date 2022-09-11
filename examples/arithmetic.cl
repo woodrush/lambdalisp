@@ -8,8 +8,8 @@
 (print (mod 11 3))
 
 
-;; LambdaLisp prints t and nil as `t` and `()`, while Common Lisp prints them as `T` and `NIL`.
 ;; The extra `if ... 'T 'NIL` is present for compatibility with Common Lisp.
+;; This is since LambdaLisp prints t and nil as `t` and `()`, while Common Lisp prints them as `T` and `NIL`.
 ;; Raw comparison expressions evaluate to either t or nil. For example, (< 1 2) => t.
 (print (if (< 1 2)   'T 'NIL))
 (print (if (< -1 2)  'T 'NIL))
