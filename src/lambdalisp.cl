@@ -1134,6 +1134,8 @@
                         (if-then-return (=-bit c "a")
                           (do
                             (<- (val vals) (vals))
+                            (if-then-return (isstring val)
+                              (printstring (valueof val) (print-format fmt vals cont)))
                             (printexpr val)
                             (print-format fmt vals cont)))
                         (if-then-return (=-bit c "%")
