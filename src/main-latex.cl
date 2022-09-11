@@ -1,3 +1,8 @@
 (load "./lambdalisp.cl")
+(load "./lazyk-ulamb-blc-wrapper.cl")
 
-(format t (compile-to-plaintext-lambda-lazy main))
+(defun-lazy main* (stdin*)
+  ((blc-to-ulamb-wrapper main) stdin*))
+
+(format t (compile-to-plaintext-lambda-lazy main*))
+

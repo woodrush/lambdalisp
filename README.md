@@ -39,7 +39,7 @@ make run-repl
 This will build all the required tools and run LambdaLisp on the lambda calculus interpreter `clamb`,
 presenting a REPL for interacting with LambdaLisp.
 The source code that is being run is [lambdalisp.ulamb](lambdalisp.ulamb),
-which is a lambda calculus term written in [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html) notation.
+which is the lambda calculus term shown in [lambdalisp.pdf](lambdalisp.pdf) written in [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html) notation.
 The requirement for building these tools are `gcc`.
 
 When building `clamb`, Make runs `git clone https://github.com/irori/clamb` to clone `clamb`'s source code.
