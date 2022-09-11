@@ -29,7 +29,7 @@ all:
 	$(MAKE) $(target_blc)
 	$(MAKE) $(target_ulamb)
 
-run-repl: $(target_ulamb) $(ULAMB) $(ASC2BIN)
+run-repl: $(ULAMB) $(ASC2BIN)
 	( cat $(target_ulamb) | $(ASC2BIN); cat ) | $(ULAMB) -u
 
 test: test-blc-uni test-compiler-hosting-blc-uni
