@@ -43,7 +43,7 @@ When building `clamb`, Make runs `git clone https://github.com/irori/clamb` to c
 
 The source code being run is [lambdalisp.ulamb](lambdalisp.ulamb),
 which is the lambda calculus term shown in [lambdalisp.pdf](lambdalisp.pdf) written in [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html) notation.
-`clamb` automatically takes care of the [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding)-based I/O to run LambdaLisp on the terminal.
+`clamb` automatically takes care of the previously described [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding)-based I/O to run LambdaLisp on the terminal.
 Interaction is done by writing LambdaLisp in continuation passing style,
 allowing a Haskell-style interactive I/O to work on lambda calculus interpreters.
 This also allows imperative programming on LambdaLisp with `read` and `print` such as in [read-print.cl](examples/read-print.cl).
@@ -54,13 +54,14 @@ Once `make run-repl` is run, you can play the [number guessing game](./examples/
 ( cat lambdalisp.ulamb | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/clamb -u
 ```
 
-You can run the same script on Common Lisp with:
+You can run the same script on Common Lisp. If you use SBCL, you can run it with:
 
 ```sh
 sbcl --script ./examples/number-guessing-game.cl
 ```
 
-after installing `sbcl`, a Common Lisp interpreter.
+To run LambdaLisp on other lambda calculus interpreters, please see the Supported Lambda Calculus Interpreters section.
+
 
 ## Example
 ```lisp
