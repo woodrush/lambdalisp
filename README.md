@@ -52,6 +52,7 @@ Once `make run-repl` is run, the REPL can also be run with:
 ## Example
 ```lisp
 (defun new-counter (init)
+  ;; Return a closure.
   ;; Use the let over lambda technique for creating independent and persistent variables
   (let ((i init))
     (lambda () (setq i (+ 1 i)))))

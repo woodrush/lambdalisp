@@ -1,7 +1,8 @@
 (defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
 
 (defun new-counter (init)
-  ;; Use the let over lambda technique for creating persistent variables
+  ;; Return a closure.
+  ;; Use the let over lambda technique for creating independent and persistent variables
   (let ((i init))
     (lambda () (setq i (+ 1 i)))))
 
