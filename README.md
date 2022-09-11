@@ -48,16 +48,19 @@ Interaction is done by writing LambdaLisp in continuation passing style,
 allowing a Haskell-style interactive I/O to work on lambda calculus interpreters.
 This also allows imperative programming on LambdaLisp with `read` and `print` such as in [read-print.cl](examples/read-print.cl).
 
-Once `make run-repl` is run, the REPL can also be run with:
+Once `make run-repl` is run, you can play the [number guessing game](./examples/number-guessing-game.cl) with:
 
 ```sh
-# Pack the 01 bitstream to a bytestream
-cat lambdalisp.ulamb | ./bin/asc2bin > lambdalisp.ulamb.bin
-
-# Run the REPL
-./bin/clamb lambdalisp.ulamb.bin -u
+( cat lambdalisp.ulamb | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/clamb -u
 ```
 
+You can run the same script on Common Lisp with:
+
+```sh
+sbcl --script ./examples/number-guessing-game.cl
+```
+
+after installing `sbcl`, a Common Lisp interpreter.
 
 ## Example
 ```lisp
