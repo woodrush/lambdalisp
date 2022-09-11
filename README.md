@@ -49,6 +49,38 @@ Once `make run-repl` is run, the REPL can also be run with:
 ```
 
 
+## Example
+```lisp
+(defun new-counter (init)
+  ;; Use the let over lambda technique for creating independent and persistent variables
+  (let ((i init))
+    (lambda () (setq i (+ 1 i)))))
+
+;; Instantiate counters
+(setq counter1 (new-counter 0))
+(setq counter2 (new-counter 10))
+
+(print (counter1)) ;; => 1
+(print (counter1)) ;; => 2
+(print (counter2)) ;; => 11
+(print (counter1)) ;; => 3
+(print (counter2)) ;; => 12
+(print (counter1)) ;; => 4
+(print (counter1)) ;; => 5
+```
+
+can be run as
+
+```sh
+( cat lambdalisp.ulamb | ./bin/asc2bin; cat examples/counter.lisp ) | ./bin/clamb -u
+( cat lambdalisp.ulamb | ./bin/asc2bin; cat examples/counter.lisp - ) | ./bin/clamb -u  # To enter the REPL after executing the script
+```
+
+More examples can be found under [./examples](./examples).
+The largest program written for LambdaLisp that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
+which runs the lambda calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) that I wrote for this project, used to compile LambdaLisp itself.
+
+
 ## Features
 Key features are:
 
