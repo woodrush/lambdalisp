@@ -66,17 +66,17 @@ interpreter-name-lazyk="Lazy K"
 .PHONY: test-compiler-hosting-blc
 test-compiler-hosting-blc: out/lambdacraft.cl.blc-out $(BLC) $(ASC2BIN) examples/lambdacraft.cl
 # Remove non-01-characters and provide it to BLC
-	cat $< | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(BLC) > $@
+	cat $< | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(BLC) > out/$@.out
 	printf 'A' > out/lambdacraft.cl.blc-expected
-	diff $@ out/lambdacraft.cl.blc-expected || ( rm $@; exit 1)
+	diff out/$@.out out/lambdacraft.cl.blc-expected || ( rm out/$@.out; exit 1)
 	@echo "\n    LambdaCraft-compiler-hosting-on-LambdaLisp test passed.\n"
 
 .PHONY: test-compiler-hosting-blc-uni
 test-compiler-hosting-blc-uni: out/lambdacraft.cl.blc-uni-out $(UNI) $(ASC2BIN) examples/lambdacraft.cl
 # Remove non-01-characters and provide it to BLC
-	cat $< | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(UNI) > $@
+	cat $< | sed 's/[^0-9]*//g' | tr -d "\n" | $(ASC2BIN) | $(UNI) > out/$@.out
 	printf 'A' > out/lambdacraft.cl.blc-expected
-	diff $@ out/lambdacraft.cl.blc-expected || ( rm $@; exit 1)
+	diff out/$@.out out/lambdacraft.cl.blc-expected || ( rm out/$@.out; exit 1)
 	@echo "\n    LambdaCraft-compiler-hosting-on-LambdaLisp test passed.\n"
 
 
