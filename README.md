@@ -113,7 +113,7 @@ Supported special forms and functions are:
 - defun, defmacro, lambda (&rest can be used)
 - quote, atom, car, cdr, cons, eq
 - +, -, *, /, mod, =, >, <, >=, <=, integerp
-- read (reads Lisp expressions), print, format, write-to-string, intern, stringp
+- read (reads Lisp expressions), print, format (supports `~a` and `~%`), write-to-string, intern, stringp
 - let, let*, labels, setq, boundp
 - progn, loop, block, return, return-from, if, cond, error
 - list, append, reverse, length, position, mapcar
