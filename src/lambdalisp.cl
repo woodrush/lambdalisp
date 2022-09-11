@@ -687,6 +687,16 @@
     (cons " ")
     (repl (cons3 reg heap stdin))))
 
+(defun-lazy error-unapplicable (expr state)
+  (error
+    (do
+      (printstring str-Unapplicable)
+      (cons " ")
+      (printstring str-object)
+      (cons " ")
+      (printexpr expr nil))
+    state))
+
 (defun-lazy malloc (state cont)
   (do
     (<- (reg heap stdin) (state))
@@ -947,15 +957,7 @@
     (<- (cur-stack-trace) (lookup-tree* reg reg-stack-trace))
     (<- (reg) (memory-write* reg reg-stack-trace (cons (cons-data@ head tail) cur-stack-trace)))
     (<- (maybelambda state) (eval head (cons3 reg heap stdin)))
-    (let* error
-      (error
-        (do
-          (printstring str-Unapplicable)
-          (cons " ")
-          (printstring str-object)
-          (cons " ")
-          (printexpr head nil))
-        state))
+    (let* error (error-unapplicable head state))
     (typematch maybelambda
       ;; atom
       error
@@ -1113,15 +1115,7 @@
               (<- (fmt-option evtail) (mapped-base))
               (<- (str-fmt vals) (evtail))
               (if-then-return (not (isstring str-fmt))
-                (error
-                  (do
-                    (printstring str-Unapplicable)
-                    (cons " ")
-                    (printstring str-object)
-                    (cons " ")
-                    (printexpr str-fmt)
-                    nil)
-                  state))
+                (error-unapplicable str-fmt state))
               (let* print-format
                 (letrec-lazy print-format (fmt vals cont)
                   (do
@@ -1416,7 +1410,7 @@
                           (<- (sum) (append (valueof arg1) (valueof arg2)))
                           (cont (string* sum))))
                       (t
-                        (cont nil))))
+                        (error-unapplicable arg1 state))))
                   car-mapped
                   cdr-mapped))
               (if-then-return (isnil sum)
@@ -1440,7 +1434,7 @@
                           (<- (_ sum) (add* nil nil (valueof arg1) (valueof arg2)))
                           (cont (int* sum))))
                       (t
-                        (cont nil))))
+                        (error-unapplicable arg1 state))))
                   car-mapped
                   cdr-mapped))
               (if-then-return (isnil sum)
@@ -1459,7 +1453,7 @@
                           (<- (sum) (mul* (valueof arg1) (valueof arg2)))
                           (cont (int* sum))))
                       (t
-                        (cont nil))))
+                        (error-unapplicable arg1 state))))
                   car-mapped
                   cdr-mapped))
               (if-then-return (isnil sum)
