@@ -421,8 +421,7 @@
       ;; string
       (cons "\"" (printstring (valueof expr) (cons "\"" cont)))
       ;; int
-      (printint (valueof expr) cont)
-      ))))
+      (printint (valueof expr) cont)))))
 
 (defrec-lazy printlist (expr cont)
   (do
