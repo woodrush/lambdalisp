@@ -1794,14 +1794,3 @@
 
 (defun-lazy main (stdin*)
   (init string-generator stdin*))
-
-
-;; (format t (concatenate 'string "`"  (compile-to-ski-lazy main) (compile-to-ski-lazy string-generator)))
-;; (format t (concatenate 'string "01" (compile-to-blc-lazy main) (compile-to-blc-lazy string-generator)))
-
-;; (format t (compile-to-js-arrow-lazy main))
-
-;; ;; Print lambda term
-;; (setf *print-right-margin* 800)
-;; (format t (write-to-string (curry (macroexpand-lazy main))))
-
