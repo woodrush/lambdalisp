@@ -44,7 +44,7 @@ When building `clamb`, Make runs `git clone https://github.com/irori/clamb` to c
 The source code being run is [lambdalisp.ulamb](lambdalisp.ulamb),
 which is the lambda calculus term shown in [lambdalisp.pdf](lambdalisp.pdf) written in [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html) notation.
 `clamb` automatically takes care of the previously described [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding)-based I/O to run LambdaLisp on the terminal.
-Interaction is done by writing LambdaLisp in continuation passing style,
+Interaction is done by writing LambdaLisp in continuation-passing style,
 allowing a Haskell-style interactive I/O to work on lambda calculus interpreters.
 This also allows imperative programming on LambdaLisp with `read` and `print` such as in [read-print.cl](examples/read-print.cl).
 
@@ -106,7 +106,7 @@ Key features are:
 - Reader macros with `set-macro-character`
 - Access to the interpreter's virtual heap memory with `malloc`, `memread`, and `memwrite`
 - Show the call stack trace when an error is invoked
-- Garbage collection during macro evaluation
+- Garbage collection during macro expansion
 
 Supported special forms and functions are:
 
@@ -128,12 +128,12 @@ Supported special forms and functions are:
 
 
 ## Supported Lambda Calculus Interpreters
-Below is a summary of the supported languages and interpreters.
-These lambda calculus interpreters run on the terminal,
-and automatically handles the previously described
-[Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding) for the standard input and output.
-Each language uses a slightly different lambda term encoding for the I/O,
+Below is a summary of the supported lambda calculus interpreters.
+All interpreters run on the terminal and automatically handles the previously described
+Church-Mogensen-Scott-based encoding for the standard input and output.
+Each interpreter uses a slightly different lambda term encoding for the I/O,
 and a different notation for providing the lambda term as an input to the interpreter.
+The different types of I/O and encoding specs are shown below as a language.
 
 LambdaLisp is written natively as a lambda term that accepts and produces the I/O encoding of the language [Binary Lambda Calculus](https://tromp.github.io/cl/cl.html).
 It is adapted to other languages by wrapping it with an encoder-decoder that absorbs the string-to-lambda encoding differences in each environment.
@@ -156,7 +156,7 @@ It is adapted to other languages by wrapping it with an encoder-decoder that abs
 ### Building the Lambda Calculus Interpreters
 Several notes about the interpreters:
 
-- The BLC intepreter `Blc` only runs on x86-64-Linux systems.
+- The BLC intepreter `Blc` runs only on x86-64-Linux systems.
 - The BLC interpreter `tromp` may not compile on a Mac with the defualt gcc (which is actually an alias of clang). Details are provided below.
 - The most reliably compilable BLC interpreter is `uni`, which compiles and runs on both Linux and Mac.
 - The interpreters for Universal Lambda and Lazy K, `clamb` and `lazyk`, can be built and run on both of these systems.
