@@ -96,37 +96,49 @@ test-self-host: $(BASE_SRCS) $(def_prelude) ./src/main.cl $(target_blc) $(BLC) $
 .PRECIOUS: out/%.cl.sbcl-out
 out/%.cl.sbcl-out: examples/%.cl
 	mkdir -p ./out
-	$(SBCL) --script $< > $@.tmp
+	if [ -f "test/$*.cl.in" ]; then \
+		cat test/$*.cl.in | $(SBCL) --script $< > $@.tmp; else \
+		$(SBCL) --script $< > $@.tmp; fi
 	mv $@.tmp $@
 
 .PRECIOUS: out/%.blc-out
 out/%.blc-out: examples/% $(target_blc) $(BLC) $(ASC2BIN)
 	mkdir -p ./out
-	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) > $@.tmp
+	if [ -f "test/$*.in" ]; then \
+		( cat $(target_blc) | $(ASC2BIN); cat $< test/$*.in ) | $(BLC) > $@.tmp; else \
+		( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) > $@.tmp; fi
 	mv $@.tmp $@
 
 .PRECIOUS: out/%.blc-tromp-out
 out/%.blc-tromp-out: examples/% $(target_blc) $(TROMP) $(ASC2BIN)
 	mkdir -p ./out
-	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(TROMP) > $@.tmp
+	if [ -f "test/$*.in" ]; then \
+		( cat $(target_blc) | $(ASC2BIN); cat $< test/$*.in) | $(TROMP) > $@.tmp; else \
+		( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(TROMP) > $@.tmp; fi
 	mv $@.tmp $@
 
 .PRECIOUS: out/%.blc-uni-out
 out/%.blc-uni-out: examples/% $(target_blc) $(UNI) $(ASC2BIN)
 	mkdir -p ./out
-	( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(UNI) > $@.tmp
+	if [ -f "test/$*.in" ]; then \
+		( cat $(target_blc) | $(ASC2BIN); cat $< test/$*.in ) | $(UNI) > $@.tmp; else \
+		( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(UNI) > $@.tmp; fi
 	mv $@.tmp $@
 
 .PRECIOUS: out/%.ulamb-out
 out/%.ulamb-out: examples/% $(target_ulamb) $(ULAMB) $(ASC2BIN)
 	mkdir -p ./out
-	( cat $(target_ulamb) | $(ASC2BIN); cat $< ) | $(ULAMB) -u > $@.tmp
+	if [ -f "test/$*.in" ]; then \
+		( cat $(target_ulamb) | $(ASC2BIN); cat $< test/$*.in ) | $(ULAMB) -u > $@.tmp; else \
+		( cat $(target_ulamb) | $(ASC2BIN); cat $< ) | $(ULAMB) -u > $@.tmp; fi
 	mv $@.tmp $@
 
 .PRECIOUS: out/%.lazyk-out
 out/%.lazyk-out: examples/% $(target_lazy) $(LAZYK)
 	mkdir -p ./out
-	cat $< | $(LAZYK) $(target_lazy) -u > $@.tmp
+	if [ -f "test/$*.in" ]; then \
+		cat $< $*.in | $(LAZYK) $(target_lazy) -u > $@.tmp; else \
+		cat $< | $(LAZYK) $(target_lazy) -u > $@.tmp; fi
 	mv $@.tmp $@
 
 
