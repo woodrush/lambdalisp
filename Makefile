@@ -216,8 +216,9 @@ $(target_lazy): $(BASE_SRCS) $(def_prelude_lazyk) ./src/main-lazyk.cl ./src/lazy
 
 	# Replace ``s`kki with k, which are equivalent terms
 	cat $(target_lazy).tmp | sed s/\`\`s\`kki/k/g > $(target_lazy).tmp2
-	mv $(target_lazy).tmp2 $(target_lazy)
-	rm $(target_lazy).tmp
+	cat $(target_lazy).tmp2 | sed -e 's/\(................................................................................\)/\1\n/g' > $(target_lazy).tmp
+	mv $(target_lazy).tmp $(target_lazy)
+	rm $(target_lazy).tmp2
 
 
 # Additional targets
