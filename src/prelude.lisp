@@ -1,10 +1,10 @@
 ;;================================================================================================================================
 ;; LambdaLisp prelude script
-;; 
+;;
 ;; This prelude file is run as a startup script at LambdaLisp's initialization phase.
 ;; At compile time, this file becomes encoded into a lambda calculus string representation and is
 ;; hard-coded inside its lambda calculus source code as a lambda calculus term.
-;; 
+;;
 ;; At runtime, the contents of this file is prepended to the standard input and is interpreted as a LambdaLisp expression.
 ;; The REPL initially reads one Lisp term from the input stream (containing this file), evaluates it, and prints nothing.
 ;; The prelude is wrapped with `progn` to evaluate multiple expressions during this initialization phase.
@@ -67,6 +67,11 @@
 
   (defun stringp (p)
     (eq (type p) 'str))
+
+  (defun integerp (p)
+    (eq (type p) 'int))
+
+  (defun finish-output ())
 
   (defmacro labels (llist &rest b)
     `(let (,@(mapcar (lambda (item) `(,(car item))) llist))
