@@ -1,7 +1,7 @@
 (defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
 
 (defun number-guessing-game ()
-  (let ((n ()) (n-tries 0) (answer 42))
+  (let ((n ()) (n-tries 0) (answer (* 3 14)))
     (loop
       (format t "Let's play a number guessing game. I'm thinking of a number between 1 and 10000.~%")
       (format t "Say a number, and I'll tell you if it's less than, greater than, or equal to my number.~%")
