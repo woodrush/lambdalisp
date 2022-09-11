@@ -1294,6 +1294,8 @@
                       (lambda (cont _ state)
                         (eval-progn tail state (cont cont))))
                     ((loopcont loopcont) nil (cons3 reg heap stdin)))))))
+          ((stringeq (valueof head) kExit)
+            nil)
           ((stringeq (valueof head) kReturnFrom)
             (do
               (<- (reg heap stdin) (state))
@@ -1652,6 +1654,7 @@
       (list "e" "v" "a" "l")
       (list "a" "p" "p" "l" "y")
       (list "l" "o" "o" "p")
+      (list "e" "x" "i" "t")
       (list "l" "e" "t"); kLet
       (list "s" "e" "t" "q")
       (list "&" "r" "e" "s" "t")
@@ -1759,6 +1762,7 @@
          kEval
          kApply
          kLoop
+         kExit
          kLet
          kSetq
          kRest
