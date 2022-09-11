@@ -478,10 +478,10 @@
 ;;================================================================
 ;; Compile a program
 ;;================================================================
-;; Define the letter A: 0b01000001
+;; Define the letter `A`: 0b01000001
 (def-lazy "A" (list t nil t t t t t nil))
 
-;; Define a program that prints the letter A
+;; Define a program that prints the letter `A`
 (defun-lazy main (stdin)
   (cons "A" nil))
 
