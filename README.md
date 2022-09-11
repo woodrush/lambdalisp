@@ -25,6 +25,30 @@ Supported interpreters are:
 Further details are described in the How it Works section.
 
 
+## Usage
+You can try the LambdaLisp REPL by simply running:
+
+```sh
+git clone https://github.com/woodrush/lambdalisp
+cd lambdalisp
+make run-repl
+```
+
+This will build all the required tools and run LambdaLisp on the lambda calculus interpreter `clamb`,
+presenting a REPL for interacting with LambdaLisp.
+The source code that is being run is [lambdalisp.ulamb](lambdalisp.ulamb),
+which is a lambda calculus term written in [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html) notation.
+The requirement for building these tools are `gcc`.
+
+When building `clamb`, Make runs `git clone https://github.com/irori/clamb` to clone `clamb`'s source code.
+
+Once `make run-repl` is run, the REPL can also be run with:
+
+```sh
+( cat lambdalisp.ulamb | ./bin/asc2bin; cat ) | ./bin/clamb -u
+```
+
+
 ## Features
 Key features are:
 
@@ -56,32 +80,7 @@ Supported special forms and functions are:
 - new, defclass, defmethod, `.`, field assignment by setf
 
 
-## Usage
-You can try the LambdaLisp REPL by simply running:
-
-```sh
-git clone https://github.com/woodrush/lambdalisp
-cd lambdalisp
-make run-repl
-```
-
-This will build all the required tools and run LambdaLisp on the lambda calculus interpreter `clamb`,
-presenting a REPL for interacting with LambdaLisp.
-The source code that is being run is [lambdalisp.ulamb](lambdalisp.ulamb),
-which is a lambda calculus term written in [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html) notation.
-The requirement for building these tools are `gcc`.
-
-When building `clamb`, Make runs `git clone https://github.com/irori/clamb` to clone `clamb`'s source code.
-The make procedure prompts if this is OK, so to proceed type `y` when the prompt is shown.
-
-Once `make run-repl` is run, the REPL can also be run with:
-
-```sh
-( cat lambdalisp.ulamb | ./bin/asc2bin; cat ) | ./bin/clamb -u
-```
-
-
-### Supported Lambda Calculus Reduction Engines
+## Supported Lambda Calculus Reduction Engines
 LambdaLisp can be run on other lambda calculus interpreters as well.
 Below is a summary of the supported languages and interpreters.
 
@@ -262,6 +261,7 @@ make test      # Runs the tests on the BLC interpreter `uni`
 make test-all  # Runs the tests on all of the available interpreters
 ```
 
+`make test-all` uses a maximum of about 5GB of memory (on the largest program [examples/lambdacraft.cl](examples/lambdacraft.cl), which takes several minutes) and takes about 10 minutes on my machine.
 
 ### Output Comparison Test
 Runs the programs in `./examples/`. Runnable with:
