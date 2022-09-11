@@ -46,7 +46,7 @@ which is the lambda calculus term shown in [lambdalisp.pdf](lambdalisp.pdf) writ
 `clamb` automatically takes care of the [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding)-based I/O to run LambdaLisp on the terminal.
 Interaction is done by writing LambdaLisp in continuation passing style,
 allowing a Haskell-style interactive I/O to work on lambda calculus interpreters.
-This also allows imperative programming on LambdaLisp with `read` and `print`.
+This also allows imperative programming on LambdaLisp with `read` and `print` such as in [read-print.cl](examples/read-print.cl).
 
 Once `make run-repl` is run, the REPL can also be run with:
 
