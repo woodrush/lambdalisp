@@ -11,7 +11,7 @@
         (loop
           (block input-n
             (loop
-              (format t "> ")
+              (format t "number> ")
               (finish-output nil)
               (setq n (read))
               (if (integerp n)
@@ -29,6 +29,8 @@
       (format t "That's right! I was thinking of ~a. Congratulations!~%" n)
       (format t "Number of tries: ~a~%" n-tries)
       (format t "Do you want to try again? [y/N]~%")
+      (format t "y/N> ")
+      (finish-output nil)
       (setq n (read))
       (cond
         ((eq n 'y)
@@ -36,7 +38,7 @@
           (setq n-tries 0))
         (t
           (return))))
-      (format t "Thank you for playing!")
+      (format t "Thank you for playing!~%")
       (exit)))
 
 (number-guessing-game)
