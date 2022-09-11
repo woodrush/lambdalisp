@@ -87,8 +87,8 @@ Key features are:
 
 - Signed 32-bit integer literals
 - String literals
-- Lexical scopes and persistent bindings with `let`
-- Object oriented programming feature with class inheritance (as pre-loaded macros)
+- Lexical scopes, closures and persistent bindings with `let`
+- Object oriented programming feature with class inheritance (as pre-loaded macros using closures)
 - Reader macros with `set-macro-character`
 - Access to the interpreter's virtual heap memory with `malloc`, `memread`, and `memwrite`
 - Show the call stack trace when an error is invoked
@@ -113,15 +113,17 @@ Supported special forms and functions are:
 - new, defclass, defmethod, `.`, field assignment by setf
 
 
-## Supported Lambda Calculus Reduction Engines
-LambdaLisp can be run on other lambda calculus interpreters as well.
+## Supported Lambda Calculus Interpreters
 Below is a summary of the supported languages and interpreters.
-
-Each language uses a different lambda term encoding for the I/O,
+These lambda calculus interpreters run on the terminal,
+and automatically handles the previously described
+[Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding) for the standard input and output.
+Each language uses a slightly different lambda term encoding for the I/O,
 and a different notation for providing the lambda term as an input to the interpreter.
-LambdaLisp is written natively as a lambda term that accepts and produces the I/O encoding of Binary Lambda Calculus,
-and is adapted to each of the languages by wrapping it with an encoder-decoder that
-absorbs the encoding differences in each environment.
+
+LambdaLisp is written natively as a lambda term that accepts and produces the I/O encoding of the language [Binary Lambda Calculus](https://tromp.github.io/cl/cl.html).
+It is adapted to other languages by wrapping it with an encoder-decoder that absorbs the string-to-lambda encoding differences in each environment.
+
 
 | Language                                                     | Extension | Engine                  | Program Format               |
 |--------------------------------------------------------------|-----------|-------------------------|------------------------------|
