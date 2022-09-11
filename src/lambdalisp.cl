@@ -832,6 +832,7 @@
     ;; int
     (cont expr state)))
 
+
 (defrec-lazy eval-letbind (*initenv expr state cont)
   (do
     (if-then-return (isnil-data expr)
@@ -1106,6 +1107,58 @@
               (if-then-return (isstring arg1)
                 (printstring (valueof arg1) (cont arg1 state)))
               (printexpr arg1 (cont arg1 state))))
+          ((stringeq (valueof head) kFormat)
+            (do
+              (<- (mapped-base state) (map-eval tail state))
+              (<- (fmt-option evtail) (mapped-base))
+              (<- (str-fmt vals) (evtail))
+              (if-then-return (not (isstring str-fmt))
+                (error
+                  (do
+                    (printstring str-Unapplicable)
+                    (cons " ")
+                    (printstring str-object)
+                    (cons " ")
+                    (printexpr str-fmt)
+                    nil)
+                  state))
+              (let* print-format
+                (letrec-lazy print-format (fmt vals cont)
+                  (do
+                    (if-then-return (isnil fmt)
+                      cont)
+                    (<- (c fmt) (fmt))
+                    (if-then-return (=-bit c "tilde")
+                      (do
+                        (<- (c fmt) (fmt))
+                        (if-then-return (=-bit c "a")
+                          (do
+                            (<- (val vals) (vals))
+                            (printexpr val)
+                            (print-format fmt vals cont)))
+                        (if-then-return (=-bit c "%")
+                          (do
+                            (cons "\\n")
+                            (print-format fmt vals cont)))
+                        (error
+                          (do
+                            (printstring str-Unapplicable)
+                            (cons " ")
+                            (printstring kFormat)
+                            (cons " ")
+                            (cons "tilde")
+                            (cons c)
+                            nil)
+                          state)))
+                    (cons c (print-format fmt vals cont)))))
+              (if-then-return (isnil-data fmt-option)
+                (do
+                  (let* outstr (print-format (valueof str-fmt) vals nil))
+                  ;; Evaluate the string
+                  (<- (outstr) (reverse outstr))
+                  (<- (outstr) (reverse outstr))
+                  (cont (string* outstr) state)))
+              (print-format (valueof str-fmt) vals (cont (atom* nil) state))))
           ((stringeq (valueof head) kPeekchar)
             (do
               (<- (reg heap stdin) (state))
@@ -1516,15 +1569,17 @@
 
 (defun-lazy string-generator (stdin cont)
   (do
+    (let* ";"     (do (b0) (b0) (b1) (b1) (b1) (b0) (b1) (b1) nil))
+    (let* "9"     (do (b0) (b0) (b1) (b1) (b1) (b0) (b0) (b1) nil))
     (let* ":"     (do (b0) (b0) (b1) (b1) (b1) (b0) (b1) (b0) nil))
     (let* "E"     (do (b0) (b1) (b0) (b0) (b0) (b1) (b0) (b1) nil))
     (let* "S"     (do (b0) (b1) (b0) (b1) (b0) (b0) (b1) (b1) nil))
     (let* "U"     (do (b0) (b1) (b0) (b1) (b0) (b1) (b0) (b1) nil))
     (let* "x"     (do (b0) (b1) (b1) (b1) (b1) (b0) (b0) (b0) nil))
-    (let* "j"     (do (b0) (b1) (b1) (b0) (b1) (b0) (b1) (b0) nil))
     (let* "\\"    (do (b0) (b1) (b0) (b1) (b1) (b1) (b0) (b0) nil))
     (let* "\\n"   (do (b0) (b0) (b0) (b0) (b1) (b0) (b1) (b0) nil))
     (let* "tilde" (do (b0) (b1) (b1) (b1) (b1) (b1) (b1) (b0) nil))
+    (let* "j"     (do (b0) (b1) (b1) (b0) (b1) (b0) (b1) (b0) nil))
     (let* "0"     (do (b0) (b0) (b1) (b1) (b0) (b0) (b0) (b0) nil))
     (let* "1"     (do (b0) (b0) (b1) (b1) (b0) (b0) (b0) (b1) nil))
     (let* "."     (do (b0) (b0) (b1) (b0) (b1) (b1) (b1) (b0) nil))
@@ -1594,6 +1649,7 @@
       (list "b" "l" "o" "c" "k")
       (list "r" "e" "t" "u" "r" "n" "-" "f" "r" "o" "m")
       (list "e" "r" "r" "o" "r")
+      (list "f" "o" "r" "m" "a" "t")
       (list "p" "e" "e" "k" "-" "c" "h" "a" "r")
       (list "r" "e" "a" "d" "-" "c" "h" "a" "r")
       (list "s" "e" "t" "-" "m" "a" "c" "r" "o" "-" "c" "h" "a" "r" "a" "c" "t" "e" "r")
@@ -1624,24 +1680,26 @@
       (list "i" "f")
       (list "n" "i" "l")
       (atom* (list "t"))
-      (do (b0) (b1) (b0) (b1) (b1) (b1) (b0) (b0) nil) ;; "\\"
-      (do (b0) (b1) (b0) (b0) (b0) (b0) (b0) (b0) nil) ;; "@"
-      (do (b0) (b0) (b1) (b0) (b1) (b1) (b0) (b0) nil) ;; ","
-      (do (b0) (b0) (b1) (b0) (b0) (b1) (b1) (b1) nil) ;; "'"
-      (do (b0) (b0) (b1) (b0) (b0) (b0) (b1) (b0) nil) ;; "\""
-      (do (b0) (b1) (b1) (b0) (b0) (b0) (b0) (b0) nil) ;; "`"
-      (do (b0) (b0) (b1) (b0) (b1) (b1) (b0) (b1) nil) ;; "-"
-      (do (b0) (b0) (b1) (b1) (b1) (b0) (b1) (b1) nil) ;; ";"
-      (do (b0) (b0) (b1) (b1) (b0) (b0) (b0) (b0) nil) ;; "0"
-      (do (b0) (b0) (b1) (b1) (b0) (b0) (b0) (b1) nil) ;; "1"
-      (do (b0) (b0) (b1) (b1) (b1) (b0) (b0) (b1) nil) ;; "9"
-      (do (b0) (b0) (b1) (b1) (b1) (b1) (b1) (b0) nil) ;; ">"
-      (do (b0) (b0) (b1) (b0) (b1) (b1) (b1) (b0) nil) ;; "."
-      (do (b0) (b0) (b1) (b0) (b0) (b0) (b0) (b0) nil) ;; " "
-      (do (b0) (b0) (b0) (b0) (b1) (b0) (b1) (b0) nil) ;; "\\n"
-      (do (b0) (b0) (b1) (b0) (b1) (b0) (b0) (b0) nil) ;; "("
-      (do (b0) (b0) (b1) (b0) (b1) (b0) (b0) (b1) nil) ;; ")"
-      )))
+      "a"
+      "%"
+      "tilde"
+      "\\"
+      "@"
+      ","
+      "'"
+      "\""
+      "`"
+      "-"
+      ";"
+      "0"
+      "1"
+      "9"
+      ">"
+      "."
+      " "
+      "\\n"
+      "("
+      ")")))
 
 
 ;;================================================================
@@ -1698,6 +1756,7 @@
          kBlock
          kReturnFrom
          kError
+         kFormat
          kPeekchar
          kReadchar
          kSetMacroCharacter
@@ -1728,6 +1787,9 @@
          kIf
          kNil
          t-atom
+         "a"
+         "%"
+         "tilde"
          "\\"
          "@"
          ","

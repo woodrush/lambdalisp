@@ -123,42 +123,6 @@
   (defun string (p)
     (str p))
 
-  (defun format (option str &rest e)
-    ;; Supports ~a and ~%
-    (let ((ret))
-      (loop
-        (cond
-          ((eq str "")
-            (return))
-          ((eq (carstr str) "~")
-            (setq str (cdrstr str))
-            (cond
-              ((eq (carstr str) "%")
-                ;; `?` gets compiled to a newline in compile-prelude.sh
-                (setq ret (cons "?" ret)))
-              ((eq (carstr str) "a")
-                (if e
-                  (progn
-                    (setq item (car e))
-                    (setq e (cdr e)))
-                  (setq item ()))
-                (setq ret (cons (str item) ret)))))
-          (t
-            (setq ret (cons (carstr str) ret))))
-        (setq str (cdrstr str)))
-
-      (setq str "")
-      (loop
-        (if (eq ret ())
-          (return))
-        (setq str (+ (car ret) str))
-        (setq ret (cdr ret)))
-      (if option
-        (progn
-          (print str t)
-          ())
-        str)))
-
   ;;================================================================
   ;; Hash table
   ;;================================================================
