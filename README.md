@@ -4,7 +4,7 @@ The entire lambda calculus expression is viewable as a PDF [here](lambdalisp.pdf
 
 LambdaLisp is tested by running `examples/*.cl` on both Common Lisp and LambdaLisp and comparing their outputs.
 The largest LambdaLisp-Common-Lisp polyglot program that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
-which runs the lambda calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) I wrote for this project, used to compile LambdaLisp itself.
+which runs the Lisp-to-lambda-calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) I wrote for this project, used to compile LambdaLisp itself.
 
 LambdaLisp is written as a lambda calculus term `LambdaLisp = λx. ...`
 which takes a string `x` as an input and returns a string as an output.
