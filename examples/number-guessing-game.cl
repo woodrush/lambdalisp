@@ -38,7 +38,7 @@
           (setq n-tries 0))
         (t
           (return))))
-      (format t "Thank you for playing!~%")
-      (exit)))
+    (format t "Thank you for playing!~%")
+    (exit)))
 
 (number-guessing-game)
