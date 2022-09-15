@@ -3,7 +3,7 @@
 [![test](https://github.com/woodrush/lambdalisp/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/woodrush/lambdalisp/actions/workflows/test.yml)
 
 
-LambdaLisp is a Lisp interpreter written as a pure untyped lambda calculus term.
+LambdaLisp is a Lisp interpreter written as an untyped lambda calculus term.
 The entire lambda calculus expression is viewable as a PDF [here](https://github.com/woodrush/lambdalisp/raw/main/lambdalisp.pdf).
 
 LambdaLisp is tested by running `examples/*.cl` on both Common Lisp and LambdaLisp and comparing their outputs.
@@ -11,7 +11,7 @@ Supported features are persistent bindings and closures with `let`, reader macro
 The largest LambdaLisp-Common-Lisp polyglot program that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
 which runs the Lisp-to-lambda-calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) I wrote for this project, used to compile LambdaLisp itself.
 
-LambdaLisp is written as a lambda calculus term `LambdaLisp = λx. ...`
+LambdaLisp is written as a closed lambda calculus term `LambdaLisp = λx. ...`
 which takes a string `x` as an input and returns a string as an output.
 The input `x` represents the Lisp program and the user's standard input,
 and the output represents the standard output.
@@ -178,11 +178,18 @@ which is the format accepted by the BLC and UL interpreters.
 The interpreters' source codes are obtained from external locations, each published by its authors mentioned in the previous section.
 When the make recipe is run, each recipe obtains these external source codes using the following commands:
 
-- `blc`
-- `tromp`
-- `uni`
+- `tromp`: `wget http://www.ioccc.org/2012/tromp/tromp.c`
 - `clamb`: `git clone https://github.com/irori/clamb`
 - `lazyk`: `git clone https://github.com/irori/lazyk`
+
+For the following interpreters, please manually obtain the files and place them under `./build`:
+
+- `blc`:
+  - `Blc.S`, from https://justine.lol/lambda/
+    - There is a similar file with the lowercase filename `blc.S`. Please get the uppercase one, `Blc.S`.
+  - `flat.lds`, from https://justine.lol/lambda/
+- `uni`
+  - `uni.c`, from https://tromp.github.io/cl/cl.html
 
 
 ### Running LambdaLisp
