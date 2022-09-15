@@ -51,9 +51,16 @@ pdf: $(target_pdf)
 # Each basic test compares LambdaLisp outputs with:
 # - Outputs when executed on Common Lisp, for examples/*.cl, which run on both Common Lisp and LambdaLisp
 # - Predefined expected output text in ./test/, for examples/*.lisp, which are LambdaLisp-exclusive programs
+.PHONY: test-lisp-%
+test-lisp-%: $(addsuffix .%-out.expected-diff, $(addprefix out/, $(notdir $(wildcard test/*.lisp.out))))
+	@echo "\n    All LambdaLisp-exclusive tests have passed for $(interpreter-name-$*).\n"
+
+.PHONY: test-sbclcmp-%
+test-sbclcmp-%: $(addsuffix .%-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl))))
+	@echo "\n    All SBCL comparison tests have passed for $(interpreter-name-$*).\n"
+
 .PHONY: test-%
-test-%: $(addsuffix .%-out.sbcl-diff, $(addprefix out/, $(notdir $(wildcard examples/*.cl)))) \
-        $(addsuffix .%-out.expected-diff, $(addprefix out/, $(notdir $(wildcard test/*.lisp.out))))
+test-%: test-sbclcmp-% test-lisp-%
 	@echo "\n    All tests have passed for $(interpreter-name-$*).\n"
 interpreter-name-blc="BLC with the interpreter 'Blc'"
 interpreter-name-blc-tromp="BLC with the interpreter 'tromp'"
