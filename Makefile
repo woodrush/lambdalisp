@@ -13,9 +13,9 @@ DVIPDFMX=dvipdfmx
 
 ASC2BIN=./bin/asc2bin
 
-target_blc=lambdalisp.blc
-target_ulamb=lambdalisp.ulamb
-target_lazy=lambdalisp.lazy
+target_blc=./bin/lambdalisp.blc
+target_ulamb=./bin/lambdalisp.ulamb
+target_lazy=./bin/lambdalisp.lazy
 target_latex=out/lambdalisp.tex
 target_pdf=lambdalisp.pdf
 
@@ -243,7 +243,6 @@ $(target_pdf): $(target_latex)
 	cd build; git clone https://github.com/irori/clamb
 
 $(ULAMB): ./build/clamb/clamb.c
-	mkdir -p ./bin
 	cd build/clamb; $(CC) -O2 clamb.c -o clamb
 	mv build/clamb/clamb ./bin
 	chmod 755 $(ULAMB)
@@ -256,7 +255,6 @@ clamb: $(ULAMB)
 	cd build; git clone https://github.com/irori/lazyk
 
 $(LAZYK): ./build/lazyk/lazyk.c
-	mkdir -p ./bin
 	cd build/lazyk; $(CC) -O2 lazyk.c -o lazyk
 	mv build/lazyk/lazyk ./bin
 	chmod 755 $(LAZYK)
@@ -284,7 +282,6 @@ build/flat.lds:
 	if [ ! -f $@ ]; then $(MAKE) show_Blc.S_message; fi
 
 $(BLC): build/Blc.S build/flat.lds
-	mkdir -p ./bin
 	# Extend the maximum memory limit to execute large programs
 	# Make TERMS configurable
 	cd build; cat Blc.S | sed -e 's/#define.*TERMS.*//' > Blc.ext.S
@@ -312,7 +309,6 @@ build/tromp.c:
 	if [ ! -f $@ ]; then $(MAKE) show_tromp.c_message; fi
 
 $(TROMP): ./build/tromp.c
-	mkdir -p ./bin
 	# Compile with the option -DA=9999999 (larger than the original -DM=999999) to execute large programs
 	cd build; $(CC) -Wall -W -std=c99 -O2 -m64 -DInt=long -DA=9999999 -DX=8 tromp.c -o tromp
 	mv build/tromp ./bin
@@ -335,7 +331,6 @@ build/uni.c:
 	if [ ! -f $@ ]; then $(MAKE) show_uni.c_message; fi
 
 $(UNI): ./build/uni.c
-	mkdir -p ./bin
 	# Compile with the option -DA=9999999 (larger than the original -DM=999999) to execute large programs
 	cd build; $(CC) -Wall -W -O2 -std=c99 -m64 -DM=9999999 uni.c -o uni
 	mv build/uni ./bin
@@ -345,7 +340,6 @@ $(UNI): ./build/uni.c
 uni: $(UNI)
 
 $(ASC2BIN): ./tools/asc2bin.c
-	mkdir -p ./bin
 	cd build; $(CC) ../tools/asc2bin.c -O2 -o asc2bin
 	mv build/asc2bin ./bin
 	chmod 755 $(ASC2BIN)
