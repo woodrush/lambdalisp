@@ -7,7 +7,6 @@ LambdaLisp is a Lisp interpreter written as an untyped lambda calculus term.
 The entire lambda calculus expression is viewable as a PDF [here](https://github.com/woodrush/lambdalisp/raw/main/lambdalisp.pdf).
 
 LambdaLisp is tested by running `examples/*.cl` on both Common Lisp and LambdaLisp and comparing their outputs.
-Supported features are persistent bindings and closures with `let`, reader macros, 32-bit signed integer literals, string literals, etc.
 The largest LambdaLisp-Common-Lisp polyglot program that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
 which runs the Lisp-to-lambda-calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) I wrote for this project, used to compile LambdaLisp itself.
 
@@ -74,7 +73,7 @@ This will build all the required tools and run LambdaLisp on the lambda calculus
 presenting a REPL for interacting with LambdaLisp.
 When building `clamb`, Make runs `git clone https://github.com/irori/clamb` to clone `clamb`'s source code.
 
-The source code being run is [lambdalisp.ulamb](lambdalisp.ulamb),
+The source code being run is [lambdalisp.ulamb](./bin/lambdalisp.ulamb),
 which is the lambda calculus term shown in [lambdalisp.pdf](lambdalisp.pdf) written in [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html) notation.
 `clamb` automatically takes care of the previously described [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding)-based I/O to run LambdaLisp on the terminal.
 Interaction is done by writing LambdaLisp in continuation-passing style,
@@ -84,7 +83,7 @@ This also allows imperative programming on LambdaLisp with `read` and `print` su
 Once `make run-repl` is run, you can play the [number guessing game](./examples/number-guessing-game.cl) with:
 
 ```sh
-( cat lambdalisp.ulamb | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/clamb -u
+( cat ./bin/lambdalisp.ulamb | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/clamb -u
 ```
 
 You can run the same script on Common Lisp. If you use SBCL, you can run it with:
@@ -130,7 +129,7 @@ Supported special forms and functions are:
 ## Supported Lambda Calculus Interpreters
 Below is a summary of the supported lambda calculus interpreters.
 All interpreters run on the terminal and automatically handles the previously described
-Church-Mogensen-Scott-based encoding for the standard input and output.
+lambda-based encoding for the standard input and output.
 Each interpreter uses a slightly different lambda term encoding for the I/O,
 and a different notation for providing the lambda term as an input to the interpreter.
 The different types of I/O and encoding specs are shown below as a language.
@@ -197,12 +196,13 @@ For the following interpreters, please manually obtain the files and place them 
 After building all of the required tools and interpreters, running LambdaLisp on the Binary Lambda Calculus interpreter `Blc` can be done as follows.
 To run on `tromp` or `uni`, replace `Blc` with `tromp` or `uni`.
 ```sh
+cd ./bin
 # Pack the 01 bitstream to a bytestream
-cat lambdalisp.blc | ./bin/asc2bin > lambdalisp.blc.bin
+cat lambdalisp.blc | ./asc2bin > lambdalisp.blc.bin
 
-cat lambdalisp.blc.bin -            | ./bin/Blc # Run the LambdaLisp REPL
-cat lambdalisp.blc.bin [filepath]   | ./bin/Blc # Run a LambdaLisp script and exit
-cat lambdalisp.blc.bin [filepath] - | ./bin/Blc # Run a LambdaLisp script, then enter the REPL
+cat lambdalisp.blc.bin -            | ./Blc # Run the LambdaLisp REPL
+cat lambdalisp.blc.bin [filepath]   | ./Blc # Run a LambdaLisp script and exit
+cat lambdalisp.blc.bin [filepath] - | ./Blc # Run a LambdaLisp script, then enter the REPL
 ```
 
 Running `cat -` with the hyphen connects the standard input after the specified input files,
@@ -210,7 +210,7 @@ allowing the user to interact with the interpreter through the terminal after re
 If `cat -` doesn't work, the following command can be used instead:
 
 ```sh
-( cat lambdalisp.blc.bin [filepath]; cat ) | ./bin/Blc
+( cat lambdalisp.blc.bin [filepath]; cat ) | ./Blc
 ```
 
 #### On Universal Lambda
@@ -220,22 +220,25 @@ since they are different languages.
 This is since the I/O lambda term encoding is different for these languages.
 Otherwise, both languages are based entirely on untyped lambda calculus.
 ```sh
+cd ./bin
+
 # Pack the 01 bitstream to a bytestream
-cat lambdalisp.ulamb | ./bin/asc2bin > lambdalisp.ulamb.bin
+cat lambdalisp.ulamb | ./asc2bin > lambdalisp.ulamb.bin
 
 # The -u option is required for handling I/O properly
-./bin/clamb lambdalisp.ulamb.bin -u                    # Run the LambdaLisp REPL
-cat [filepath]   | ./bin/clamb -u lambdalisp.ulamb.bin # Run a LambdaLisp script and exit
-cat [filepath] - | ./bin/clamb -u lambdalisp.ulamb.bin # Run a LambdaLisp script, then enter the REPL
+./clamb lambdalisp.ulamb.bin -u                    # Run the LambdaLisp REPL
+cat [filepath]   | ./clamb -u lambdalisp.ulamb.bin # Run a LambdaLisp script and exit
+cat [filepath] - | ./clamb -u lambdalisp.ulamb.bin # Run a LambdaLisp script, then enter the REPL
 ```
 
 #### On Lazy K
 Running LambdaLisp on the Lazy K interpreter `lazyk` can be done as follows:
 ```sh
+cd ./bin
 # The -u option is required for handling I/O properly
-./bin/lazyk lambdalisp.lazy -u                    # Run the LambdaLisp REPL
-cat [filepath]   | ./bin/lazyk lambdalisp.lazy -u # Run a LambdaLisp script and exit
-cat [filepath] - | ./bin/lazyk lambdalisp.lazy -u # Run a LambdaLisp script, then enter the REPL
+./lazyk ./lambdalisp.lazy -u                    # Run the LambdaLisp REPL
+cat [filepath]   | ./lazyk lambdalisp.lazy -u # Run a LambdaLisp script and exit
+cat [filepath] - | ./lazyk lambdalisp.lazy -u # Run a LambdaLisp script, then enter the REPL
 ```
 
 ### Building 'tromp' on a Mac
@@ -295,9 +298,9 @@ brew install sbcl
 
 LambdaLisp can then be compiled with:
 ```sh
-make blc     # Builds lambdalisp.blc, for Binary Lambda Calculus
-make ulamb   # Builds lambdalisp.ulamb, for Universal Lambda
-make lazyk   # Builds lambdalisp.lazy, for Lazy K
+make blc-src     # Builds lambdalisp.blc, for Binary Lambda Calculus
+make ulamb-src   # Builds lambdalisp.ulamb, for Universal Lambda
+make lazyk-src   # Builds lambdalisp.lazy, for Lazy K
 ```
 
 To compile [lambdalisp.pdf](./lambdalisp.pdf), first install LaTeX, and then run:
@@ -323,8 +326,8 @@ The GitHub Actions CI runs `make test-ulamb`, which does the following:
 
 - Compiles [./bin/lambdalisp.ulamb](./bin/lambdalisp.ulamb) from [./src/main-ulamb.cl](./src/main.cl) using SBCL
 - Builds `clamb`
-- Runs `./examples/src/*.cl` with both LambdaLisp (run with `clamb`) and SBCL and compares the outputs
-- Runs `./examples/src/*.lisp` with both LambdaLisp and compares the outputs with `./test/*.lisp.out`
+- Runs `./examples/src/*.cl` on both LambdaLisp (run with `clamb`) and SBCL and compares the outputs
+- Runs `./examples/src/*.lisp` on LambdaLisp and compares the outputs with `./test/*.lisp.out`
 
 
 
@@ -357,8 +360,11 @@ make test-compiler-hosting-blc test-compiler-hosting-blc-uni
 
 ### Experimental: Self-Hosting Test
 This test is currently theoretical since it requires a lot of time and memory, and is unused in `make test-all`.
-This test extends the previous LambdaCraft compiler hosting test and checks if the Common Lisp source code for LambdaLisp runs on LambdaLisp itself. Since the LambdaCraft compiler hosting test runs properly, this test should theoretically run as well, although it requires a tremendous amount of memory and time. One concern is whether the 32-bit heap address space used internally in LambdaLisp is enough to compile this program. This can be circumvented by compiling LambdaLisp with an address space of 64-bit or larger, which can be done simply by replacing the literal `32` (which only appears once in `src/lambdalisp.cl`) with `64`, etc.
-The test is run on the binary lambda calculus interpreter Blc.
+This test extends the previous LambdaCraft compiler hosting test and checks if the Common Lisp source code for LambdaLisp runs on LambdaLisp itself. Since the LambdaCraft compiler hosting test runs properly, this test should theoretically run as well, although it requires a tremendous amount of memory and time. The test is run on the binary lambda calculus interpreter Blc.
+
+One concern is whether the 32-bit heap address space used internally in LambdaLisp is enough to compile this program. This can be solved by compiling LambdaLisp with an address space of 64-bit or larger, which can be done simply by replacing the literal `32` (which only appears once in `src/lambdalisp.cl`) with `64`, etc.
+Another concern is whether if the execution hits Blc's maximum term limit. This can be solved by compiling Blc with a larger memory limit, by editing the rule for `$(BLC)` in the Makefile.
+
 
 Runnable with:
 ```sh
@@ -388,14 +394,14 @@ without the requirement of introducing any non-lambda-type object.
 
 The LambdaLisp execution flow is thus as follows: you first encode the input string (Lisp program and stdin)
 as lambda terms, apply it to `LambdaLisp = λx. ...`, beta-reduce it until it is in beta normal form,
-and parse the output lambda term as a Mogensen-Scott-encoded list of bits
+and parse the output lambda term as a lambda-encoded list of bits
 (inspecting the equivalence of lambda terms is quite simple in this case since it is in beta normal form).
 This rather complex flow is supported exactly as is in 3 lambda-calculus-based programming languages:
 Binary Lambda Calculus, Universal Lambda, and Lazy K.
 
 ### Lambda-Calculus-Based Programming Languages
 Binary Lambda Calculus (BLC) and Universal Lambda (UL) are programming languages with the exact same I/O strategy described above -
-a program is expressed as a pure lambda term that takes a Mogensen-Scott-encoded string and returns a Mogensen-Scott-encoded string.
+a program is expressed as a pure lambda term that takes a lambda-encoded string and returns a lambda-encoded string.
 When the interpreters for these languages `Blc` and `clamb` are run on the terminal,
 the interpreter automatically encodes the input bytestream to lambda terms, performs beta-reduction,
 parses the output lambda term as a list of bits, and prints the output as a string in the terminal.
