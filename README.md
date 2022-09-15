@@ -1,10 +1,12 @@
-![LambdaLisp's logo](./bin/lambdalisp_logo.png)
+![LambdaLisp's logo](./bin/lambdalisp_logo.png)<br>
+[![test](https://github.com/woodrush/lambdalisp/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/woodrush/lambdalisp/actions/workflows/test.yml)
+
 
 LambdaLisp is a Lisp interpreter written as a pure untyped lambda calculus term.
-The entire lambda calculus expression is viewable as a PDF [here](lambdalisp.pdf).
+The entire lambda calculus expression is viewable as a PDF [here](https://github.com/woodrush/lambdalisp/raw/main/lambdalisp.pdf).
 
 LambdaLisp is tested by running `examples/*.cl` on both Common Lisp and LambdaLisp and comparing their outputs.
-It supports features such as persistent bindings and closures with `let`, reader macros, 32-bit signed integer literals, string literals, etc.
+Supported features are persistent bindings and closures with `let`, reader macros, 32-bit signed integer literals, string literals, etc.
 The largest LambdaLisp-Common-Lisp polyglot program that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
 which runs the Lisp-to-lambda-calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) I wrote for this project, used to compile LambdaLisp itself.
 
