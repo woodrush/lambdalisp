@@ -3,6 +3,7 @@ LambdaLisp is a Lisp interpreter written as a pure untyped lambda calculus term.
 The entire lambda calculus expression is viewable as a PDF [here](lambdalisp.pdf).
 
 LambdaLisp is tested by running `examples/*.cl` on both Common Lisp and LambdaLisp and comparing their outputs.
+It supports features such as persistent bindings and closures with `let`, reader macros, 32-bit signed integer literals, string literals, etc.
 The largest LambdaLisp-Common-Lisp polyglot program that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
 which runs the Lisp-to-lambda-calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) I wrote for this project, used to compile LambdaLisp itself.
 
@@ -26,6 +27,34 @@ Supported interpreters are:
 - Universal Lambda interpreter [clamb](https://github.com/irori/clamb) and Lazy K interpreter [lazyk](https://github.com/irori/lazyk) written by Kunihiko Sakamoto
 
 Further details are described in the How it Works section.
+
+
+## Example
+The following LambdaLisp code runs out of the box:
+
+```lisp
+(defun new-counter (init)
+  ;; Return a closure.
+  ;; Use the let over lambda technique for creating independent and persistent variables.
+  (let ((i init))
+    (lambda () (setq i (+ 1 i)))))
+
+;; Instantiate counters
+(setq counter1 (new-counter 0))
+(setq counter2 (new-counter 10))
+
+(print (counter1)) ;; => 1
+(print (counter1)) ;; => 2
+(print (counter2)) ;; => 11
+(print (counter1)) ;; => 3
+(print (counter2)) ;; => 12
+(print (counter1)) ;; => 4
+(print (counter1)) ;; => 5
+```
+
+More examples can be found under [./examples](./examples).
+The largest program written for LambdaLisp that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
+which runs the lambda calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) I wrote for this project, used to compile LambdaLisp itself.
 
 
 ## Usage
@@ -61,39 +90,6 @@ sbcl --script ./examples/number-guessing-game.cl
 ```
 
 To run LambdaLisp on other lambda calculus interpreters, please see the Supported Lambda Calculus Interpreters section.
-
-
-## Example
-```lisp
-(defun new-counter (init)
-  ;; Return a closure.
-  ;; Use the let over lambda technique for creating independent and persistent variables.
-  (let ((i init))
-    (lambda () (setq i (+ 1 i)))))
-
-;; Instantiate counters
-(setq counter1 (new-counter 0))
-(setq counter2 (new-counter 10))
-
-(print (counter1)) ;; => 1
-(print (counter1)) ;; => 2
-(print (counter2)) ;; => 11
-(print (counter1)) ;; => 3
-(print (counter2)) ;; => 12
-(print (counter1)) ;; => 4
-(print (counter1)) ;; => 5
-```
-
-can be run as
-
-```sh
-( cat lambdalisp.ulamb | ./bin/asc2bin; cat examples/counter.lisp ) | ./bin/clamb -u
-( cat lambdalisp.ulamb | ./bin/asc2bin; cat examples/counter.lisp - ) | ./bin/clamb -u  # To enter the REPL after executing the script
-```
-
-More examples can be found under [./examples](./examples).
-The largest program written for LambdaLisp that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
-which runs the lambda calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) I wrote for this project, used to compile LambdaLisp itself.
 
 
 ## Features
