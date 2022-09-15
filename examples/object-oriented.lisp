@@ -22,7 +22,7 @@
 
 (defclass Counter-addsub (Counter-add)
   (defmethod *init (c)
-    (funcall (. (. self super) *init) c))
+    ((. (. self super) *init) c))
 
   (defmethod sub (n)
     (setf (. self i) (- (. self i) n))))
