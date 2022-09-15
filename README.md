@@ -1,4 +1,5 @@
-![LambdaLisp's logo](./bin/lambdalisp_logo.png)<br>
+![LambdaLisp's logo](./bin/lambdalisp_logo.png)
+<br>
 [![test](https://github.com/woodrush/lambdalisp/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/woodrush/lambdalisp/actions/workflows/test.yml)
 
 
@@ -21,7 +22,7 @@ without the need of introducing any non-lambda-type object.
 
 When run on a lambda calculus interpreter that runs on the terminal,
 LambdaLisp presents a REPL where you can interactively define and evaluate Lisp expressions.
-These interpreters automatically process the Mogensen-Scott string-to-lambda encoding for handling I/O through the terminal.
+These interpreters automatically process the string-to-lambda encoding for handling I/O through the terminal.
 Supported interpreters are:
 
 - The [521-byte lambda calculus interpreter](https://justine.lol/lambda/) written by Justine Tunney
@@ -174,7 +175,7 @@ make blc tromp uni clamb lazyk asc2bin
 Here, asc2bin is a utility required to pack the ASCII 01 bitstream source of BLC and UL to a byte stream,
 which is the format accepted by the BLC and UL interpreters.
 
-The interpreters' source codes are obtained from an external source, each published by its authors mentioned in the previous section.
+The interpreters' source codes are obtained from external locations, each published by its authors mentioned in the previous section.
 When the make recipe is run, each recipe obtains these external source codes using the following commands:
 
 - `blc`
@@ -310,6 +311,15 @@ make test-all  # Runs the tests on all of the available interpreters
 ```
 
 `make test-all` uses a maximum of about 5GB of memory (on the largest program [examples/lambdacraft.cl](examples/lambdacraft.cl), which takes several minutes) and takes about 10 minutes on my machine.
+
+The GitHub Actions CI runs `make test-ulamb`, which does the following:
+
+- Compiles [./bin/lambdalisp.ulamb](./bin/lambdalisp.ulamb) from [./src/main-ulamb.cl](./src/main.cl) using SBCL
+- Builds `clamb`
+- Runs `./examples/src/*.cl` with both LambdaLisp (run with `clamb`) and SBCL and compares the outputs
+- Runs `./examples/src/*.lisp` with both LambdaLisp and compares the outputs with `./test/*.lisp.out`
+
+
 
 ### Output Comparison Test
 Runs the programs in `./examples/`. Runnable with:
