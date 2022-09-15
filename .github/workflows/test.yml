@@ -7,13 +7,13 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  test-ulamb:
 
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - name: Run test-lisp-ulamb
+    - name: Run test-ulamb
       run: |
         sudo apt install -y sbcl
-        make test-lisp-ulamb
+        make test-ulamb
