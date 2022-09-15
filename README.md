@@ -1,4 +1,5 @@
-# LambdaLisp
+![LambdaLisp's logo](./bin/lambdalisp_logo.png)
+
 LambdaLisp is a Lisp interpreter written as a pure untyped lambda calculus term.
 The entire lambda calculus expression is viewable as a PDF [here](lambdalisp.pdf).
 
