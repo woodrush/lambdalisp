@@ -301,19 +301,10 @@ $(BLC): build/Blc.S build/flat.lds
 .PHONY: blc
 blc: $(BLC)
 
-.PHONY: show_tromp.c_message
-show_tromp.c_message:
-	@echo
-	@echo "    This procedure requires the binary lambda calculus interpreter 'tromp'."
-	@echo "    To compile it and proceed, please place tromp.c under ./build."
-	@echo "    Note that on a Mac, the default gcc may not compile tromp.c, and an installation of a different version for gcc may be required."
-	@echo "    Please see README.md for details."
-	@echo
-	@exit 1
-
 build/tromp.c:
 	mkdir -p ./build
-	if [ ! -f $@ ]; then $(MAKE) show_tromp.c_message; fi
+	wget http://www.ioccc.org/2012/tromp/tromp.c
+	mv tromp.c ./build
 
 $(TROMP): ./build/tromp.c
 	# Compile with the option -DA=9999999 (larger than the original -DM=999999) to execute large programs
