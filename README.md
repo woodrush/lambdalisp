@@ -6,7 +6,8 @@
 LambdaLisp is a Lisp interpreter written as an untyped lambda calculus term.
 The entire lambda calculus expression is viewable as a PDF [here](https://github.com/woodrush/lambdalisp/raw/main/lambdalisp.pdf).
 
-LambdaLisp is tested by running `examples/*.cl` on both Common Lisp and LambdaLisp and comparing their outputs.
+Supported features are persistent bindings and closures with `let`, reader macros, 32-bit signed integer literals, string literals, and many more.
+LambdaLisp is tested by running programs on both Common Lisp and LambdaLisp and comparing their outputs.
 The largest LambdaLisp-Common-Lisp polyglot program that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
 which runs the Lisp-to-lambda-calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) I wrote for this project, used to compile LambdaLisp itself.
 
@@ -33,7 +34,7 @@ Further details are described in the How it Works section.
 
 
 ## Example
-The following LambdaLisp code runs out of the box:
+The following LambdaLisp code runs right out of the box:
 
 ```lisp
 (defun new-counter (init)
@@ -61,6 +62,7 @@ which runs the lambda calculus compiler [LambdaCraft](https://github.com/woodrus
 
 
 ## Usage
+### Trying the LambdaLisp REPL
 You can try the LambdaLisp REPL by simply running:
 
 ```sh
@@ -69,17 +71,19 @@ cd lambdalisp
 make run-repl
 ```
 The requirement for running this is `gcc`.
-This will build all the required tools and run LambdaLisp on the lambda calculus interpreter `clamb`,
-presenting a REPL for interacting with LambdaLisp.
+This will build all the required tools and run LambdaLisp on the lambda calculus interpreter `clamb`.
 When building `clamb`, Make runs `git clone https://github.com/irori/clamb` to clone `clamb`'s source code.
 
 The source code being run is [lambdalisp.ulamb](./bin/lambdalisp.ulamb),
 which is the lambda calculus term shown in [lambdalisp.pdf](lambdalisp.pdf) written in [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html) notation.
-`clamb` automatically takes care of the previously described [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding)-based I/O to run LambdaLisp on the terminal.
+`clamb` automatically takes care of the string-to-lambda I/O encoding to run LambdaLisp on the terminal.
 Interaction is done by writing LambdaLisp in continuation-passing style,
 allowing a Haskell-style interactive I/O to work on lambda calculus interpreters.
-This also allows imperative programming on LambdaLisp with `read` and `print` such as in [read-print.cl](examples/read-print.cl).
 
+To run LambdaLisp on other lambda calculus interpreters, please see the Supported Lambda Calculus Interpreters section.
+
+
+### Playing the Number Guessing Game
 Once `make run-repl` is run, you can play the [number guessing game](./examples/number-guessing-game.cl) with:
 
 ```sh
@@ -92,8 +96,6 @@ You can run the same script on Common Lisp. If you use SBCL, you can run it with
 sbcl --script ./examples/number-guessing-game.cl
 ```
 
-To run LambdaLisp on other lambda calculus interpreters, please see the Supported Lambda Calculus Interpreters section.
-
 
 ## Features
 Key features are:
@@ -101,7 +103,7 @@ Key features are:
 - Signed 32-bit integer literals
 - String literals
 - Lexical scopes, closures and persistent bindings with `let`
-- Object oriented programming feature with class inheritance (as pre-loaded macros using closures)
+- Object-oriented programming feature with class inheritance (as pre-loaded macros using closures)
 - Reader macros with `set-macro-character`
 - Access to the interpreter's virtual heap memory with `malloc`, `memread`, and `memwrite`
 - Show the call stack trace when an error is invoked
@@ -129,13 +131,11 @@ Supported special forms and functions are:
 ## Supported Lambda Calculus Interpreters
 Below is a summary of the supported lambda calculus interpreters.
 All interpreters run on the terminal and automatically handles the previously described
-lambda-based encoding for the standard input and output.
-Each interpreter uses a slightly different lambda term encoding for the I/O,
-and a different notation for providing the lambda term as an input to the interpreter.
-The different types of I/O and encoding specs are shown below as a language.
+string-to-lambda encoding for the standard I/O.
+Each interpreter uses a slightly different I/O encoding, classified below as languages.
 
-LambdaLisp is written natively as a lambda term that accepts and produces the I/O encoding of the language [Binary Lambda Calculus](https://tromp.github.io/cl/cl.html).
-It is adapted to other languages by wrapping it with an encoder-decoder that absorbs the string-to-lambda encoding differences in each environment.
+LambdaLisp is written natively as a lambda term based on the language [Binary Lambda Calculus](https://tromp.github.io/cl/cl.html).
+It is adapted to other languages by wrapping it with an [encoder-decoder](./src/lazyk-ulamb-blc-wrapper.cl) that absorbs the language spec differences.
 
 
 | Language                                                     | Extension | Engine                  | Program Format               |
@@ -171,10 +171,9 @@ Or, to build them individually:
 make blc tromp uni clamb lazyk asc2bin
 ```
 
-Here, asc2bin is a utility required to pack the ASCII 01 bitstream source of BLC and UL to a byte stream,
-which is the format accepted by the BLC and UL interpreters.
+Here, asc2bin is a utility that packs ASCII 0/1 bitstreams to a byte stream, the format accepted by the BLC and UL interpreters.
 
-The interpreters' source codes are obtained from external locations, each published by its authors mentioned in the previous section.
+The interpreters' source codes are obtained from external locations.
 When the make recipe is run, each recipe obtains these external source codes using the following commands:
 
 - `tromp`: `wget http://www.ioccc.org/2012/tromp/tromp.c`
@@ -193,8 +192,8 @@ For the following interpreters, please manually obtain the files and place them 
 
 ### Running LambdaLisp
 #### On Binary Lambda Calculus
-After building all of the required tools and interpreters, running LambdaLisp on the Binary Lambda Calculus interpreter `Blc` can be done as follows.
-To run on `tromp` or `uni`, replace `Blc` with `tromp` or `uni`.
+After building all of the required tools and interpreters, running LambdaLisp on the Binary Lambda Calculus interpreter `Blc` can be done as follows:
+
 ```sh
 cd ./bin
 # Pack the 01 bitstream to a bytestream
@@ -204,6 +203,8 @@ cat lambdalisp.blc.bin -            | ./Blc # Run the LambdaLisp REPL
 cat lambdalisp.blc.bin [filepath]   | ./Blc # Run a LambdaLisp script and exit
 cat lambdalisp.blc.bin [filepath] - | ./Blc # Run a LambdaLisp script, then enter the REPL
 ```
+
+To run on `tromp` or `uni`, replace `Blc` with `tromp` or `uni`.
 
 Running `cat -` with the hyphen connects the standard input after the specified input files,
 allowing the user to interact with the interpreter through the terminal after reading a file.
@@ -328,7 +329,7 @@ The GitHub Actions CI runs `make test-ulamb`, which does the following:
 - Builds `clamb`
 - Runs `./examples/src/*.cl` on both LambdaLisp (run with `clamb`) and SBCL and compares the outputs
 - Runs `./examples/src/*.lisp` on LambdaLisp and compares the outputs with `./test/*.lisp.out`
-
+- Runs the LambdaCraft Compiler Hosting Test (described below)
 
 
 ### Output Comparison Test
