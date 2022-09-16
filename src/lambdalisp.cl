@@ -1825,10 +1825,10 @@
     (let* eval-hat       (lambda (x y z w) (def-eval       (x x y z w) (y x y z w) (z x y z w) (w x y z w))))
     (let* eval-apply-hat (lambda (x y z w) (def-eval-apply (x x y z w) (y x y z w) (z x y z w) (w x y z w))))
     (let* repl-hat       (lambda (x y z w) (def-repl       (x x y z w) (y x y z w) (z x y z w) (w x y z w))))
-    (let* repl       (repl-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
+    (let* repl       (repl-hat       read-expr-hat eval-hat eval-apply-hat repl-hat))
     (let* eval-apply (eval-apply-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
-    (let* read-expr  (read-expr-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
-    (let* eval       (eval-hat read-expr-hat eval-hat eval-apply-hat repl-hat))
+    (let* read-expr  (read-expr-hat  read-expr-hat eval-hat eval-apply-hat repl-hat))
+    (let* eval       (eval-hat       read-expr-hat eval-hat eval-apply-hat repl-hat))
 
     (let* reg
       (do
