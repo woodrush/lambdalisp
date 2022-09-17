@@ -269,24 +269,15 @@ $(LAZYK): ./build/lazyk/lazyk.c
 .PHONY: lazyk
 lazyk: $(LAZYK)
 
-.PHONY: show_Blc.S_message
-show_Blc.S_message:
-	@echo
-	@echo "    This procedure requires the binary lambda calculus interpreter 'Blc'."
-	@echo "    To compile it and proceed, please place Blc.S and flat.lds under ./build."
-	@echo "    (Please use the uppercase Blc.S, and not the lowercase blc.S.)"
-	@echo "    Blc can be run on x86-64 Linux systems. In other environments, ./bin/tromp or ./bin/uni (make test-blc-tromp, make test-blc-uni) can be used."
-	@echo "    Please see README.md for details."
-	@echo
-	@exit 1
-
 build/Blc.S:
 	mkdir -p ./build
-	if [ ! -f $@ ]; then $(MAKE) show_Blc.S_message; fi
+	wget https://justine.lol/lambda/Blc.S?v=2
+	mv Blc.S?v=2 ./build/Blc.S
 
 build/flat.lds:
 	mkdir -p ./build
-	if [ ! -f $@ ]; then $(MAKE) show_Blc.S_message; fi
+	wget https://justine.lol/lambda/flat.lds
+	mv flat.lds ./build
 
 $(BLC): build/Blc.S build/flat.lds
 	# Extend the maximum memory limit to execute large programs
