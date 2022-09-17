@@ -35,6 +35,9 @@ run-repl: $(BLC) $(ASC2BIN)
 run-repl-ulamb: $(ULAMB) $(ASC2BIN)
 	( cat $(target_ulamb) | $(ASC2BIN); cat ) | $(ULAMB) -u
 
+run-repl-lazyk: $(LAZYK) $(ASC2BIN)
+	( cat $(target_lazyk) | $(ASC2BIN); cat ) | $(LAZYK) -u
+
 test: test-blc-uni test-compiler-hosting-blc-uni
 test-all-nonlinux: interpreters-nonlinux test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp
 # On x86-64-Linux, the interpreter 'Blc' can be used.
