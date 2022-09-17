@@ -35,6 +35,42 @@ Supported interpreters are:
 More implementation details are introduced in [this blog post](https://woodrush.github.com/blog/lambdalisp.html).
 
 
+## Usage
+### Trying the LambdaLisp REPL
+You can try the LambdaLisp REPL by simply running:
+
+```sh
+git clone https://github.com/woodrush/lambdalisp
+cd lambdalisp
+make run-repl
+```
+The requirement for running this is `gcc`.
+This will build all the required tools and run LambdaLisp on the lambda calculus interpreter `clamb`.
+When building `clamb`, Make runs `git clone https://github.com/irori/clamb` to clone `clamb`'s source code.
+
+The source code being run is [lambdalisp.ulamb](./bin/lambdalisp.ulamb),
+which is the lambda calculus term shown in [lambdalisp.pdf](lambdalisp.pdf) written in [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html) notation.
+`clamb` automatically takes care of the string-to-lambda I/O encoding to run LambdaLisp on the terminal.
+Interaction is done by writing LambdaLisp in continuation-passing style,
+allowing a Haskell-style interactive I/O to work on lambda calculus interpreters.
+
+To run LambdaLisp on other lambda calculus interpreters, please see the Supported Lambda Calculus Interpreters section.
+
+
+### Playing the Number Guessing Game
+Once `make run-repl` is run, you can play the [number guessing game](./examples/number-guessing-game.cl) with:
+
+```sh
+( cat ./bin/lambdalisp.ulamb | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/clamb -u
+```
+
+You can run the same script on Common Lisp. If you use SBCL, you can run it with:
+
+```sh
+sbcl --script ./examples/number-guessing-game.cl
+```
+
+
 ## Example
 The following LambdaLisp code runs right out of the box:
 
@@ -81,45 +117,77 @@ console.log(counter1()); // => 4
 console.log(counter1()); // => 5
 ```
 
+As described in [Let Over Lambda](https://letoverlambda.com/),
+when you have closures, you get object-oriented programming for free.
+LambdaLisp has a built-in OOP feature implemented as predefined macros based on closures.
+It supports Python-like classes with class inheritance:
+
+```lisp
+(defclass Counter ()
+  (i 0)
+
+  (defmethod inc ()
+    (setf (. self i) (+ 1 (. self i))))
+
+  (defmethod dec ()
+    (setf (. self i) (- (. self i) 1))))
+
+
+(defclass Counter-add (Counter)
+  (defmethod *init (i)
+    (setf (. self i) i))
+
+  (defmethod add (n)
+    (setf (. self i) (+ (. self i) n))))
+
+
+(defparameter counter1 (new Counter))
+(defparameter counter2 (new Counter-add 100))
+
+((. counter1 inc))
+((. counter2 add) 100)
+
+(setf (. counter1 i) 5)
+(setf (. counter2 i) 500)
+```
+
+An equivalent Python code is:
+
+```python
+class Counter ():
+    i = 0
+
+    def inc (self):
+        self.i += 1
+        return self.i
+    
+    def dec (self):
+        self.i -= 1
+        return self.i
+
+class Counter_add (Counter):
+    def __init__ (self, i):
+        self.i = i
+    
+    def add (self, n):
+        self.i += n
+        return self.i
+
+counter1 = Counter()
+counter2 = Counter_add(100)
+
+counter1.inc()
+counter2.add(100)
+
+counter1.i = 5
+counter2.i = 500
+```
+
+
 More examples can be found under [./examples](./examples).
 The largest program written for LambdaLisp that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
 which runs the lambda calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) written for this project, used to compile LambdaLisp itself.
 
-
-## Usage
-### Trying the LambdaLisp REPL
-You can try the LambdaLisp REPL by simply running:
-
-```sh
-git clone https://github.com/woodrush/lambdalisp
-cd lambdalisp
-make run-repl
-```
-The requirement for running this is `gcc`.
-This will build all the required tools and run LambdaLisp on the lambda calculus interpreter `clamb`.
-When building `clamb`, Make runs `git clone https://github.com/irori/clamb` to clone `clamb`'s source code.
-
-The source code being run is [lambdalisp.ulamb](./bin/lambdalisp.ulamb),
-which is the lambda calculus term shown in [lambdalisp.pdf](lambdalisp.pdf) written in [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html) notation.
-`clamb` automatically takes care of the string-to-lambda I/O encoding to run LambdaLisp on the terminal.
-Interaction is done by writing LambdaLisp in continuation-passing style,
-allowing a Haskell-style interactive I/O to work on lambda calculus interpreters.
-
-To run LambdaLisp on other lambda calculus interpreters, please see the Supported Lambda Calculus Interpreters section.
-
-
-### Playing the Number Guessing Game
-Once `make run-repl` is run, you can play the [number guessing game](./examples/number-guessing-game.cl) with:
-
-```sh
-( cat ./bin/lambdalisp.ulamb | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/clamb -u
-```
-
-You can run the same script on Common Lisp. If you use SBCL, you can run it with:
-
-```sh
-sbcl --script ./examples/number-guessing-game.cl
-```
 
 
 ## Features
@@ -201,16 +269,15 @@ Here, asc2bin is a utility that packs ASCII 0/1 bitstreams to a byte stream, the
 The interpreters' source codes are obtained from external locations.
 When the make recipe is run, each recipe obtains these external source codes using the following commands:
 
+- `blc`:
+  - `Blc.S`: `wget https://justine.lol/lambda/Blc.S?v=2`
+  - `flat.lds`: `wget https://justine.lol/lambda/flat.lds`
 - `tromp`: `wget http://www.ioccc.org/2012/tromp/tromp.c`
 - `clamb`: `git clone https://github.com/irori/clamb`
 - `lazyk`: `git clone https://github.com/irori/lazyk`
 
-For the following interpreters, please manually obtain the files and place them under `./build`:
+For `uni`, please manually obtain the source and place it under `./build`:
 
-- `blc`:
-  - `Blc.S`, from https://justine.lol/lambda/
-    - There is a similar file with the lowercase filename `blc.S`. Please get the uppercase one, `Blc.S`.
-  - `flat.lds`, from https://justine.lol/lambda/
 - `uni`
   - `uni.c`, from https://tromp.github.io/cl/cl.html
 
