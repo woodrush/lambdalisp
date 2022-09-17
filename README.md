@@ -27,7 +27,7 @@ LambdaLisp presents a REPL where you can interactively define and evaluate Lisp 
 These interpreters automatically process the string-to-lambda encoding for handling I/O through the terminal.
 Supported interpreters are:
 
-- The [521-byte lambda calculus interpreter](https://justine.lol/lambda/) written by Justine Tunney
+- SectorLambda, the [521-byte lambda calculus interpreter](https://justine.lol/lambda/) written by Justine Tunney
 - The [IOCCC](https://www.ioccc.org/) 2012 ["Most functional"](https://www.ioccc.org/2012/tromp/hint.html) interpreter written by John Tromp
   (the [source](https://www.ioccc.org/2012/tromp/tromp.c) is in the shape of a λ)
 - Universal Lambda interpreter [clamb](https://github.com/irori/clamb) and Lazy K interpreter [lazyk](https://github.com/irori/lazyk) written by Kunihiko Sakamoto
@@ -36,7 +36,7 @@ More implementation details are introduced in [this blog post](https://woodrush.
 
 
 ## Usage
-### Trying the LambdaLisp REPL
+### Trying the LambdaLisp REPL (on x86-64-Linux)
 You can try the LambdaLisp REPL by simply running:
 
 ```sh
@@ -44,21 +44,42 @@ git clone https://github.com/woodrush/lambdalisp
 cd lambdalisp
 make run-repl
 ```
-The requirement for running this is `gcc`.
-This will build all the required tools and run LambdaLisp on the lambda calculus interpreter `clamb`.
-When building `clamb`, Make runs `git clone https://github.com/irori/clamb` to clone `clamb`'s source code.
-
-The source code being run is [lambdalisp.ulamb](./bin/lambdalisp.ulamb),
+The requirement is `cc` which should be installed by default.
+This will run LambdaLisp on SectorLambda, the [521-byte lambda calculus interpreter](https://justine.lol/lambda/).
+The source code being run is [lambdalisp.blc](./bin/lambdalisp.blc),
 which is the lambda calculus term shown in [lambdalisp.pdf](lambdalisp.pdf) written in [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html) notation.
-`clamb` automatically takes care of the string-to-lambda I/O encoding to run LambdaLisp on the terminal.
+SectorLambda automatically takes care of the string-to-lambda I/O encoding to run LambdaLisp on the terminal.
 Interaction is done by writing LambdaLisp in continuation-passing style,
 allowing a Haskell-style interactive I/O to work on lambda calculus interpreters.
+
+When building SectorLambda, Make runs the following commands to get its source code:
+
+- `Blc.S`: `wget https://justine.lol/lambda/Blc.S?v=2`
+- `flat.lds`: `wget https://justine.lol/lambda/flat.lds`
+
+
+### Trying the LambdaLisp REPL (on a Mac)
+SectorLambda is x86-64-Linux exclusive. On other platforms such as a Mac, the following command can be used:
+
+```sh
+git clone https://github.com/woodrush/lambdalisp
+cd lambdalisp
+make run-repl-ulamb
+```
+This runs LambdaLisp on the lambda calculus interpreter `clamb`.
+The requirement for this is `gcc` or `cc`.
 
 To run LambdaLisp on other lambda calculus interpreters, please see the Supported Lambda Calculus Interpreters section.
 
 
 ### Playing the Number Guessing Game
 Once `make run-repl` is run, you can play the [number guessing game](./examples/number-guessing-game.cl) with:
+
+```sh
+( cat ./bin/lambdalisp.blc | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/Blc -u
+```
+
+Or on a mac:
 
 ```sh
 ( cat ./bin/lambdalisp.ulamb | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/clamb -u
@@ -272,14 +293,11 @@ When the make recipe is run, each recipe obtains these external source codes usi
 - `blc`:
   - `Blc.S`: `wget https://justine.lol/lambda/Blc.S?v=2`
   - `flat.lds`: `wget https://justine.lol/lambda/flat.lds`
+- `uni`: `wget https://tromp.github.io/cl/uni.c`
 - `tromp`: `wget http://www.ioccc.org/2012/tromp/tromp.c`
 - `clamb`: `git clone https://github.com/irori/clamb`
 - `lazyk`: `git clone https://github.com/irori/lazyk`
 
-For `uni`, please manually obtain the source and place it under `./build`:
-
-- `uni`
-  - `uni.c`, from https://tromp.github.io/cl/cl.html
 
 
 ### Running LambdaLisp
