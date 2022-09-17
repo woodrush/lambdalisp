@@ -15,7 +15,7 @@ ASC2BIN=./bin/asc2bin
 
 target_blc=./bin/lambdalisp.blc
 target_ulamb=./bin/lambdalisp.ulamb
-target_lazy=./bin/lambdalisp.lazy
+target_lazyk=./bin/lambdalisp.lazy
 target_latex=out/lambdalisp.tex
 target_pdf=lambdalisp.pdf
 
@@ -147,11 +147,11 @@ out/%.ulamb-out: examples/% $(target_ulamb) $(ULAMB) $(ASC2BIN)
 	mv $@.tmp $@
 
 .PRECIOUS: out/%.lazyk-out
-out/%.lazyk-out: examples/% $(target_lazy) $(LAZYK)
+out/%.lazyk-out: examples/% $(target_lazyk) $(LAZYK)
 	mkdir -p ./out
 	if [ -f "test/$*.in" ]; then \
-		cat $< $*.in | $(LAZYK) $(target_lazy) -u > $@.tmp; else \
-		cat $< | $(LAZYK) $(target_lazy) -u > $@.tmp; fi
+		cat $< $*.in | $(LAZYK) $(target_lazyk) -u > $@.tmp; else \
+		cat $< | $(LAZYK) $(target_lazyk) -u > $@.tmp; fi
 	mv $@.tmp $@
 
 
@@ -222,16 +222,16 @@ $(target_ulamb): $(BASE_SRCS) $(def_prelude) ./src/main-ulamb.cl ./src/lazyk-ula
 	mv $(target_ulamb).tmp $(target_ulamb)
 
 .PHONY: lazyk-src
-lazyk-src: $(target_lazy)
-$(target_lazy): $(BASE_SRCS) $(def_prelude_lazyk) ./src/main-lazyk.cl ./src/lazyk-ulamb-blc-wrapper.cl ./src/lazyk-chars.cl
+lazyk-src: $(target_lazyk)
+$(target_lazyk): $(BASE_SRCS) $(def_prelude_lazyk) ./src/main-lazyk.cl ./src/lazyk-ulamb-blc-wrapper.cl ./src/lazyk-chars.cl
 	@echo "Compiling to Lazy K takes a while (several minutes)."
-	cd src; sbcl --script ./main-lazyk.cl > ../$(target_lazy).tmp
+	cd src; sbcl --script ./main-lazyk.cl > ../$(target_lazyk).tmp
 
 	# Replace ``s`kki with k, which are equivalent terms
-	cat $(target_lazy).tmp | sed s/\`\`s\`kki/k/g > $(target_lazy).tmp2
-	cat $(target_lazy).tmp2 | sed -e 's/\(................................................................................\)/\1\n/g' > $(target_lazy).tmp
-	mv $(target_lazy).tmp $(target_lazy)
-	rm $(target_lazy).tmp2
+	cat $(target_lazyk).tmp | sed s/\`\`s\`kki/k/g > $(target_lazyk).tmp2
+	cat $(target_lazyk).tmp2 | sed -e 's/\(................................................................................\)/\1\n/g' > $(target_lazyk).tmp
+	mv $(target_lazyk).tmp $(target_lazyk)
+	rm $(target_lazyk).tmp2
 
 
 # Additional targets
