@@ -4,23 +4,23 @@
 
 
 LambdaLisp is a Lisp interpreter written as an untyped lambda calculus term.
-The entire lambda calculus expression is viewable as a PDF [here](https://github.com/woodrush/lambdalisp/raw/main/lambdalisp.pdf).
+The entire lambda calculus expression is viewable as a PDF [here](https://woodrush.github.com/lambdalisp.pdf).
 
 
 ## Overview
 LambdaLisp is written as a closed lambda calculus term `LambdaLisp = λx. ...`
 which takes a string `x` as an input and returns a string as an output.
-The input `x` represents the Lisp program and the user's standard input,
-and the output represents the standard output.
+The input `x` is the Lisp program and the user's standard input,
+and the output is the standard output.
 Characters are encoded into lambda term representations of natural numbers using the [Church encoding](https://en.wikipedia.org/wiki/Church_encoding),
-and strings are encoded to a list of lambda terms using the [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding),
-so the entire computation process solely consists of the beta-reduction of lambda calculus terms,
-without the need of introducing any non-lambda-type object.
+and strings are encoded as a list of characters with lists expressed as lambdas in the [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding),
+so the entire computation process solely consists of the beta-reduction of lambda terms,
+without introducing any non-lambda-type object.
 
 Supported features are closures and persistent bindings with `let`, reader macros, 32-bit signed integers, strings, and many more.
 LambdaLisp is tested by running programs on both Common Lisp and LambdaLisp and comparing their outputs.
 The largest LambdaLisp-Common-Lisp polyglot program that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
-which runs the Lisp-to-lambda-calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) I wrote for this project, used to compile LambdaLisp itself.
+which runs the Lisp-to-lambda-calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) written for this project, used to compile LambdaLisp itself.
 
 When run on a lambda calculus interpreter that runs on the terminal,
 LambdaLisp presents a REPL where you can interactively define and evaluate Lisp expressions.
@@ -32,7 +32,7 @@ Supported interpreters are:
   (the [source](https://www.ioccc.org/2012/tromp/tromp.c) is in the shape of a λ)
 - Universal Lambda interpreter [clamb](https://github.com/irori/clamb) and Lazy K interpreter [lazyk](https://github.com/irori/lazyk) written by Kunihiko Sakamoto
 
-Further details are described in the How it Works section.
+More implementation details are introduced in [this blog post](https://woodrush.github.com/blog/lambdalisp.html).
 
 
 ## Example
@@ -83,7 +83,7 @@ console.log(counter1()); // => 5
 
 More examples can be found under [./examples](./examples).
 The largest program written for LambdaLisp that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
-which runs the lambda calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) I wrote for this project, used to compile LambdaLisp itself.
+which runs the lambda calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) written for this project, used to compile LambdaLisp itself.
 
 
 ## Usage
@@ -308,7 +308,7 @@ will compile `tromp`.
 
 ## Building from Source
 LambdaLisp's source code is written using [LambdaCraft](https://github.com/woodrush/lambdacraft), a DSL written in Common Lisp for compiling
-Common Lisp to lambda calculus terms which I wrote for this project.
+Common Lisp to lambda calculus terms which written for this project.
 Building from source requires SBCL (Steel Bank Common Lisp), a Common Lisp interpreter.
 
 First install SBCL with:
@@ -399,84 +399,4 @@ make test-self-host
 
 
 ## How it Works
-### Handling I/O in Lambda Calculus
-LambdaLisp is written as a function `LambdaLisp = λx. ...`
-which takes a string as an input and returns a string as an output.
-The input represents the Lisp program and the user's standard input (the `x` is the input string),
-and the output represents the standard output.
-A string is represented as a list of bits of its ASCII representation.
-In untyped lambda calculus, a method called the [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding)
-can be used to express a list of lambda terms as a pure untyped lambda calculus term, without the help of introducing a non-lambda-type object.
-Bits are encoded as `0 = λx.λy.x` and `1 = λx.λy.y`.
-
-Under these rules, the bit sequence `0101` can be expressed as a pure beta-normal lambda term
-`λf.(f (λx.λy.x) λg.(g (λx.λy.y λh.(h (λx.λy.x) λi.(i (λx.λy.y) (λx.λy.y))))))`,
-where the last `λx.λy.y` is used as a list terminator having the same role as `nil` in Lisp.
-By defining the lambda terms `cons = λx.λy.λf.(f x y)` and `nil = λx.λy.y`, this term can be rewritten as
-`(cons 0 (cons 1 (cons 0 (cons 1 nil))))`, which is exactly the same as how lists are constructed in Lisp.
-Note that `1 == nil`.
-
-Using this method, both the standard input and output strings can entirely be encoded into pure lambda calculus terms,
-allowing for LambdaLisp to operate with beta reduction of lambda terms as its sole rule of computation,
-without the requirement of introducing any non-lambda-type object.
-
-The LambdaLisp execution flow is thus as follows: you first encode the input string (Lisp program and stdin)
-as lambda terms, apply it to `LambdaLisp = λx. ...`, beta-reduce it until it is in beta normal form,
-and parse the output lambda term as a lambda-encoded list of bits
-(inspecting the equivalence of lambda terms is quite simple in this case since it is in beta normal form).
-This rather complex flow is supported exactly as is in 3 lambda-calculus-based programming languages:
-Binary Lambda Calculus, Universal Lambda, and Lazy K.
-
-### Lambda-Calculus-Based Programming Languages
-Binary Lambda Calculus (BLC) and Universal Lambda (UL) are programming languages with the exact same I/O strategy described above -
-a program is expressed as a pure lambda term that takes a lambda-encoded string and returns a lambda-encoded string.
-When the interpreters for these languages `Blc` and `clamb` are run on the terminal,
-the interpreter automatically encodes the input bytestream to lambda terms, performs beta-reduction,
-parses the output lambda term as a list of bits, and prints the output as a string in the terminal.
-
-The differences in BLC and UL are in a slight difference in the method for encoding the I/O.
-Otherwise, both of these languages follow the same principle, where lambda terms are the solely avalable object types in the language.
-Even Haskell has primitive data types for data such as integers and strings.
-In these lambda-calculus-based languages, _everything_ including the data is expressed as lambdas,
-making each of them a truly "purely" functional language.
-
-In BLC and UL, lambda terms are written in a notation called [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html).
-The BLC notation for a lambda term can be obtained by first rewriting it in [De Bruijn notation](https://en.wikipedia.org/wiki/De_Bruijn_index),
-then encoding `λ = 00`, `apply = 01`, and `i = 1^i0`. For example, `λx.λy.λz.λt.y -> λλλλ3 -> 000000001110`, `(λx.x)(λx.x) -> apply λ1 λ1 -> 0100100010`.
-The bitstream in [lambdalisp.ulamb](./lambdalisp.ulamb) decodes into the lambda term shown in [lambdalisp.pdf](lambdalisp.pdf) this way.
-
-### Lazy K
-Lazy K is a language with the same I/O strategy with BLC and UL except programs are written as
-[SKI combinator calculus](https://en.wikipedia.org/wiki/SKI_combinator_calculus) terms instead of lambda terms.
-The SKI combinator calculus is a system equivalent to lambda calculus,
-where there are only 3 functions : `S = λx.λy.λz.(x z (y z))`, `K = λx.λy.x`, and `I = λx.x`,
-and every SKI combinator calculus term is written as a combination of these 3 functions.
-
-Every SKI term can be easily be converted to an equivalent lambda calculus term by simply rewriting the term with these rules.
-Very interestingly, there is a method for converting the other way around -
-there is a [consistent method](https://en.wikipedia.org/wiki/Combinatory_logic#Completeness_of_the_S-K_basis)
-to convert an arbitrary lambda term with an arbitrary number of variables to an equivalent SKI combinator calculus term.
-This equivalence relation with lambda calculus proves that SKI combinator calculus is Turing-complete.
-
-Apart from the strong condition that only 3 predefined functions exist,
-the beta-reduction rules for the SKI combinator calculus are exactly identical as that of lambda calculus,
-so the computation flow and the I/O strategy for Lazy K is the same as BLC and Universal Lambda -
-all programs can be written purely in SKI combinator calculus terms without the need of introducing any function other than `S`, `K`, and `I`.
-This allows Lazy K's syntax to be astonishingly simple, where only 4 keywords exist - `s`, `k`, `i`, and `` ` `` for function application.
-
-As mentioned in the [original Lazy K design proposal](https://tromp.github.io/cl/lazy-k.html),
-if [BF](https://en.wikipedia.org/wiki/Brainfuck) captures the distilled essence of structured imperative programming,
-Lazy K captures the distilled essence of functional programming.
-It might as well be the assembly language of lazily evaluated functional programming.
-With the simple syntax and rules orchestrating a Turing-complete language,
-I find Lazy K to be a very beautiful language being one of my all-time favorites.
-
-LambdaLisp is written in these 3 languages - Binary Lambda Calculus, Universal Lambda, and Lazy K.
-In each of these languages, LambdaLisp is expressed as a lambda term or SKI combinator calculus term.
-Therefore, to run LambdaLisp, an interpreter for one of these languages is required.
-To put in a rather convoluted way, LambdaLisp is a Lisp interpreter that runs on another language's interpreter.
-
-LambdaLisp is written natively as a lambda term that accepts and produces the I/O encoding of the language [Binary Lambda Calculus](https://tromp.github.io/cl/cl.html),
-which uses a list of bits to encode each character.
-Universal Lambda and Lazy K uses natural numbers in the [Church encoding](https://en.wikipedia.org/wiki/Church_encoding) as the character encoding.
-These differences in the string-to-lambda encoding is adapted to other languages by wrapping LambdaLisp's source with an [encoder-decoder wrapper](./src/lazyk-ulamb-blc-wrapper.cl) that absorbs these encoding differences.
+Implementation details are introduced in [this blog post](https://woodrush.github.com/blog/lambdalisp.html).
