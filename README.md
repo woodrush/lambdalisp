@@ -8,7 +8,8 @@ The entire lambda calculus expression is viewable as a PDF [here](https://woodru
 
 
 ## Overview
-LambdaLisp is written as a closed lambda calculus term `LambdaLisp = λx. ...`
+LambdaLisp is a Lisp interpreter written as an untyped lambda calculus term.
+It is written as a closed lambda calculus term `LambdaLisp = λx. ...`
 which takes a string `x` as an input and returns a string as an output.
 The input `x` is the Lisp program and the user's standard input,
 and the output is the standard output.
@@ -45,17 +46,26 @@ cd lambdalisp
 make run-repl
 ```
 The requirement is `cc` which should be installed by default.
+To try it on a Mac, please see the next section.
+
 This will run LambdaLisp on SectorLambda, the [521-byte lambda calculus interpreter](https://justine.lol/lambda/).
 The source code being run is [lambdalisp.blc](./bin/lambdalisp.blc),
 which is the lambda calculus term shown in [lambdalisp.pdf](lambdalisp.pdf) written in [binary lambda calculus](https://tromp.github.io/cl/Binary_lambda_calculus.html) notation.
+
 SectorLambda automatically takes care of the string-to-lambda I/O encoding to run LambdaLisp on the terminal.
 Interaction is done by writing LambdaLisp in continuation-passing style,
 allowing a Haskell-style interactive I/O to work on lambda calculus interpreters.
 
-When building SectorLambda, Make runs the following commands to get its source code:
+When building SectorLambda, Make runs the following commands to get its source codes:
 
 - `Blc.S`: `wget https://justine.lol/lambda/Blc.S?v=2`
 - `flat.lds`: `wget https://justine.lol/lambda/flat.lds`
+
+After running `make run-repl`, the REPL can also be run as:
+
+```sh
+( cat ./bin/lambdalisp.blc | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/Blc
+```
 
 
 ### Trying the LambdaLisp REPL (on a Mac)
@@ -69,7 +79,14 @@ make run-repl-ulamb
 This runs LambdaLisp on the lambda calculus interpreter `clamb`.
 The requirement for this is `gcc` or `cc`.
 
+After running `make run-repl`, the REPL can also be run as:
+
+```sh
+( cat ./bin/lambdalisp.ulamb | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/clamb -u
+```
+
 To run LambdaLisp on other lambda calculus interpreters, please see the Supported Lambda Calculus Interpreters section.
+
 
 
 ### Playing the Number Guessing Game
@@ -92,7 +109,7 @@ sbcl --script ./examples/number-guessing-game.cl
 ```
 
 
-## Example
+## Examples
 The following LambdaLisp code runs right out of the box:
 
 ```lisp
@@ -144,6 +161,7 @@ LambdaLisp has a built-in OOP feature implemented as predefined macros based on 
 It supports Python-like classes with class inheritance:
 
 ```lisp
+;; Runs on LambdaLisp
 (defclass Counter ()
   (i 0)
 
@@ -435,9 +453,9 @@ make test-all  # Runs the tests on all of the available interpreters
 
 The GitHub Actions CI runs `make test-ulamb`, which does the following:
 
-- Compiles [./bin/lambdalisp.ulamb](./bin/lambdalisp.ulamb) from [./src/main-ulamb.cl](./src/main.cl) using SBCL
-- Builds `clamb`
-- Runs `./examples/src/*.cl` on both LambdaLisp (run with `clamb`) and SBCL and compares the outputs
+- Compiles [./bin/lambdalisp.blc](./bin/lambdalisp.blc) from [./src/main.cl](./src/main.cl) using SBCL
+- Builds `Blc` (SectorLambda)
+- Runs `./examples/src/*.cl` on both LambdaLisp (run with `Blc`) and SBCL and compares the outputs
 - Runs `./examples/src/*.lisp` on LambdaLisp and compares the outputs with `./test/*.lisp.out`
 - Runs the LambdaCraft Compiler Hosting Test (described below)
 
