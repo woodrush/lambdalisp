@@ -8,8 +8,8 @@ The entire lambda calculus expression is viewable as a PDF [here](https://woodru
 
 
 ## Overview
-LambdaLisp is a Lisp interpreter written as an untyped lambda calculus term.
-It is written as a closed lambda calculus term `LambdaLisp = λx. ...`
+LambdaLisp is a Lisp interpreter written as a closed untyped lambda calculus term.
+It is written as a lambda calculus term `LambdaLisp = λx. ...`
 which takes a string `x` as an input and returns a string as an output.
 The input `x` is the Lisp program and the user's standard input,
 and the output is the standard output.
@@ -18,10 +18,10 @@ and strings are encoded as a list of characters with lists expressed as lambdas 
 so the entire computation process solely consists of the beta-reduction of lambda terms,
 without introducing any non-lambda-type object.
 
-Supported features are closures and persistent bindings with `let`, reader macros, 32-bit signed integers, strings, and many more.
+Supported features are closures and persistent bindings with `let`, reader macros, 32-bit signed integers, strings, and much more.
 LambdaLisp is tested by running programs on both Common Lisp and LambdaLisp and comparing their outputs.
 The largest LambdaLisp-Common-Lisp polyglot program that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
-which runs the Lisp-to-lambda-calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) written for this project, used to compile LambdaLisp itself.
+which runs the Lisp-to-lambda-calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) written for this project, also used to compile LambdaLisp itself.
 
 When run on a lambda calculus interpreter that runs on the terminal,
 LambdaLisp presents a REPL where you can interactively define and evaluate Lisp expressions.
@@ -33,10 +33,12 @@ Supported interpreters are:
   (the [source](https://www.ioccc.org/2012/tromp/tromp.c) is in the shape of a λ)
 - Universal Lambda interpreter [clamb](https://github.com/irori/clamb) and Lazy K interpreter [lazyk](https://github.com/irori/lazyk) written by Kunihiko Sakamoto
 
-More implementation details are introduced in [this blog post](https://woodrush.github.com/blog/lambdalisp.html).
+More implementation details are introduced in [this blog post](https://woodrush.github.io/blog/lambdalisp.html).
 
 
 ## Usage
+LambdaLisp runs on x86-64-Linux and other platforms such as Mac.
+
 ### Trying the LambdaLisp REPL (on x86-64-Linux)
 You can try the LambdaLisp REPL by simply running:
 
@@ -64,11 +66,11 @@ When building SectorLambda, Make runs the following commands to get its source c
 After running `make run-repl`, the REPL can also be run as:
 
 ```sh
-( cat ./bin/lambdalisp.blc | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/Blc
+( cat ./bin/lambdalisp.blc | ./bin/asc2bin; cat ) | ./bin/Blc
 ```
 
 
-### Trying the LambdaLisp REPL (on a Mac)
+### Trying the LambdaLisp REPL (on Other Platforms)
 SectorLambda is x86-64-Linux exclusive. On other platforms such as a Mac, the following command can be used:
 
 ```sh
@@ -79,10 +81,10 @@ make run-repl-ulamb
 This runs LambdaLisp on the lambda calculus interpreter `clamb`.
 The requirement for this is `gcc` or `cc`.
 
-After running `make run-repl`, the REPL can also be run as:
+After running `make run-repl-ulamb`, the REPL can also be run as:
 
 ```sh
-( cat ./bin/lambdalisp.ulamb | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/clamb -u
+( cat ./bin/lambdalisp.ulamb | ./bin/asc2bin; cat ) | ./bin/clamb -u
 ```
 
 To run LambdaLisp on other lambda calculus interpreters, please see the Supported Lambda Calculus Interpreters section.
@@ -93,10 +95,10 @@ To run LambdaLisp on other lambda calculus interpreters, please see the Supporte
 Once `make run-repl` is run, you can play the [number guessing game](./examples/number-guessing-game.cl) with:
 
 ```sh
-( cat ./bin/lambdalisp.blc | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/Blc -u
+( cat ./bin/lambdalisp.blc | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/Blc
 ```
 
-Or on a mac:
+If you ran `make run-repl-ulamb`, you can run:
 
 ```sh
 ( cat ./bin/lambdalisp.ulamb | ./bin/asc2bin; cat ./examples/number-guessing-game.cl; cat ) | ./bin/clamb -u
@@ -110,6 +112,8 @@ sbcl --script ./examples/number-guessing-game.cl
 
 
 ## Examples
+
+### Closures
 The following LambdaLisp code runs right out of the box:
 
 ```lisp
@@ -155,6 +159,7 @@ console.log(counter1()); // => 4
 console.log(counter1()); // => 5
 ```
 
+### Object-Oriented Programming
 As described in [Let Over Lambda](https://letoverlambda.com/),
 when you have closures, you get object-oriented programming for free.
 LambdaLisp has a built-in OOP feature implemented as predefined macros based on closures.
@@ -223,19 +228,20 @@ counter2.i = 500
 ```
 
 
+### More Examples
 More examples can be found under [./examples](./examples).
 The largest program written for LambdaLisp that has been tested is [lambdacraft.cl](./examples/lambdacraft.cl),
-which runs the lambda calculus compiler [LambdaCraft](https://github.com/woodrush/lambdacraft) written for this project, used to compile LambdaLisp itself.
+which runs the lambda calculus compiler [LambdaCraft](https://github.io/woodrush/lambdacraft) written for this project, also used to compile LambdaLisp itself.
 
 
 
 ## Features
 Key features are:
 
-- Signed 32-bit integer literals
-- String literals
-- Lexical scopes, closures and persistent bindings with `let`
-- Object-oriented programming feature with class inheritance (as pre-loaded macros using closures)
+- Signed 32-bit integers
+- Strings
+- Closures, lexical scopes, and persistent bindings with `let`
+- Object-oriented programming feature with class inheritance
 - Reader macros with `set-macro-character`
 - Access to the interpreter's virtual heap memory with `malloc`, `memread`, and `memwrite`
 - Show the call stack trace when an error is invoked
@@ -502,4 +508,4 @@ make test-self-host
 
 
 ## How it Works
-Implementation details are introduced in [this blog post](https://woodrush.github.com/blog/lambdalisp.html).
+Implementation details are introduced in [this blog post](https://woodrush.github.io/blog/lambdalisp.html).
