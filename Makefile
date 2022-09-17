@@ -29,7 +29,10 @@ all:
 	$(MAKE) $(target_blc)
 	$(MAKE) $(target_ulamb)
 
-run-repl: $(ULAMB) $(ASC2BIN)
+run-repl: $(BLC) $(ASC2BIN)
+	( cat $(target_blc) | $(ASC2BIN); cat ) | $(BLC)
+
+run-repl-ulamb: $(ULAMB) $(ASC2BIN)
 	( cat $(target_ulamb) | $(ASC2BIN); cat ) | $(ULAMB) -u
 
 test: test-blc-uni test-compiler-hosting-blc-uni
@@ -306,18 +309,10 @@ $(TROMP): ./build/tromp.c
 .PHONY: tromp
 tromp: $(TROMP)
 
-.PHONY: show_uni.c_message
-show_uni.c_message:
-	@echo
-	@echo "    This procedure requires the binary lambda calculus interpreter 'uni'."
-	@echo "    To compile it and proceed, please place uni.c under ./build."
-	@echo "    Please see README.md for details."
-	@echo
-	@exit 1
-
 build/uni.c:
 	mkdir -p ./build
-	if [ ! -f $@ ]; then $(MAKE) show_uni.c_message; fi
+	wget https://tromp.github.io/cl/uni.c
+	mv uni.c ./build
 
 $(UNI): ./build/uni.c
 	# Compile with the option -DA=9999999 (larger than the original -DM=999999) to execute large programs
