@@ -36,7 +36,7 @@ run-repl-ulamb: $(ULAMB) $(ASC2BIN)
 	( cat $(target_ulamb) | $(ASC2BIN); cat ) | $(ULAMB) -u
 
 run-repl-lazyk: $(LAZYK) $(ASC2BIN)
-	( cat $(target_lazyk) | $(ASC2BIN); cat ) | $(LAZYK) -u
+	$(LAZYK) -u $(target_lazyk)
 
 test: test-blc-uni test-compiler-hosting-blc-uni
 test-all-nonlinux: interpreters-nonlinux test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp
