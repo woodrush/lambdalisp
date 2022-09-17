@@ -7,13 +7,13 @@ on:
     branches: [ main ]
 
 jobs:
-  test-ulamb:
+  test-blc:
 
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - name: Run test-ulamb
+    - name: Run test-blc
       run: |
         sudo apt install -y sbcl
-        make test-ulamb
+        make test-blc
