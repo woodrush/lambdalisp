@@ -237,6 +237,7 @@ $(target_lazyk): $(BASE_SRCS) $(def_prelude_lazyk) ./src/main-lazyk.cl ./src/laz
 # Additional targets
 .PRECIOUS: $(target_latex)
 $(target_latex): $(BASE_SRCS) $(def_prelude) ./src/main-latex.cl ./tools/main.tex ./tools/make-latex.sh
+	mkdir -p ./out
 	./tools/make-latex.sh
 	mv lambdalisp.tex out
 
