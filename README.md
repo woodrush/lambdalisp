@@ -4,7 +4,7 @@
 
 
 LambdaLisp is a Lisp interpreter written as an untyped lambda calculus term.
-The entire lambda calculus expression is viewable as a PDF [here](https://woodrush.github.com/lambdalisp.pdf).
+The entire lambda calculus expression is viewable as a PDF [here](https://woodrush.github.io/lambdalisp.pdf).
 
 
 ## Overview
