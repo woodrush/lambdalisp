@@ -318,10 +318,10 @@ $(BLC): build/Blc.S build/flat.lds
 .PHONY: blc
 blc: $(BLC)
 
-build/lambda/blc.h:
+build/lambda/blc.orig.h:
 	mkdir -p ./build/lambda
 	wget https://justine.lol/lambda/blc.h
-	mv blc.h ./build/lambda
+	mv blc.h ./build/lambda/blc.orig.h
 
 build/lambda/lambda.c:
 	mkdir -p ./build/lambda
@@ -368,10 +368,13 @@ build/lambda/vars.c:
 	wget https://justine.lol/lambda/vars.c
 	mv vars.c ./build/lambda
 
-$(LAMBDA):	build/lambda/blc.h build/lambda/lambda.c build/lambda/parse.c \
+$(LAMBDA):	build/lambda/blc.orig.h build/lambda/lambda.c build/lambda/parse.c \
 			build/lambda/needbit.c build/lambda/getbit.c build/lambda/error.c \
 			build/lambda/debug.c build/lambda/dump.c build/lambda/print.c \
 			build/lambda/vars.c
+	# Extend the maximum memory limit to execute large programs
+	# Make TERMS configurable
+	cd build/lambda; cat blc.orig.h | sed -e 's/#define.*TERMS.*//' > blc.h
 	# Compile with the option -DTERMS=50000000 (larger than the original -DTERMS=5000000) to execute large programs
 	cd build/lambda; $(CC) -I . -DTERMS=50000000 -o lambda.com lambda.c \
 		parse.c needbit.c getbit.c error.c debug.c dump.c print.c vars.c
