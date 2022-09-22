@@ -383,10 +383,7 @@
       (floor i (length plaintext-lambda-env-vars)))))
 
 (defun lambda-compiler-builder (app-format-var app-format-app abs-format)
-  (let ((compiler ())
-        (app-format-var app-format-var)
-        (app-format-app app-format-app)
-        (abs-format abs-format))
+  (let ((compiler ()))
     (setq compiler
       (lambda (body &optional (env ()))
         (labels
@@ -395,19 +392,32 @@
               (if i
                 (int-to-alphabet i)
                 (decorate-varname var)))))
-          (if (atom body)
-              (lookup env body)
-              (if (not (islambda body))
-                (format nil (if (atom (car body)) app-format-var app-format-app)
-                    (funcall compiler (car body) env)
-                    (funcall compiler (car (cdr body)) env))
-                (format nil abs-format
-                  (lookup (cons (lambdaarg-top body) env) (lambdaarg-top body))
-                  (funcall compiler (lambdabody body) (cons (lambdaarg-top body) env))))))))))
+          (cond
+            ((atom body)
+              (lookup env body))
+            ((not (islambda body))
+              (format nil
+                (cond
+                  ((atom (car body))
+                    app-format-var)
+                  ((islambda (car body))
+                    app-format-app)
+                  (t
+                    app-format-var))
+                (funcall compiler (car body) env)
+                (funcall compiler (car (cdr body)) env)))
+            (t
+              (format nil abs-format
+                (lookup (cons (lambdaarg-top body) env) (lambdaarg-top body))
+                (funcall compiler (lambdabody body) (cons (lambdaarg-top body) env))))))))))
 
-(defparameter to-plaintext-lambda* (lambda-compiler-builder "(~a ~a)" "(~a ~a)" "λ~a.~a"))
+(defparameter to-plaintext-lambda* (lambda-compiler-builder "(~a ~a)" "((~a) ~a)" "\\~a.~a"))
 (defun to-plaintext-lambda (&rest args)
   (apply to-plaintext-lambda* args))
+
+(defparameter to-lam* (lambda-compiler-builder "(~a ~a)" "(~a ~a)" "(\\~a.~a)"))
+(defun to-lam (&rest args)
+  (apply to-lam* args))
 
 (defparameter to-js-arrow* (lambda-compiler-builder "~a(~a)" "(~a)(~a)" "(~a) => ~a"))
 (defun to-js-arrow (&rest args)
@@ -433,12 +443,18 @@
 (defun compile-to-plaintext-lambda (expr)
   (to-plaintext-lambda (curry expr)))
 
+(defun compile-to-lam (expr)
+  (to-lam (curry expr)))
+
 
 ;;================================================================
 ;; Utilities
 ;;================================================================
 (defmacro compile-to-plaintext-lambda-lazy (expr-lazy)
   `(compile-to-plaintext-lambda (macroexpand-lazy ,expr-lazy)))
+
+(defmacro compile-to-lam-lazy (expr-lazy)
+  `(compile-to-lam (macroexpand-lazy ,expr-lazy)))
 
 (defmacro compile-to-blc-lazy (expr-lazy)
   `(compile-to-blc (macroexpand-lazy ,expr-lazy)))
