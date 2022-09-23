@@ -3,6 +3,7 @@
 CC=cc
 
 BLC=./bin/Blc
+LAMBDA=./bin/lambda
 UNI=./bin/uni
 TROMP=./bin/tromp
 ULAMB=./bin/clamb
@@ -32,6 +33,9 @@ all:
 run-repl: $(BLC) $(ASC2BIN)
 	( cat $(target_blc) | $(ASC2BIN); cat ) | $(BLC)
 
+run-repl-lambda: $(LAMBDA) $(ASC2BIN)
+	( cat $(target_blc) | $(ASC2BIN); cat ) | $(LAMBDA) -b
+
 run-repl-ulamb: $(ULAMB) $(ASC2BIN)
 	( cat $(target_ulamb) | $(ASC2BIN); cat ) | $(ULAMB) -u
 
@@ -39,13 +43,13 @@ run-repl-lazyk: $(LAZYK) $(ASC2BIN)
 	$(LAZYK) -u $(target_lazyk)
 
 test: test-blc-uni test-compiler-hosting-blc-uni
-test-all-nonlinux: interpreters-nonlinux test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp
+test-all-nonlinux: interpreters-nonlinux test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp test-blc-lambda
 # On x86-64-Linux, the interpreter 'Blc' can be used.
-test-all: interpreters test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp test-blc test-compiler-hosting-blc
+test-all: interpreters test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp test-blc-lambda test-blc test-compiler-hosting-blc
 
 # Build all of the interpreters that support LambdaLisp
-interpreters: uni clamb lazyk tromp blc asc2bin
-interpreters-nonlinux: uni clamb lazyk tromp asc2bin
+interpreters: uni clamb lazyk tromp blc lambda asc2bin
+interpreters-nonlinux: uni clamb lazyk tromp lambda asc2bin
 
 # Build the PDF file
 pdf: $(target_pdf)
@@ -69,6 +73,7 @@ test-sbclcmp-%: $(addsuffix .%-out.sbcl-diff, $(addprefix out/, $(notdir $(wildc
 test-%: test-sbclcmp-% test-lisp-%
 	@echo "\n    All tests have passed for $(interpreter-name-$*).\n"
 interpreter-name-blc="BLC with the interpreter 'Blc'"
+interpreter-name-blc-lambda="BLC with the interpreter 'lambda'"
 interpreter-name-blc-tromp="BLC with the interpreter 'tromp'"
 interpreter-name-blc-uni="BLC with the interpreter 'uni'"
 interpreter-name-ulamb="Universal Lambda"
@@ -122,6 +127,14 @@ out/%.blc-out: examples/% $(target_blc) $(BLC) $(ASC2BIN)
 		( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(BLC) > $@.tmp; fi
 	mv $@.tmp $@
 
+.PRECIOUS: out/%.blc-lambda-out
+out/%.blc-lambda-out: examples/% $(target_blc) $(LAMBDA) $(ASC2BIN)
+	mkdir -p ./out
+	if [ -f "test/$*.in" ]; then \
+		( cat $(target_blc) | $(ASC2BIN); cat $< test/$*.in ) | $(LAMBDA) -b > $@.tmp; else \
+		( cat $(target_blc) | $(ASC2BIN); cat $< ) | $(LAMBDA) -b > $@.tmp; fi
+	mv $@.tmp $@
+
 .PRECIOUS: out/%.blc-tromp-out
 out/%.blc-tromp-out: examples/% $(target_blc) $(TROMP) $(ASC2BIN)
 	mkdir -p ./out
@@ -159,6 +172,9 @@ out/%.lazyk-out: examples/% $(target_lazyk) $(LAZYK)
 out/%.blc-out.sbcl-diff: ./out/%.blc-out.cleaned ./out/%.sbcl-out
 	diff $^ || exit 1
 
+out/%.blc-lambda-out.sbcl-diff: ./out/%.blc-lambda-out.cleaned ./out/%.sbcl-out
+	diff $^ || exit 1
+
 out/%.blc-tromp-out.sbcl-diff: ./out/%.blc-tromp-out.cleaned ./out/%.sbcl-out
 	diff $^ || exit 1
 
@@ -178,6 +194,9 @@ out/%.cleaned: out/%
 
 # Expected text comparison test - compare LambdaLisp outputs with a predefined expected output
 out/%.blc-out.expected-diff: ./out/%.blc-out ./test/%.out
+	diff $^ || exit 1
+
+out/%.blc-lambda-out.expected-diff: ./out/%.blc-lambda-out ./test/%.out
 	diff $^ || exit 1
 
 out/%.blc-tromp-out.expected-diff: ./out/%.blc-tromp-out ./test/%.out
@@ -298,6 +317,71 @@ $(BLC): build/Blc.S build/flat.lds
 
 .PHONY: blc
 blc: $(BLC)
+
+build/lambda/blc.orig.h:
+	mkdir -p ./build/lambda
+	wget https://justine.lol/lambda/blc.h
+	mv blc.h ./build/lambda/blc.orig.h
+
+build/lambda/lambda.c:
+	mkdir -p ./build/lambda
+	wget https://justine.lol/lambda/lambda.c
+	mv lambda.c ./build/lambda
+
+build/lambda/parse.c:
+	mkdir -p ./build/lambda
+	wget https://justine.lol/lambda/parse.c
+	mv parse.c ./build/lambda
+
+build/lambda/needbit.c:
+	mkdir -p ./build/lambda
+	wget https://justine.lol/lambda/needbit.c
+	mv needbit.c ./build/lambda
+
+build/lambda/getbit.c:
+	mkdir -p ./build/lambda
+	wget https://justine.lol/lambda/getbit.c
+	mv getbit.c ./build/lambda
+
+build/lambda/error.c:
+	mkdir -p ./build/lambda
+	wget https://justine.lol/lambda/error.c
+	mv error.c ./build/lambda
+
+build/lambda/debug.c:
+	mkdir -p ./build/lambda
+	wget https://justine.lol/lambda/debug.c
+	mv debug.c ./build/lambda
+
+build/lambda/dump.c:
+	mkdir -p ./build/lambda
+	wget https://justine.lol/lambda/dump.c
+	mv dump.c ./build/lambda
+
+build/lambda/print.c:
+	mkdir -p ./build/lambda
+	wget https://justine.lol/lambda/print.c
+	mv print.c ./build/lambda
+
+build/lambda/vars.c:
+	mkdir -p ./build/lambda
+	wget https://justine.lol/lambda/vars.c
+	mv vars.c ./build/lambda
+
+$(LAMBDA):	build/lambda/blc.orig.h build/lambda/lambda.c build/lambda/parse.c \
+			build/lambda/needbit.c build/lambda/getbit.c build/lambda/error.c \
+			build/lambda/debug.c build/lambda/dump.c build/lambda/print.c \
+			build/lambda/vars.c
+	# Extend the maximum memory limit to execute large programs
+	# Make TERMS configurable
+	cd build/lambda; cat blc.orig.h | sed -e 's/#define.*TERMS.*//' > blc.h
+	# Compile with the option -DTERMS=50000000 (larger than the original -DTERMS=5000000) to execute large programs
+	cd build/lambda; $(CC) -I . -DTERMS=50000000 -o lambda lambda.c \
+		parse.c needbit.c getbit.c error.c debug.c dump.c print.c vars.c
+	mv build/lambda/lambda ./bin
+
+.PHONY: lambda
+lambda: $(LAMBDA)
 
 build/tromp.c:
 	mkdir -p ./build
