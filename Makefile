@@ -3,7 +3,7 @@
 CC=cc
 
 BLC=./bin/Blc
-LAMBDA=./bin/lambda.com
+LAMBDA=./bin/lambda
 UNI=./bin/uni
 TROMP=./bin/tromp
 ULAMB=./bin/clamb
@@ -73,7 +73,7 @@ test-sbclcmp-%: $(addsuffix .%-out.sbcl-diff, $(addprefix out/, $(notdir $(wildc
 test-%: test-sbclcmp-% test-lisp-%
 	@echo "\n    All tests have passed for $(interpreter-name-$*).\n"
 interpreter-name-blc="BLC with the interpreter 'Blc'"
-interpreter-name-blc-lambda="BLC with the interpreter 'lambda.com'"
+interpreter-name-blc-lambda="BLC with the interpreter 'lambda'"
 interpreter-name-blc-tromp="BLC with the interpreter 'tromp'"
 interpreter-name-blc-uni="BLC with the interpreter 'uni'"
 interpreter-name-ulamb="Universal Lambda"
@@ -376,9 +376,9 @@ $(LAMBDA):	build/lambda/blc.orig.h build/lambda/lambda.c build/lambda/parse.c \
 	# Make TERMS configurable
 	cd build/lambda; cat blc.orig.h | sed -e 's/#define.*TERMS.*//' > blc.h
 	# Compile with the option -DTERMS=50000000 (larger than the original -DTERMS=5000000) to execute large programs
-	cd build/lambda; $(CC) -I . -DTERMS=50000000 -o lambda.com lambda.c \
+	cd build/lambda; $(CC) -I . -DTERMS=50000000 -o lambda lambda.c \
 		parse.c needbit.c getbit.c error.c debug.c dump.c print.c vars.c
-	mv build/lambda/lambda.com ./bin
+	mv build/lambda/lambda ./bin
 
 .PHONY: lambda
 lambda: $(LAMBDA)
