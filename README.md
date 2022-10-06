@@ -33,7 +33,9 @@ Supported interpreters are:
   (the [source](https://www.ioccc.org/2012/tromp/tromp.c) is in the shape of a λ)
 - Universal Lambda interpreter [clamb](https://github.com/irori/clamb) and Lazy K interpreter [lazyk](https://github.com/irori/lazyk) written by Kunihiko Sakamoto
 
-More implementation details are introduced in [this blog post](https://woodrush.github.io/blog/lambdalisp.html).
+Lisp has been described by Alan Kay as the [Maxwell's equations of software](https://www.gnu.org/software/mes/manual/html_node/LISP-as-Maxwell_0027s-Equations-of-Software.html).
+In the same sense, I believe that lambda calculus is the particle physics of computation.
+LambdaLisp may therefore be a gigantic electromagnetic [Lagrangian](https://en.wikipedia.org/wiki/Mathematical_formulation_of_the_Standard_Model) that connects the realm of human-friendly programming to the origins of the notion of computation itself.
 
 
 ## Usage
