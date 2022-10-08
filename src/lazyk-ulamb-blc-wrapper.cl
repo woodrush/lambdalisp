@@ -83,9 +83,52 @@
     (<- (c-blc) (int2bitlist c-ulamb powerlist))
     (cons c-blc (lazykstr-to-blcstr s-cdr))))
 
+(defrec-lazy take-n* (n l cur-n cont)
+  (cond
+    ((= n cur-n)
+      (cont nil l))
+    (t
+      (typematch-nil-cons l (car-l cdr-l)
+        ;; nil case
+        (do
+          (<- (ret nextlist) (take-n* n l (succ cur-n)))
+          (cont (cons t ret) nextlist))
+        ;; cons case
+        (do
+          (<- (ret nextlist) (take-n* n cdr-l (succ cur-n)))
+          (cont (cons car-l ret) nextlist))))))
+
+(defun-lazy take-n (n l)
+  (take-n* n l 0))
+
+(defrec-lazy bit-to-byte (s)
+  (typematch-nil-cons s (car-s cdr-s)
+    ;; nil case
+    nil
+    ;; cons case
+    (do
+      (<- (c s) (take-n 8 s))
+      (cons c (bit-to-byte s)))))
+
+(defrec-lazy append-direct (l1 l2)
+  (typematch-nil-cons l1 (car-l1 cdr-l1)
+    ;; nil case
+    l2
+    ;; cons case
+    (cons car-l1 (append-direct cdr-l1 l2))))
+
+(defrec-lazy byte-to-bit (s)
+  (typematch-nil-cons s (car-s cdr-s)
+    ;; nil case
+    nil
+    ;; cons case
+    (append-direct car-s (byte-to-bit cdr-s))))
 
 (defun-lazy blc-to-lazyk-wrapper (program stdin)
   (blcstr-to-lazykstr (program (lazykstr-to-blcstr stdin))))
 
 (defun-lazy blc-to-ulamb-wrapper (program stdin)
   (blcstr-to-ulambstr (program (ulambstr-to-blcstr stdin))))
+
+(defun-lazy blc-to-bitblc-wrapper (program stdin)
+  (byte-to-bit (program (bit-to-byte stdin))))
