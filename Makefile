@@ -12,6 +12,7 @@ LAZYK=./bin/lazyk
 SBCL=sbcl
 LATEX=latex
 DVIPDFMX=dvipdfmx
+GHC=ghc
 
 ASC2BIN=./bin/asc2bin
 ASC2BIT=./bin/asc2bit
@@ -46,7 +47,7 @@ run-repl-lazyk: $(target_lazyk)$(LAZYK) $(ASC2BIN)
 	$(LAZYK) -u $(target_lazyk)
 
 run-repl-bitblc: $(target_bitblc) $(UNI2) $(ASC2BIN) $(ASC2BIT)
-	( cat $(target_bitblc); (cat | $(ASC2BIT)) ) | $(UNI2) | $(ASC2BIN)
+	( cat $(target_bitblc); (cat - | $(ASC2BIT)) ) | $(UNI2) | $(ASC2BIN)
 
 test: test-blc-uni test-compiler-hosting-blc-uni
 test-all-nonlinux: interpreters-nonlinux test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp test-blc-lambda
@@ -435,3 +436,9 @@ asc2bit: $(ASC2BIT)
 $(ASC2BIT): tools/asc2bit.c
 	$(CC) $< -O2 -o $@
 	chmod 755 $@
+
+build/AIT/Makefile:
+	cd build; git clone https://github.com/tromp/AIT
+
+$(UNI2): build/AIT/Makefile
+	cd build/AIT; $(GHC) Uni2.hs && mv Uni2 ../../bin
