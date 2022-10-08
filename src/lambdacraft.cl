@@ -304,6 +304,11 @@
 (defmacro-lazy do (&rest proc)
   `(do* ,@(reverse proc)))
 
+(defmacro-lazy typematch-nil-cons (expr cons-args nil-case cons-case)
+  `(,expr
+     (lambda ,cons-args
+       (lambda (_) ,cons-case))
+     ,nil-case))
 
 
 ;;================================================================

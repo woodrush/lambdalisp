@@ -5,18 +5,22 @@ CC=cc
 BLC=./bin/Blc
 LAMBDA=./bin/lambda
 UNI=./bin/uni
+UNI2=./bin/Uni2
 TROMP=./bin/tromp
 ULAMB=./bin/clamb
 LAZYK=./bin/lazyk
 SBCL=sbcl
 LATEX=latex
 DVIPDFMX=dvipdfmx
+GHC=ghc
 
 ASC2BIN=./bin/asc2bin
+ASC2BIT=./bin/asc2bit
 
 target_blc=./bin/lambdalisp.blc
 target_ulamb=./bin/lambdalisp.ulamb
 target_lazyk=./bin/lambdalisp.lazy
+target_bitblc=./bin/lambdalisp.bitblc
 target_latex=out/lambdalisp.tex
 target_pdf=lambdalisp.pdf
 
@@ -30,17 +34,20 @@ all:
 	$(MAKE) $(target_blc)
 	$(MAKE) $(target_ulamb)
 
-run-repl: $(BLC) $(ASC2BIN)
+run-repl: $(target_blc) $(BLC) $(ASC2BIN)
 	( cat $(target_blc) | $(ASC2BIN); cat ) | $(BLC)
 
-run-repl-lambda: $(LAMBDA) $(ASC2BIN)
+run-repl-lambda: $(target_blc) $(LAMBDA) $(ASC2BIN)
 	( cat $(target_blc) | $(ASC2BIN); cat ) | $(LAMBDA) -b
 
-run-repl-ulamb: $(ULAMB) $(ASC2BIN)
+run-repl-ulamb: $(target_ulamb) $(ULAMB) $(ASC2BIN)
 	( cat $(target_ulamb) | $(ASC2BIN); cat ) | $(ULAMB) -u
 
-run-repl-lazyk: $(LAZYK) $(ASC2BIN)
+run-repl-lazyk: $(target_lazyk)$(LAZYK) $(ASC2BIN)
 	$(LAZYK) -u $(target_lazyk)
+
+run-script-bitblc: $(target_bitblc) $(UNI2) $(ASC2BIN) $(ASC2BIT)
+	( cat $(target_bitblc); (cat examples/loop.cl | $(ASC2BIT)) ) | $(UNI2) | $(ASC2BIN)
 
 test: test-blc-uni test-compiler-hosting-blc-uni
 test-all-nonlinux: interpreters-nonlinux test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp test-blc-lambda
@@ -252,6 +259,12 @@ $(target_lazyk): $(BASE_SRCS) $(def_prelude_lazyk) ./src/main-lazyk.cl ./src/laz
 	mv $(target_lazyk).tmp $(target_lazyk)
 	rm $(target_lazyk).tmp2
 
+.PHONY: bitblc-src
+bitblc-src: $(target_bitblc)
+$(target_bitblc): $(BASE_SRCS) $(def_prelude) ./src/main-bitblc.cl ./src/lazyk-ulamb-blc-wrapper.cl
+	cd src; sbcl --script ./main-bitblc.cl > ../$@.tmp
+	mv $@.tmp $@
+
 
 # Additional targets
 .PRECIOUS: $(target_latex)
@@ -411,10 +424,21 @@ $(UNI): ./build/uni.c
 .PHONY: uni
 uni: $(UNI)
 
+.PHONY: asc2bin
+asc2bin: $(ASC2BIN)
 $(ASC2BIN): ./tools/asc2bin.c
 	cd build; $(CC) ../tools/asc2bin.c -O2 -o asc2bin
 	mv build/asc2bin ./bin
 	chmod 755 $(ASC2BIN)
 
-.PHONY: asc2bin
-asc2bin: $(ASC2BIN)
+.PHONY: asc2bit
+asc2bit: $(ASC2BIT)
+$(ASC2BIT): tools/asc2bit.c
+	$(CC) $< -O2 -o $@
+	chmod 755 $@
+
+build/AIT/Makefile:
+	cd build; git clone https://github.com/tromp/AIT
+
+$(UNI2): build/AIT/Makefile
+	cd build/AIT; $(GHC) Uni2.hs && mv Uni2 ../../bin
