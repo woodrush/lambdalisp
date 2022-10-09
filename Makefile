@@ -438,6 +438,7 @@ $(ASC2BIT): tools/asc2bit.c
 	chmod 755 $@
 
 build/AIT/Makefile:
+	mkdir -p build
 	cd build; git clone https://github.com/tromp/AIT
 
 $(UNIOBF): build/AIT/Makefile
