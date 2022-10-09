@@ -46,8 +46,8 @@ run-repl-ulamb: $(target_ulamb) $(ULAMB) $(ASC2BIN)
 run-repl-lazyk: $(target_lazyk)$(LAZYK) $(ASC2BIN)
 	$(LAZYK) -u $(target_lazyk)
 
-run-script-bitblc: $(target_bitblc) $(UNI2) $(ASC2BIN) $(ASC2BIT)
-	( cat $(target_bitblc); (cat examples/loop.cl | $(ASC2BIT)) ) | $(UNI2) | $(ASC2BIN)
+run-repl-bitblc: $(target_bitblc) $(UNI2) $(ASC2BIN) $(ASC2BIT)
+	( cat $(target_bitblc); (cat | $(ASC2BIT)) ) | $(UNI2) | $(ASC2BIN)
 
 test: test-blc-uni test-compiler-hosting-blc-uni
 test-all-nonlinux: interpreters-nonlinux test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp test-blc-lambda
