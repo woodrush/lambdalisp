@@ -5,7 +5,7 @@ CC=cc
 BLC=./bin/Blc
 LAMBDA=./bin/lambda
 UNI=./bin/uni
-UNI2=./bin/Uni2
+UNIOBF=./bin/UniObf
 TROMP=./bin/tromp
 ULAMB=./bin/clamb
 LAZYK=./bin/lazyk
@@ -46,8 +46,8 @@ run-repl-ulamb: $(target_ulamb) $(ULAMB) $(ASC2BIN)
 run-repl-lazyk: $(target_lazyk)$(LAZYK) $(ASC2BIN)
 	$(LAZYK) -u $(target_lazyk)
 
-run-repl-bitblc: $(target_bitblc) $(UNI2) $(ASC2BIN) $(ASC2BIT)
-	( cat $(target_bitblc); (cat | $(ASC2BIT)) ) | $(UNI2) | $(ASC2BIN)
+run-repl-bitblc: $(target_bitblc) $(UNIOBF) $(ASC2BIN) $(ASC2BIT)
+	( cat $(target_bitblc); (cat | $(ASC2BIT)) ) | $(UNIOBF) | $(ASC2BIN)
 
 test: test-blc-uni test-compiler-hosting-blc-uni
 test-all-nonlinux: interpreters-nonlinux test-blc-uni test-ulamb test-lazyk test-compiler-hosting-blc-uni test-blc-tromp test-blc-lambda
@@ -440,5 +440,5 @@ $(ASC2BIT): tools/asc2bit.c
 build/AIT/Makefile:
 	cd build; git clone https://github.com/tromp/AIT
 
-$(UNI2): build/AIT/Makefile
-	cd build/AIT; $(GHC) Uni2.hs && mv Uni2 ../../bin
+$(UNIOBF): build/AIT/Makefile
+	cd build/AIT; $(GHC) UniObf.hs && mv UniObf ../../bin
