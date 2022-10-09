@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 
 int main (void) {
     char c;
@@ -13,6 +14,7 @@ int main (void) {
         n++;
         if (n == 8) {
             putchar(buf);
+            fflush(stdout);
             buf = 0;
             mask = 1 << 7;
             n = 0;
