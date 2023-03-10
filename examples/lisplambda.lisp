@@ -1,5 +1,3 @@
-(setq code "000010")
-
 (defun parsevarname (s n cont)
   (cond
     ((= nil s)
@@ -44,5 +42,9 @@
     (t
       (error "Parse error"))))
 
-(parseblc (lexblc code) (lambda (term _) (print term)))
-(print "End")
+(defun main ()
+  (setq code (read))
+  (print code)
+  (parseblc (lexblc code) (lambda (term _) (print term))))
+
+(main)
