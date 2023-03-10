@@ -39,11 +39,6 @@
     (t
       (nth (- n 1) (cdr l)))))
 
-(defun drop (n l)
-  (cond
-    ((= 0 n) l)
-    (t (drop (- n 1) (cdr l)))))
-
 (defun krivine (term)
   (let ((tmp nil) (et term) (ep nil) (ee nil))
     (format t "----~%")

@@ -53,13 +53,8 @@
     (t
       (nth (- n 1) (cdr l)))))
 
-(defun drop (n l)
-  (cond
-    ((= 0 n) l)
-    (t (drop (- n 1) (cdr l)))))
-
 (defun krivine (term)
-  (let ((n 0) (tmp nil) (et term) (ep nil) (ee nil))
+  (let ((tmp nil) (et term) (ep nil) (ee nil))
     (format t "----~%")
     (loop
       (format t "t: ~a~%" et)
@@ -69,8 +64,7 @@
       (cond
         ;; Variable
         ((integerp et)
-          (setq n et)
-          (setq tmp (nth n ee))
+          (setq tmp (nth et ee))
           (setq et (car tmp))
           (setq ee (cdr tmp)))
         ;; Abstraction
