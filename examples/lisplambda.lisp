@@ -79,7 +79,7 @@
           (cond ((eq nil ep)
             (return-from krivine et)))
           (setq et (cdr et))
-          (setq ee (cons (car ep ee)))
+          (setq ee (cons (car ep) ee))
           (setq ep (cdr ep)))
         ;; Empty term
         ((eq nil et)
