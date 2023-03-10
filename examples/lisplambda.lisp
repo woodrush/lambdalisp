@@ -151,20 +151,6 @@
 (defun int2lint (n)
   (int2lint* n *powerlist*))
 
-(defun char2lchar (c)
-  (cond
-    ((eq "a" c)
-      (int2lint 97))
-    ((eq "b" c)
-      (int2lint 98))))
-
-(defun str2lstr (s)
-  (cond
-    ((eq "" s)
-      lnil)
-    (t
-      (lcons (char2lchar (carstr s)) (str2lstr (cdrstr s))))))
-
 (defparameter *newline* "
 ")
 (defparameter *chartable* (list
@@ -179,16 +165,32 @@
   "`" "a" "b"  "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o"
   "p" "q" "r"  "s" "t" "u" "v" "w" "x" "y" "z" "{" "|" "}" "-" "[0x7f]"))
 
+(defun char2lchar (c)
+  (let ((i 0) (l *chartable*) (c2 (car *chartable*)))
+    (loop
+      (cond
+        ((= c c2)
+          (return-from char2lchar (int2lint i)))
+        ;; TODO: Handle special bytes
+        ((< 127 i)
+          (return (int2lint 0))))
+      (setq i (+ 1 i))
+      (setq l (cdr l))
+      (setq c2 (car l)))))
+
+(defun str2lstr (s)
+  (cond
+    ((eq "" s)
+      lnil)
+    (t
+      (lcons (char2lchar (carstr s)) (str2lstr (cdrstr s))))))
+
 (defun lstr2str (s)
   (cond
     ((isnil s)
       "")
     (t
       (+ (nth (lint2int (lcar s)) *chartable*) (lstr2str (lcdr s))))))
-
-(print (lint2int (int2lint 125)))
-(print (lbool2int ltrue))
-(print (lbool2int lnil))
 
 (defun lreadline ()
   (let ((c (read-char)))
@@ -198,24 +200,20 @@
       (t
         (lcons (char2lchar c) (lreadline))))))
 
-(print (str2lstr "aba"))
-(print (lstr2str (str2lstr "aba")))
+(defun main ()
+  (let ((parsed nil) (stdin nil) (program nil) (result nil) (result-text nil))
+    (format t "~%")
+    (format t "Code: ")
+    (setq parsed (parseblc-stdin))
+    (format t "~%")
+    (format t "Parsed: ~a~%" parsed)
+    (setq stdin (lreadline))
+    (format t "Stdin: ~a~%" stdin)
+    (setq program (list parsed stdin))
+    (setq result (krivine program))
+    (format t "Output term: ~a~%" result)
+    (setq result-text (lstr2str result))
+    (format t "Output: ~a~%" result-text)
+    (exit)))
 
-;; (defun main ()
-;;   (let ((parsed nil) (stdin nil) (program nil) (result nil) (result-text nil))
-;;     (format t "~%")
-;;     (format t "Code: ")
-;;     (setq parsed (parseblc-stdin))
-;;     (format t "~%")
-;;     (format t "Parsed: ~a~%" parsed)
-;;     (setq stdin (lreadline))
-;;     (format t "Stdin: ~a~%" stdin)
-;;     (setq program (list parsed stdin))
-;;     ;; (format t "Krivine machine transitions:~%")
-;;     (setq result (krivine program))
-;;     (format t "Output term: ~a~%" result)
-;;     (setq result-text (lstr2str result))
-;;     (format t "Output: ~a~%" result-text)
-;;     (exit)))
-
-;; (main)
+(main)
