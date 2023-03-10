@@ -1,3 +1,5 @@
+(defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
+
 (defun parsevarname (s n cont)
   (cond
     ((= nil s)
@@ -19,7 +21,7 @@
           (cons 'L (lexblc (cdrstr (cdrstr s)))))
         ;; case 1
         (t
-          (cons 'P (lexblc (cdrstr (cdrstr s)))))))
+          (cons 'A (lexblc (cdrstr (cdrstr s)))))))
     ;; case 1
     (t
       (parsevarname (cdrstr s) 0
@@ -27,13 +29,12 @@
           (cons n (lexblc s)))))))
 
 (defun parseblc (lexed cont)
-  (print lexed)
   (cond
     ;; Abstraction
     ((eq 'L (car lexed))
       (parseblc (cdr lexed) (lambda (t1 pnext) (cont (cons 'L t1) pnext))))
     ;; Appliation
-    ((eq 'P (car lexed))
+    ((eq 'A (car lexed))
       (parseblc (cdr lexed) 
         (lambda (t1 pnext)
           (parseblc pnext
@@ -59,11 +60,12 @@
 
 (defun krivine (term)
   (let ((n 0) (tmp nil) (et term) (ep nil) (ee nil))
+    (format t "----~%")
     (loop
-      (print "----")
-      (print et)
-      (print ep)
-      (print ee)
+      (format t "t: ~a~%" et)
+      (format t "p: ~a~%" ep)
+      (format t "e: ~a~%" ee)
+      (format t "----~%")
       (cond
         ;; Variable
         ((integerp et)
@@ -79,6 +81,9 @@
           (setq et (cdr et))
           (setq ee (cons (car ep ee)))
           (setq ep (cdr ep)))
+        ;; Empty term
+        ((eq nil et)
+          (return-from krivine et))
         ;; Application
         (t
           (setq ep
@@ -88,9 +93,15 @@
           (setq et (car et)))))))
 
 (defun main ()
-  (setq code (read))
-  (print code)
-  (parseblc (lexblc code) (lambda (term _) 
-    (print (krivine term)))))
+  (let ((code nil) (lexed nil) (parsed nil) (result nil))
+    (format t "~%")
+    (setq code (read))
+    (format t "Input: ~a~%" code)
+    (setq lexed (lexblc code))
+    (format t "Lexed: ~a~%" lexed)
+    (parseblc lexed (lambda (term _) (setq parsed term)))
+    (format t "Parsed: ~a~%" parsed)
+    (setq result (krivine parsed))
+    (format t "Result: ~a~%" result)))
 
 (main)
