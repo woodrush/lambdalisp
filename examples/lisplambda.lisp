@@ -42,26 +42,20 @@
     (t
       (nth (- n 1) (cdr l)))))
 
-(defun drop (n l)
-  (cond
-    ((= 0 n) l)
-    (t (drop (- n 1) (cdr l)))))
-
 (defun krivine (term)
-  (let ((n 0) (tmp nil) (et term) (ep nil) (ee nil))
-    ;; (format t "----~%")
+  (let ((tmp nil) (et term) (ep nil) (ee nil))
     (loop
+      ;; (format t "----~%")
       ;; (format t "t: ~a~%" et)
       ;; (format t "p: ~a~%" ep)
       ;; (format t "e: ~a~%" ee)
-      ;; (format t "----~%")
       (cond
         ;; Variable
         ((integerp et)
-          (setq n et)
-          (setq tmp (nth n ee))
+          (setq tmp (nth et ee))
           (setq et (car tmp))
-          (setq ee (cdr tmp)))
+          (setq ee (cdr tmp))
+          (format t "Variable~%"))
         ;; Abstraction
         ((eq 'L (car et))
           ;; If the stack is empty, finish the evaluation
@@ -69,7 +63,8 @@
             (return-from krivine et)))
           (setq et (cdr et))
           (setq ee (cons (car ep) ee))
-          (setq ep (cdr ep)))
+          (setq ep (cdr ep))
+          (format t "Abstraction~%"))
         ;; Empty term
         ((eq nil et)
           (return-from krivine et))
@@ -79,7 +74,9 @@
             (cons
               (cons (car (cdr et)) ee)
               ep))
-          (setq et (car et)))))))
+          (setq tmp (car et))
+          (setq et tmp)
+          (format t "Application: ~a~%" et))))))
 
 ;;================================================================================
 ;; I/O
@@ -177,6 +174,13 @@
       (setq i (+ 1 i))
       (setq l (cdr l))
       (setq c2 (car l)))))
+(lambda (stdin)
+  (cons (car stdin) stdin))
+
+;; 0010ab
+;; 00 00 01 01 10 01 110 0000110 110ab
+;; 00 00 01 01 10 01 110 0000110 110
+;; (cons (car stdin) stdin)
 
 (defun str2lstr (s)
   (cond
@@ -211,6 +215,7 @@
     (format t "Stdin: ~a~%" stdin)
     (setq program (list parsed stdin))
     (setq result (krivine program))
+    (format t "----~%")
     (format t "Output term: ~a~%" result)
     (setq result-text (lstr2str result))
     (format t "Output: ~a~%" result-text)
