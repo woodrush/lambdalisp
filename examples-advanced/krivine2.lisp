@@ -1,5 +1,15 @@
 (defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
 
+;; Reads a lambda calculus term from the standard input and
+;; evaluates its head normal form, based on the Krivine machine.
+;; The lambda calculus term is provided as a Binary Lambda Calculus term.
+;; The transition process of the Krivine machine is visualized as the term is evaluated.
+;;
+;; The same as krivine.lisp, except the code is specified with the variable `code`,
+;; defined after this comment.
+
+(defparameter code "01 0010 0010")
+
 (defun parsevarname (s n cont)
   (cond
     ((= nil s)
@@ -11,7 +21,7 @@
 
 (defun lexblc (s)
   (cond
-    ((eq s nil)
+    ((eq s "")
       nil)
     ((= (carstr s) "0")
       (cond
@@ -19,14 +29,16 @@
           (error "Parse error: Unexpected EOF"))
         ((= (carstr (cdrstr s)) "0")
           (cons 'L (lexblc (cdrstr (cdrstr s)))))
-        ;; case 1
+        ((= (carstr (cdrstr s)) "1")
+          (cons 'A (lexblc (cdrstr (cdrstr s)))))
         (t
-          (cons 'A (lexblc (cdrstr (cdrstr s)))))))
-    ;; case 1
-    (t
+          (lexblc (cdrstr s)))))
+    ((= (carstr s) "1")
       (parsevarname (cdrstr s) 0
         (lambda (s n)
-          (cons n (lexblc s)))))))
+          (cons n (lexblc s)))))
+    (t
+      (lexblc (cdrstr s)))))
 
 (defun parseblc (lexed cont)
   (cond
@@ -35,7 +47,7 @@
       (parseblc (cdr lexed) (lambda (t1 pnext) (cont (cons 'L t1) pnext))))
     ;; Appliation
     ((eq 'A (car lexed))
-      (parseblc (cdr lexed) 
+      (parseblc (cdr lexed)
         (lambda (t1 pnext)
           (parseblc pnext
             (lambda (t2 pnext)
@@ -87,9 +99,8 @@
           (setq et (car et)))))))
 
 (defun main ()
-  (let ((code nil) (lexed nil) (parsed nil) (result nil))
+  (let ((lexed nil) (parsed nil) (result nil))
     (format t "~%")
-    (setq code (read))
     (format t "Input: ~a~%" code)
     (setq lexed (lexblc code))
     (format t "Lexed: ~a~%" lexed)

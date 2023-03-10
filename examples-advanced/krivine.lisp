@@ -1,5 +1,41 @@
 (defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
 
+;; Reads a lambda calculus term from the standard input and
+;; evaluates its head normal form, based on the Krivine machine.
+;; The lambda calculus term is provided as a Binary Lambda Calculus term.
+;; The transition process of the Krivine machine is visualized as the term is evaluated.
+;;
+;; Specifications:
+;; - All characters except 0 and 1 are ignored.
+;; - BLC is a prefix code. As soon as the interpreter accepts a valid BLC code,
+;;   the interpreter starts evaluating the code.
+;;
+;; Usage:
+;; $ ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples-advanced/krivine.lisp;
+;;     echo "01 0010 0010" ) | bin/uni
+;; Code: 0100100010
+;; Parsed: ((L . 0) (L . 0))
+;; Krivine machine transitions:
+;; ----
+;; t: ((L . 0) (L . 0))
+;; p: ()
+;; e: ()
+;; ----
+;; t: (L . 0)
+;; p: (((L . 0)))
+;; e: ()
+;; ----
+;; t: 0
+;; p: ()
+;; e: (((L . 0)))
+;; ----
+;; t: (L . 0)
+;; p: ()
+;; e: ()
+;; ----
+;; Result: (L . 0)
+
+
 (defun read-print-01char ()
   (let ((c (read-char)))
     (cond
