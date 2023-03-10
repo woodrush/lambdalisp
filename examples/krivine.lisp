@@ -1,16 +1,16 @@
 (defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
 
-(defun read-01char ()
+(defun read-print-01char ()
   (let ((c (read-char)))
     (cond
       ((or (= "0" c) (= "1" c))
         (format t c)
         c)
       (t
-        (read-01char)))))
+        (read-print-01char)))))
 
 (defun parsevarname-stdin ()
-  (let ((c (read-01char)))
+  (let ((c (read-print-01char)))
     (cond
       ((= "0" c)
         0)
@@ -18,10 +18,10 @@
         (+ 1 (parsevarname-stdin))))))
 
 (defun parseblc-stdin ()
-  (let ((c (read-01char)))
+  (let ((c (read-print-01char)))
     (cond
       ((= c "0")
-        (setq c (read-01char))
+        (setq c (read-print-01char))
         (cond
           ((= c "0")
             (cons 'L (parseblc-stdin)))
@@ -45,7 +45,7 @@
     (t (drop (- n 1) (cdr l)))))
 
 (defun krivine (term)
-  (let ((n 0) (tmp nil) (et term) (ep nil) (ee nil))
+  (let ((tmp nil) (et term) (ep nil) (ee nil))
     (format t "----~%")
     (loop
       (format t "t: ~a~%" et)
@@ -55,8 +55,7 @@
       (cond
         ;; Variable
         ((integerp et)
-          (setq n et)
-          (setq tmp (nth n ee))
+          (setq tmp (nth et ee))
           (setq et (car tmp))
           (setq ee (cdr tmp)))
         ;; Abstraction
