@@ -1,50 +1,36 @@
 (defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
 
-(defun parsevarname (s n cont)
-  (cond
-    ((= nil s)
-      (error "Parse error: Unexpected EOF in variable name"))
-    ((= "0" (carstr s))
-      (cont (cdrstr s) n))
-    ((= "1" (carstr s))
-      (parsevarname (cdrstr s) (+ 1 n) cont))))
+(defun read-01char ()
+  (let ((c (read-char)))
+    (cond
+      ((or (= "0" c) (= "1" c))
+        (format t c)
+        c)
+      (t
+        (read-01char)))))
 
-(defun lexblc (s)
-  (cond
-    ((eq s nil)
-      nil)
-    ((= (carstr s) "0")
-      (cond
-        ((eq nil (cdrstr s))
-          (error "Parse error: Unexpected EOF"))
-        ((= (carstr (cdrstr s)) "0")
-          (cons 'L (lexblc (cdrstr (cdrstr s)))))
-        ;; case 1
-        (t
-          (cons 'A (lexblc (cdrstr (cdrstr s)))))))
-    ;; case 1
-    (t
-      (parsevarname (cdrstr s) 0
-        (lambda (s n)
-          (cons n (lexblc s)))))))
+(defun parsevarname-stdin ()
+  (let ((c (read-01char)))
+    (cond
+      ((= "0" c)
+        0)
+      (t
+        (+ 1 (parsevarname-stdin))))))
 
-(defun parseblc (lexed cont)
-  (cond
-    ;; Abstraction
-    ((eq 'L (car lexed))
-      (parseblc (cdr lexed) (lambda (t1 pnext) (cont (cons 'L t1) pnext))))
-    ;; Appliation
-    ((eq 'A (car lexed))
-      (parseblc (cdr lexed) 
-        (lambda (t1 pnext)
-          (parseblc pnext
-            (lambda (t2 pnext)
-              (cont (list t1 t2) pnext))))))
-    ;; Variable
-    ((integerp (car lexed))
-      (cont (car lexed) (cdr lexed)))
-    (t
-      (error "Parse error"))))
+(defun parseblc-stdin ()
+  (let ((c (read-01char)))
+    (cond
+      ((= c "0")
+        (setq c (read-01char))
+        (cond
+          ((= c "0")
+            (cons 'L (parseblc-stdin)))
+          ;; 1 case
+          (t
+            (list (parseblc-stdin) (parseblc-stdin)))))
+      ;; 1 case
+      (t
+        (parsevarname-stdin)))))
 
 (defun nth (n l)
   (cond
@@ -93,13 +79,11 @@
           (setq et (car et)))))))
 
 (defun main ()
-  (let ((code nil) (lexed nil) (parsed nil) (result nil))
+  (let ((parsed nil) (result nil))
     (format t "~%")
-    (setq code (read))
-    (format t "Input: ~a~%" code)
-    (setq lexed (lexblc code))
-    (format t "Lexed: ~a~%" lexed)
-    (parseblc lexed (lambda (term _) (setq parsed term)))
+    (format t "Code: ")
+    (setq parsed (parseblc-stdin))
+    (format t "~%")
     (format t "Parsed: ~a~%" parsed)
     (format t "Krivine machine transitions:~%")
     (setq result (krivine parsed))
