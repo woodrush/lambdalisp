@@ -4,6 +4,7 @@
 
 
 LambdaLisp is a Lisp interpreter written as an untyped lambda calculus term.
+It basically runs a large subset of Common Lisp as shown in the [Features](#features) section.
 The entire lambda calculus expression is viewable as a PDF [here](https://woodrush.github.io/lambdalisp.pdf).
 
 
@@ -14,7 +15,7 @@ which takes a string `x` as an input and returns a string as an output.
 The input `x` is the Lisp program and the user's standard input,
 and the output is the standard output.
 Characters are encoded into lambda term representations of natural numbers using the [Church encoding](https://en.wikipedia.org/wiki/Church_encoding),
-and strings are encoded as a list of characters with lists expressed as lambdas in the [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding),
+and strings are encoded as a list of characters with lists expressed as lambdas in the [Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding),
 so the entire computation process solely consists of the beta-reduction of lambda terms,
 without introducing any non-lambda-type object.
 
