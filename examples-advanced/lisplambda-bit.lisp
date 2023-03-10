@@ -1,6 +1,8 @@
 (defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
 
 ;; Evaluates a bit-oriented Binary Lambda Calculus (BLC) Program.
+;; There is also `lisplambda.lisp` which runs on byte-oriented mode,
+;; which is what LambdaLisp runs on, although it runs slower.
 ;;
 ;; Usage:
 ;; ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples-advanced/lisplambda-bit.lisp;
@@ -17,6 +19,8 @@
 ;;     All characters are buffered into a BLC list until it hits the first newline (0x0a).
 ;;   - Note that due to the specifications of LambdaLisp,
 ;;     the program crashes when a trailing newline does not exist.
+;;   - Be careful of trailing newlines at the end of [code],
+;;     which would nullify [stdin] since the first character of [stdin] would be a newline.
 ;;
 ;; Example programs:
 ;; - Echo program:
@@ -29,6 +33,12 @@
 ;;       echo "00 00 01 01 10 01 110 0000110 110   01" ) | bin/uni
 ;;     > 001
 ;;   - Corresponds to (lambda (stdin) (cons (car stdin) stdin)).
+;; - Prime number sieve (from IOCCC 2012 by John Tromp):
+;;     $ wget https://www.ioccc.org/2012/tromp/primes.blc
+;;     $ ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples-advanced/lisplambda-bit.lisp;
+;;       cat primes.blc; echo "" ) | bin/uni
+;;     > 00110101......
+;;   - Each bit shows if the given number at that index is a prime number, starting from 0.
 
 
 ;;================================================================================

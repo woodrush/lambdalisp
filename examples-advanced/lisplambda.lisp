@@ -1,6 +1,7 @@
 (defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
 
 ;; Evaluates a byte-oriented Binary Lambda Calculus (BLC) Program.
+;; There is `lisplambda-bit.lisp` which runs on bit-oriented mode, that runs faster than this program.
 ;;
 ;; Usage:
 ;; ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples-advanced/lisplambda.lisp;
