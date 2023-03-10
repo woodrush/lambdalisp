@@ -42,8 +42,8 @@
     (t
       (nth (- n 1) (cdr l)))))
 
-(defun krivine (term)
-  (let ((tmp nil) (et term) (ep nil) (ee nil))
+(defun krivine (et ep ee isouter)
+  (let ((tmp nil))
     (loop
       ;; (format t "----~%")
       ;; (format t "t: ~a~%" et)
@@ -55,16 +55,28 @@
           (setq tmp (nth et ee))
           (setq et (car tmp))
           (setq ee (cdr tmp))
-          (format t "Variable~%"))
+          ;; (format t "Variable~%")
+          )
         ;; Abstraction
         ((eq 'L (car et))
           ;; If the stack is empty, finish the evaluation
           (cond ((eq nil ep)
-            (return-from krivine et)))
-          (setq et (cdr et))
-          (setq ee (cons (car ep) ee))
-          (setq ep (cdr ep))
-          (format t "Abstraction~%"))
+            (cond
+              (isouter
+                (cond ((isnil et) (return-from krivine et)))
+                ;; Print character
+                (setq tmp (list et ltrue))
+                (setq tmp (krivine tmp ep ee nil))
+                (format t (lchar2char tmp))
+                (setq et (list et lnil)))
+              (t
+                (return-from krivine et))))
+            (t
+              (setq et (cdr et))
+              (setq ee (cons (car ep) ee))
+              (setq ep (cdr ep))))
+          ;; (format t "Abstraction~%")
+          )
         ;; Empty term
         ((eq nil et)
           (return-from krivine et))
@@ -76,7 +88,8 @@
               ep))
           (setq tmp (car et))
           (setq et tmp)
-          (format t "Application: ~a~%" et))))))
+          ;; (format t "Application: ~a~%" et)
+          )))))
 
 ;;================================================================================
 ;; I/O
@@ -189,12 +202,15 @@
     (t
       (lcons (char2lchar (carstr s)) (str2lstr (cdrstr s))))))
 
+(defun lchar2char (c)
+  (nth (lint2int c) *chartable*))
+
 (defun lstr2str (s)
   (cond
     ((isnil s)
       "")
     (t
-      (+ (nth (lint2int (lcar s)) *chartable*) (lstr2str (lcdr s))))))
+      (+ (lchar2char (lcar s)) (lstr2str (lcdr s))))))
 
 (defun lreadline ()
   (let ((c (read-char)))
@@ -214,11 +230,13 @@
     (setq stdin (lreadline))
     (format t "Stdin: ~a~%" stdin)
     (setq program (list parsed stdin))
-    (setq result (krivine program))
-    (format t "----~%")
-    (format t "Output term: ~a~%" result)
-    (setq result-text (lstr2str result))
-    (format t "Output: ~a~%" result-text)
+    ;; (setq result (krivine program nil nil t))
+    (format t "Output:~%")
+    (krivine program nil nil t)
+    ;; (format t "----~%")
+    ;; (format t "Output term: ~a~%" result)
+    ;; (setq result-text (lstr2str result))
+    ;; (format t "Output: ~a~%" result-text)
     (exit)))
 
 (main)
