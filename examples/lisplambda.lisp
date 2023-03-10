@@ -49,12 +49,12 @@
 
 (defun krivine (term)
   (let ((n 0) (tmp nil) (et term) (ep nil) (ee nil))
-    (format t "----~%")
+    ;; (format t "----~%")
     (loop
-      (format t "t: ~a~%" et)
-      (format t "p: ~a~%" ep)
-      (format t "e: ~a~%" ee)
-      (format t "----~%")
+      ;; (format t "t: ~a~%" et)
+      ;; (format t "p: ~a~%" ep)
+      ;; (format t "e: ~a~%" ee)
+      ;; (format t "----~%")
       (cond
         ;; Variable
         ((integerp et)
@@ -151,25 +151,71 @@
 (defun int2lint (n)
   (int2lint* n *powerlist*))
 
+(defun char2lchar (c)
+  (cond
+    ((eq "a" c)
+      (int2lint 97))
+    ((eq "b" c)
+      (int2lint 98))))
+
+(defun str2lstr (s)
+  (cond
+    ((eq "" s)
+      lnil)
+    (t
+      (lcons (char2lchar (carstr s)) (str2lstr (cdrstr s))))))
+
+(defparameter *newline* "
+")
+(defparameter *chartable* (list
+  "[0x00]" "[0x01]" "[0x02]" "[0x03]" "[0x04]" "[0x05]" "[0x06]" "[0x07]"
+  "[0x08]" "[0x09]" *newline* "[0x0b]" "[0x0c]" "[0x0d]" "[0x0e]" "[0x0f]"
+  "[0x10]" "[0x11]" "[0x12]" "[0x13]" "[0x14]" "[0x15]" "[0x16]" "[0x17]"
+  "[0x18]" "[0x19]" "[0x1a]" "[0x1b]" "[0x1c]" "[0x1d]" "[0x1e]" "[0x1f]"
+  " " "!" "\"" "#" "$" "%" "&" "'" "(" ")" "*" "+" "," "-" "." "/"
+  "0" "1" "2"  "3" "4" "5" "6" "7" "8" "9" ":" ";" "<" "=" ">" "?"
+  "@" "A" "B"  "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O"
+  "P" "Q" "R"  "S" "T" "U" "V" "W" "X" "Y" "Z" "[" "\\" "]" "^" "_"
+  "`" "a" "b"  "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o"
+  "p" "q" "r"  "s" "t" "u" "v" "w" "x" "y" "z" "{" "|" "}" "-" "[0x7f]"))
+
+(defun lstr2str (s)
+  (cond
+    ((isnil s)
+      "")
+    (t
+      (+ (nth (lint2int (lcar s)) *chartable*) (lstr2str (lcdr s))))))
+
 (print (lint2int (int2lint 125)))
 (print (lbool2int ltrue))
 (print (lbool2int lnil))
 
-;; (defun str2lambdalist (s)
-;;   (cond
-;;     ((= "" s) lnil)
-;;     (t
-;;       )))
+(defun lreadline ()
+  (let ((c (read-char)))
+    (cond
+      ((= c *newline*)
+        lnil)
+      (t
+        (lcons (char2lchar c) (lreadline))))))
 
-(defun main ()
-  (let ((code nil) (lexed nil) (parsed nil) (result nil))
-    (format t "~%")
-    (format t "Code: ")
-    (setq parsed (parseblc-stdin))
-    (format t "~%")
-    (format t "Parsed: ~a~%" parsed)
-    (format t "Krivine machine transitions:~%")
-    (setq result (krivine parsed))
-    (format t "Result: ~a~%" result)))
+(print (str2lstr "aba"))
+(print (lstr2str (str2lstr "aba")))
 
-(main)
+;; (defun main ()
+;;   (let ((parsed nil) (stdin nil) (program nil) (result nil) (result-text nil))
+;;     (format t "~%")
+;;     (format t "Code: ")
+;;     (setq parsed (parseblc-stdin))
+;;     (format t "~%")
+;;     (format t "Parsed: ~a~%" parsed)
+;;     (setq stdin (lreadline))
+;;     (format t "Stdin: ~a~%" stdin)
+;;     (setq program (list parsed stdin))
+;;     ;; (format t "Krivine machine transitions:~%")
+;;     (setq result (krivine program))
+;;     (format t "Output term: ~a~%" result)
+;;     (setq result-text (lstr2str result))
+;;     (format t "Output: ~a~%" result-text)
+;;     (exit)))
+
+;; (main)
