@@ -3,8 +3,8 @@
 ;; Evaluates a bit-oriented Binary Lambda Calculus (BLC) Program.
 ;;
 ;; Usage:
-;; ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples/lisplambda.lisp;
-;;   echo "0010ab" ) | bin/uni
+;; ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples-advanced/lisplambda-bit.lisp;
+;;   echo "0010 10" ) | bin/uni
 ;;
 ;; Specifications:
 ;; - The input is in the format of: [code][stdin]
@@ -20,14 +20,14 @@
 ;;
 ;; Example programs:
 ;; - Echo program:
-;;     $ ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples/lisplambda.lisp;
-;;       echo "0010ab" ) | bin/uni
-;;     > ab
+;;     $ ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples-advanced/lisplambda-bit.lisp;
+;;       echo "0010   01" ) | bin/uni
+;;     > 01
 ;;   - Corresponds to (lambda (stdin) stdin).
 ;; - Prepend parts of the stdin:
-;;     $ ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples/lisplambda.lisp;
-;;       echo "00 00 01 01 10 01 110 0000110 110ab" ) | bin/uni
-;;     > aab
+;;     $ ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples-advanced/lisplambda-bit.lisp;
+;;       echo "00 00 01 01 10 01 110 0000110 110   01" ) | bin/uni
+;;     > 001
 ;;   - Corresponds to (lambda (stdin) (cons (car stdin) stdin)).
 
 
