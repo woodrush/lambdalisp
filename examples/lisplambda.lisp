@@ -1,5 +1,36 @@
 (defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
 
+;; Evaluates a byte-oriented Binary Lambda Calculus (BLC) Program.
+;;
+;; Usage:
+;; ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples/lisplambda.lisp;
+;;   echo "0010ab" ) | bin/uni
+;;
+;; Specifications:
+;; - The input is in the format of: [code][stdin]
+;; - The interpreter first parses the [code] as a BLC program.
+;;   - All characters except for `0` and `1` are ignored.
+;;   - As soon as the BLC program finishes (note that the BLC language is a prefix code),
+;;     the interpreter starts parsing the [stdin].
+;; - [stdin] is the standard input provided to the BLC program.
+;;   - The interpreter reads one line of standard input.
+;;     All characters are buffered into a BLC list until it hits the first newline (0x0a).
+;;   - Note that due to the specifications of LambdaLisp,
+;;     the program crashes when a trailing newline does not exist.
+;;
+;; Example programs:
+;; - Echo program:
+;;     $ ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples/lisplambda.lisp;
+;;       echo "0010ab" ) | bin/uni
+;;     > ab
+;;   - Corresponds to (lambda (stdin) stdin).
+;; - Prepend parts of the stdin:
+;;     $ ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples/lisplambda.lisp;
+;;       echo "00 00 01 01 10 01 110 0000110 110ab" ) | bin/uni
+;;     > aab
+;;   - Corresponds to (lambda (stdin) (cons (car stdin) stdin)).
+
+
 ;;================================================================================
 ;; Krivine machine
 ;;================================================================================
@@ -45,38 +76,36 @@
 (defun krivine (et ep ee isouter)
   (let ((tmp nil))
     (loop
-      ;; (format t "----~%")
-      ;; (format t "t: ~a~%" et)
-      ;; (format t "p: ~a~%" ep)
-      ;; (format t "e: ~a~%" ee)
       (cond
         ;; Variable
         ((integerp et)
           (setq tmp (nth et ee))
           (setq et (car tmp))
-          (setq ee (cdr tmp))
-          ;; (format t "Variable~%")
-          )
+          (setq ee (cdr tmp)))
         ;; Abstraction
         ((eq 'L (car et))
           ;; If the stack is empty, finish the evaluation
           (cond ((eq nil ep)
             (cond
               (isouter
+                ;; Exit when EOF == nil is detected
                 (cond ((isnil et) (return-from krivine et)))
-                ;; Print character
+                ;; Evaluate the leading character of the current output buffer,
+                ;; assuming that the current term is a list of integers
                 (setq tmp (list et ltrue))
                 (setq tmp (krivine tmp ep ee nil))
+                ;; Print the leading character
                 (format t (lchar2char tmp))
+                ;; Evaluate the rest of the output buffer,
+                ;; assuming that the current term is a list of integers
                 (setq et (list et lnil)))
               (t
+                ;; Finish evaluating the leading character
                 (return-from krivine et))))
             (t
               (setq et (cdr et))
               (setq ee (cons (car ep) ee))
-              (setq ep (cdr ep))))
-          ;; (format t "Abstraction~%")
-          )
+              (setq ep (cdr ep)))))
         ;; Empty term
         ((eq nil et)
           (return-from krivine et))
@@ -87,9 +116,7 @@
               (cons (car (cdr et)) ee)
               ep))
           (setq tmp (car et))
-          (setq et tmp)
-          ;; (format t "Application: ~a~%" et)
-          )))))
+          (setq et tmp))))))
 
 ;;================================================================================
 ;; I/O
@@ -190,11 +217,6 @@
 (lambda (stdin)
   (cons (car stdin) stdin))
 
-;; 0010ab
-;; 00 00 01 01 10 01 110 0000110 110ab
-;; 00 00 01 01 10 01 110 0000110 110
-;; (cons (car stdin) stdin)
-
 (defun str2lstr (s)
   (cond
     ((eq "" s)
@@ -230,13 +252,8 @@
     (setq stdin (lreadline))
     (format t "Stdin: ~a~%" stdin)
     (setq program (list parsed stdin))
-    ;; (setq result (krivine program nil nil t))
     (format t "Output:~%")
     (krivine program nil nil t)
-    ;; (format t "----~%")
-    ;; (format t "Output term: ~a~%" result)
-    ;; (setq result-text (lstr2str result))
-    ;; (format t "Output: ~a~%" result-text)
     (exit)))
 
 (main)
