@@ -22,7 +22,7 @@
 ;;   - Be careful of trailing newlines at the end of [code],
 ;;     which would nullify [stdin] since the first character of [stdin] would be a newline.
 ;;
-;; Example programs:
+;; Example programs: (Running them takes about a minute)
 ;; - Echo program:
 ;;     $ ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples-advanced/lisplambda-bit.lisp;
 ;;       echo "0010   01" ) | bin/uni
@@ -33,6 +33,16 @@
 ;;       echo "00 00 01 01 10 01 110 0000110 110   01" ) | bin/uni
 ;;     > 001
 ;;   - Corresponds to (lambda (stdin) (cons (car stdin) stdin)).
+;; - Self-interpreter, as known as the Universal Machine (from IOCCC 2012 by John Tromp):
+;;     $ wget https://www.ioccc.org/2012/tromp/uni.blc
+;;     $ ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples-advanced/lisplambda-bit.lisp;
+;;       cat uni.blc; echo "001001" ) | bin/uni
+;;     > 01
+;;   - Runs the BLC self-interpreter uni.blc.
+;;   - Here, the input `001001` is being provided the self-interpreter uni.blc.
+;;     The program is `0010`, and the standard input is `01`.
+;;   - Since `0010` is the identity function or the `cat` utility, the result is `01`.
+;;   - This is equivalent to running `001001` as shown in the first example program.
 ;; - Prime number sieve (from IOCCC 2012 by John Tromp):
 ;;     $ wget https://www.ioccc.org/2012/tromp/primes.blc
 ;;     $ ( cat bin/lambdalisp.blc | bin/asc2bin; cat examples-advanced/lisplambda-bit.lisp;
