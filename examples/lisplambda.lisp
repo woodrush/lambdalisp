@@ -38,7 +38,7 @@
         (lambda (t1 pnext)
           (parseblc pnext
             (lambda (t2 pnext)
-              (cont (cons t1 t2) pnext))))))
+              (cont (list t1 t2) pnext))))))
     ;; Variable
     ((integerp (car lexed))
       (cont (car lexed) (cdr lexed)))
@@ -58,7 +58,7 @@
     (t (drop (- n 1) (cdr l)))))
 
 (defun krivine (term)
-  (let ((n 0) (et term) (ep nil) (ee nil))
+  (let ((n 0) (tmp nil) (et term) (ep nil) (ee nil))
     (loop
       (print "----")
       (print et)
@@ -68,8 +68,9 @@
         ;; Variable
         ((integerp et)
           (setq n et)
-          (setq et (nth n ee))
-          (setq ee (drop n ee)))
+          (setq tmp (nth n ee))
+          (setq et (car tmp))
+          (setq ee (cdr tmp)))
         ;; Abstraction
         ((eq 'L (car et))
           ;; If the stack is empty, finish the evaluation
@@ -80,7 +81,10 @@
           (setq ep (cdr ep)))
         ;; Application
         (t
-          (setq ep (cons (cdr et) ep))
+          (setq ep
+            (cons
+              (cons (car (cdr et)) ee)
+              ep))
           (setq et (car et)))))))
 
 (defun main ()
