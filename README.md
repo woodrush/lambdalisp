@@ -508,6 +508,18 @@ Runnable with:
 make test-self-host
 ```
 
+## Lambda Calculus Interpreter Written in LambdaLisp
+The [examples-advanced](./examples-advanced/) directory features lambda calculus interpreters written in LambdaLisp itself.
+This means that we have a lambda calculus interpreter written in Lisp, which is written in lambda calculus, that runs on a lambda calculus interpreter.
+
+Furthermore, the interpreter [lisplambda-bit.lisp](./examples-advanced/lisplambda-bit.lisp)
+is capable of running [uni.blc](https://www.ioccc.org/2012/tromp/uni.blc),
+the bit-oriented BLC self-interpreter from the IOCCC 2012 "Most functional" entry written by John Tromp.
+uni.blc is a bit-oriented BLC interpreter written in bit-oriented BLC itself.
+From the standard input, it takes a program and a standard input, and evaluates the result of the program applied with the standard input.
+
+This means that we have a lambda calculus interpreter written in lambda calculus itself, which runs on a lambda calculus interpreter written in Lisp, which is written in lambda calculus, that runs on a lambda calculus interpreter.
+
 
 ## How it Works
 Implementation details are introduced in [this blog post](https://woodrush.github.io/blog/lambdalisp.html).
