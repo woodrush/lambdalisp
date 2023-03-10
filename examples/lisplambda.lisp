@@ -29,22 +29,64 @@
 (defun parseblc (lexed cont)
   (print lexed)
   (cond
+    ;; Abstraction
     ((eq 'L (car lexed))
-      (parseblc (cdr lexed) (lambda (t1 pnext) (cont (list 'L t1) pnext))))
+      (parseblc (cdr lexed) (lambda (t1 pnext) (cont (cons 'L t1) pnext))))
+    ;; Appliation
     ((eq 'P (car lexed))
       (parseblc (cdr lexed) 
         (lambda (t1 pnext)
           (parseblc pnext
             (lambda (t2 pnext)
-              (cont (list t1 t2) pnext))))))
+              (cont (cons t1 t2) pnext))))))
+    ;; Variable
     ((integerp (car lexed))
       (cont (car lexed) (cdr lexed)))
     (t
       (error "Parse error"))))
 
+(defun nth (n l)
+  (cond
+    ((= 0 n)
+      (car l))
+    (t
+      (nth (- n 1) (cdr l)))))
+
+(defun drop (n l)
+  (cond
+    ((= 0 n) l)
+    (t (drop (- n 1) (cdr l)))))
+
+(defun krivine (term)
+  (let ((n 0) (et term) (ep nil) (ee nil))
+    (loop
+      (print "----")
+      (print et)
+      (print ep)
+      (print ee)
+      (cond
+        ;; Variable
+        ((integerp et)
+          (setq n et)
+          (setq et (nth n ee))
+          (setq ee (drop n ee)))
+        ;; Abstraction
+        ((eq 'L (car et))
+          ;; If the stack is empty, finish the evaluation
+          (cond ((eq nil ep)
+            (return-from krivine et)))
+          (setq et (cdr et))
+          (setq ee (cons (car ep ee)))
+          (setq ep (cdr ep)))
+        ;; Application
+        (t
+          (setq ep (cons (cdr et) ep))
+          (setq et (car et)))))))
+
 (defun main ()
   (setq code (read))
   (print code)
-  (parseblc (lexblc code) (lambda (term _) (print term))))
+  (parseblc (lexblc code) (lambda (term _) 
+    (print (krivine term)))))
 
 (main)
