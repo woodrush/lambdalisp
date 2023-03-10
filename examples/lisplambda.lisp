@@ -1,50 +1,39 @@
 (defparameter **lambdalisp-suppress-repl** t) ;; Enters script mode and suppresses REPL messages
 
-(defun parsevarname (s n cont)
-  (cond
-    ((= nil s)
-      (error "Parse error: Unexpected EOF in variable name"))
-    ((= "0" (carstr s))
-      (cont (cdrstr s) n))
-    ((= "1" (carstr s))
-      (parsevarname (cdrstr s) (+ 1 n) cont))))
+;;================================================================================
+;; Krivine machine
+;;================================================================================
+(defun read-print-01char ()
+  (let ((c (read-char)))
+    (cond
+      ((or (= "0" c) (= "1" c))
+        (format t c)
+        c)
+      (t
+        (read-print-01char)))))
 
-(defun lexblc (s)
-  (cond
-    ((eq s nil)
-      nil)
-    ((= (carstr s) "0")
-      (cond
-        ((eq nil (cdrstr s))
-          (error "Parse error: Unexpected EOF"))
-        ((= (carstr (cdrstr s)) "0")
-          (cons 'L (lexblc (cdrstr (cdrstr s)))))
-        ;; case 1
-        (t
-          (cons 'A (lexblc (cdrstr (cdrstr s)))))))
-    ;; case 1
-    (t
-      (parsevarname (cdrstr s) 0
-        (lambda (s n)
-          (cons n (lexblc s)))))))
+(defun parsevarname-stdin ()
+  (let ((c (read-print-01char)))
+    (cond
+      ((= "0" c)
+        0)
+      (t
+        (+ 1 (parsevarname-stdin))))))
 
-(defun parseblc (lexed cont)
-  (cond
-    ;; Abstraction
-    ((eq 'L (car lexed))
-      (parseblc (cdr lexed) (lambda (t1 pnext) (cont (cons 'L t1) pnext))))
-    ;; Appliation
-    ((eq 'A (car lexed))
-      (parseblc (cdr lexed) 
-        (lambda (t1 pnext)
-          (parseblc pnext
-            (lambda (t2 pnext)
-              (cont (list t1 t2) pnext))))))
-    ;; Variable
-    ((integerp (car lexed))
-      (cont (car lexed) (cdr lexed)))
-    (t
-      (error "Parse error"))))
+(defun parseblc-stdin ()
+  (let ((c (read-print-01char)))
+    (cond
+      ((= c "0")
+        (setq c (read-print-01char))
+        (cond
+          ((= c "0")
+            (cons 'L (parseblc-stdin)))
+          ;; 1 case
+          (t
+            (list (parseblc-stdin) (parseblc-stdin)))))
+      ;; 1 case
+      (t
+        (parsevarname-stdin)))))
 
 (defun nth (n l)
   (cond
@@ -92,14 +81,92 @@
               ep))
           (setq et (car et)))))))
 
+;;================================================================================
+;; I/O
+;;================================================================================
+(defparameter ltrue (cons 'L (cons 'L 1)))
+(defparameter lnil  (cons 'L (cons 'L 0)))
+(defun lcons (a b)
+  (cons 'L `((0 ,a) ,b)))
+
+(defun isnil (e)
+  (and
+    (eq 'L (car e))
+    (eq 'L (car (cdr e)))
+    (= 0 (cdr (cdr e)))))
+
+(defun lcar (l)
+  (car (cdr (car (cdr l)))))
+
+(defun lcdr (l)
+  (car (cdr (cdr l))))
+
+(defun list2llist (l)
+  (cond
+    ((eq nil l) lnil)
+    (t
+      (lcons
+        (if (= 0 (car l)) ltrue lnil)
+        (list2llist (cdr l))))))
+
+(defun lbool2int (i)
+  (cond
+    ((and
+      (eq 'L (car i))
+      (eq 'L (car (cdr i))))
+     (cond
+      ((= 1 (cdr (cdr i)))
+        (return 0))
+      ((= 0 (cdr (cdr i)))
+        (return 1)))))
+  2)
+
+(defparameter *powerlist* (list 128 64 32 16 8 4 2 1))
+(defun lint2int* (i powerlist)
+  (cond
+    ((eq nil powerlist) 0)
+    ((isnil i) 0)
+    (t
+      (let ((n (lbool2int (lcar i))))
+        (cond
+          ((= 0 n)
+            (lint2int* (lcdr i) (cdr powerlist)))
+          ((= 1 n)
+            (+ (car powerlist) (lint2int* (lcdr i) (cdr powerlist))))
+          (t
+            (error "The argument is not a number")))))))
+
+(defun lint2int (i)
+  (lint2int* i *powerlist*))
+
+(defun int2lint* (n powerlist)
+  (cond
+    ((eq nil powerlist)
+      nil)
+    ((<= (car powerlist) n)
+      (lcons lnil (int2lint* (- n (car powerlist)) (cdr powerlist))))
+    (t
+      (lcons ltrue (int2lint* n (cdr powerlist))))))
+
+(defun int2lint (n)
+  (int2lint* n *powerlist*))
+
+(print (lint2int (int2lint 125)))
+(print (lbool2int ltrue))
+(print (lbool2int lnil))
+
+;; (defun str2lambdalist (s)
+;;   (cond
+;;     ((= "" s) lnil)
+;;     (t
+;;       )))
+
 (defun main ()
   (let ((code nil) (lexed nil) (parsed nil) (result nil))
     (format t "~%")
-    (setq code (read))
-    (format t "Input: ~a~%" code)
-    (setq lexed (lexblc code))
-    (format t "Lexed: ~a~%" lexed)
-    (parseblc lexed (lambda (term _) (setq parsed term)))
+    (format t "Code: ")
+    (setq parsed (parseblc-stdin))
+    (format t "~%")
     (format t "Parsed: ~a~%" parsed)
     (format t "Krivine machine transitions:~%")
     (setq result (krivine parsed))
