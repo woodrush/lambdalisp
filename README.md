@@ -4,6 +4,7 @@
 
 
 LambdaLisp is a Lisp interpreter written as an untyped lambda calculus term.
+It basically runs a large subset of Common Lisp as shown in the [Features](#features) section.
 The entire lambda calculus expression is viewable as a PDF [here](https://woodrush.github.io/lambdalisp.pdf).
 
 
@@ -14,7 +15,7 @@ which takes a string `x` as an input and returns a string as an output.
 The input `x` is the Lisp program and the user's standard input,
 and the output is the standard output.
 Characters are encoded into lambda term representations of natural numbers using the [Church encoding](https://en.wikipedia.org/wiki/Church_encoding),
-and strings are encoded as a list of characters with lists expressed as lambdas in the [Mogensen-Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding),
+and strings are encoded as a list of characters with lists expressed as lambdas in the [Scott encoding](https://en.wikipedia.org/wiki/Mogensen%E2%80%93Scott_encoding),
 so the entire computation process solely consists of the beta-reduction of lambda terms,
 without introducing any non-lambda-type object.
 
@@ -254,14 +255,14 @@ Supported special forms and functions are:
 - defun, defmacro, lambda (&rest can be used)
 - quote, atom, car, cdr, cons, eq
 - +, -, *, /, mod, =, >, <, >=, <=, integerp
-- read (reads Lisp expressions), print, format (supports `~a` and `~%`), write-to-string, intern, stringp
+- read (reads Lisp expressions), read-char, peek-char, print, format (supports `~a` and `~%`), write-to-string, intern, stringp
 - let, let*, labels, setq, boundp
 - progn, loop, block, return, return-from, if, cond, error
 - list, append, reverse, length, position, mapcar
 - make-hash-table, gethash (setf can be used)
 - equal, and, or, not
 - eval, apply
-- set-macro-character, peek-char, read-char, `` ` ``   `,`   `,@`   `'`   `#\`
+- set-macro-character, `` ` ``   `,`   `,@`   `'`   `#\`
 - carstr, cdrstr, str, string comparison with =, >, <, >=, <=, string concatenation with +
 - defun-local, defglobal, type, macro
 - malloc, memread, memwrite
@@ -507,6 +508,18 @@ Runnable with:
 ```sh
 make test-self-host
 ```
+
+## Lambda Calculus Interpreter Written in LambdaLisp
+The [examples-advanced](./examples-advanced/) directory features lambda calculus interpreters written in LambdaLisp itself.
+This means that we have a lambda calculus interpreter written in Lisp, which is written in lambda calculus, that runs on a lambda calculus interpreter.
+
+Furthermore, the interpreter [lisplambda-bit.lisp](./examples-advanced/lisplambda-bit.lisp)
+is capable of running [uni.blc](https://www.ioccc.org/2012/tromp/uni.blc),
+the bit-oriented BLC self-interpreter from the IOCCC 2012 "Most functional" entry written by John Tromp.
+uni.blc is a bit-oriented BLC interpreter written in bit-oriented BLC itself.
+From the standard input, it takes a program and a standard input, and evaluates the result of the program applied with the standard input.
+
+This means that we have a lambda calculus interpreter written in lambda calculus itself, which runs on a lambda calculus interpreter written in Lisp, which is written in lambda calculus, that runs on a lambda calculus interpreter.
 
 
 ## How it Works
