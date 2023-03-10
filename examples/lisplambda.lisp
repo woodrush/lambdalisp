@@ -1,4 +1,4 @@
-(setq input "0010")
+(setq code "000010")
 
 (defun parsevarname (s n cont)
   (cond
@@ -9,25 +9,40 @@
     ((= "1" (carstr s))
       (parsevarname (cdrstr s) (+ 1 n) cont))))
 
-(defun parseblc (s)
-  (print s)
+(defun lexblc (s)
   (cond
-    ((= s nil)
+    ((eq s nil)
       nil)
     ((= (carstr s) "0")
       (cond
-        ((= nil (cdrstr s))
+        ((eq nil (cdrstr s))
           (error "Parse error: Unexpected EOF"))
-        ((= (carstr (cdrstr s) "0"))
-          (cons (quote L) (parseblc (cdrstr (cdrstr s)))))
+        ((= (carstr (cdrstr s)) "0")
+          (cons 'L (lexblc (cdrstr (cdrstr s)))))
         ;; case 1
         (t
-          (cons (quote P) (parseblc (cdrstr (cdrstr s)))))))
+          (cons 'P (lexblc (cdrstr (cdrstr s)))))))
     ;; case 1
     (t
       (parsevarname (cdrstr s) 0
         (lambda (s n)
-          (cons n (parseblc s)))))))
+          (cons n (lexblc s)))))))
 
-(print (parseblc input))
+(defun parseblc (lexed cont)
+  (print lexed)
+  (cond
+    ((eq 'L (car lexed))
+      (parseblc (cdr lexed) (lambda (t1 pnext) (cont (list 'L t1) pnext))))
+    ((eq 'P (car lexed))
+      (parseblc (cdr lexed) 
+        (lambda (t1 pnext)
+          (parseblc pnext
+            (lambda (t2 pnext)
+              (cont (list t1 t2) pnext))))))
+    ((integerp (car lexed))
+      (cont (car lexed) (cdr lexed)))
+    (t
+      (error "Parse error"))))
+
+(parseblc (lexblc code) (lambda (term _) (print term)))
 (print "End")
