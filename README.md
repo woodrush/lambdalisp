@@ -254,14 +254,14 @@ Supported special forms and functions are:
 - defun, defmacro, lambda (&rest can be used)
 - quote, atom, car, cdr, cons, eq
 - +, -, *, /, mod, =, >, <, >=, <=, integerp
-- read (reads Lisp expressions), print, format (supports `~a` and `~%`), write-to-string, intern, stringp
+- read (reads Lisp expressions), read-char, peek-char, print, format (supports `~a` and `~%`), write-to-string, intern, stringp
 - let, let*, labels, setq, boundp
 - progn, loop, block, return, return-from, if, cond, error
 - list, append, reverse, length, position, mapcar
 - make-hash-table, gethash (setf can be used)
 - equal, and, or, not
 - eval, apply
-- set-macro-character, peek-char, read-char, `` ` ``   `,`   `,@`   `'`   `#\`
+- set-macro-character, `` ` ``   `,`   `,@`   `'`   `#\`
 - carstr, cdrstr, str, string comparison with =, >, <, >=, <=, string concatenation with +
 - defun-local, defglobal, type, macro
 - malloc, memread, memwrite
